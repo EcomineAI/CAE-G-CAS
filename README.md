@@ -14,13 +14,6 @@
 ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 
-Ctrl Alt Elite (CAE)
-Abello, June Vic 
-Camintoy, Erica Mae 
-Monton, Ma. Erica P.
-
-
-
 CCS FACULTY CONSULTATION HOURS SYSTEM
 
 
