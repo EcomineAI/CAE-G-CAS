@@ -6,7 +6,7 @@
 
 ▀█████ ██ ‎ ‎ ‎ ‎  ██ ██▄▄▄▄        ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎  ‎ ‎ ‎  ▀███▀     ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ▀█████ ██ ‎‎ ‎ ‎ ‎  ██ █████▀        
 
-![June](https://img.shields.io/badge/June-red?style=for-the-badge)
+![June A.](https://img.shields.io/badge/June-red?style=for-the-badge)
 ![Erica M.](https://img.shields.io/badge/Erica%20M.-purple?style=for-the-badge)
 ![Erica C.](https://img.shields.io/badge/Erica%20C.-pink?style=for-the-badge)
 
