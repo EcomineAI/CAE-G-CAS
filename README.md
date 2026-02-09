@@ -6,6 +6,10 @@
 
 ▀█████ ██ ‎ ‎ ‎ ‎  ██ ██▄▄▄▄        ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎  ‎ ‎ ‎  ▀███▀     ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ▀█████ ██ ‎‎ ‎ ‎ ‎  ██ █████▀        
 
+![June](https://img.shields.io/badge/June-red?style=for-the-badge)
+![Erica M.](https://img.shields.io/badge/Erica%20M.-purple?style=for-the-badge)
+![Erica C.](https://img.shields.io/badge/Erica%20C.-pink?style=for-the-badge)
+
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
 ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
