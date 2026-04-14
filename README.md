@@ -1,80 +1,59 @@
-                                                              
-                                                              
-▄█████ ▄████▄ ██████         ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎  ▄████     ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎‎ ‎ ▄█████ ▄████▄ ▄█████ 
+# G-CAS: Gordon College Appointment System
+**CCS Faculty Consultation Hours System**
 
-██ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎‎ ‎ ‎   ██▄▄██ ██▄▄    ‎ ‎ ‎ ‎  ‎ ▄▄▄  ‎ ‎  ██  ‎ ‎ ‎ ▄▄▄ ‎ ‎ ‎  ▄▄▄‎ ‎ ‎ ‎ ‎ ‎ ██   ‎ ‎ ‎ ‎ ‎ ‎‎‎  ‎  ‎ ‎ ‎   ██▄▄██ ▀▀▀▄▄▄ 
+A real-time system designed to record and display the consultation availability of CCS faculty members at Gordon College. G-CAS helps bridge the gap between students and instructors, ensuring that consultation hours are predictable and convenient.
 
-▀█████ ██ ‎ ‎ ‎ ‎  ██ ██▄▄▄▄        ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎  ‎ ‎ ‎  ▀███▀     ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ▀█████ ██ ‎‎ ‎ ‎ ‎  ██ █████▀        
-
+## 👥 Meet the Team
 ![June A.](https://img.shields.io/badge/June-red?style=for-the-badge)
 ![Erica M.](https://img.shields.io/badge/Erica%20M.-purple?style=for-the-badge)
 ![Erica C.](https://img.shields.io/badge/Erica%20C.-pink?style=for-the-badge)
 
-![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
-![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
-![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+---
 
-CCS FACULTY CONSULTATION HOURS SYSTEM
+## 🎯 The Mission
+### Problem Statement
+Consultation between students and instructors is critical. However, actual availability often deviates from the announced schedule, causing students to wait for long periods or travel to campus unnecessarily. 
 
+### Goals
+- **Improve** the faculty consultation process for the CCS Department.
+- **Provide** a reliable real-time system for students to check availability.
+- **Reduce** time wasted due to uncertainty.
 
-G-CAS (Gordon College Appointment System)
+### Vision
+Create a centralized management system that reduces uncertainty by providing real-time access to consultation data.
 
+---
 
-Brief description
-A system that records and displays the time availability of CCS faculty members for student consultations in real time. 
+## 🚀 Tech Stack
+- **Frontend:** [React](https://react.dev/) + [JSX](https://react.dev/learn/writing-markup-with-jsx)
+- **Build Tool:** [Vite](https://vitejs.dev/)
+- **Backend:** [Firebase](https://firebase.google.com/) (Auth & Database ready)
+- **Branding:** Custom Vanilla CSS (Premium & Mobile Responsive)
 
-Problem Statement
-Consultation between students and instructors is important. However, even when instructors announce their consultation hours, their actual availability may not always align with the given schedule. This often results in students waiting for long periods of time, uncertain whether the instructor is available or not. As a result, students may waste time and effort to go to the campus and attempt to meet instructors who are unavailable, making the consultation process inefficient and inconvenient.
+## ✨ Core Features
+- **Institutional Auth:** Secure login using Gordon College domain accounts (`@gordoncollege.edu.ph`).
+- **Real-Time Status:** View or update faculty consultation status on the fly.
+- **Role-Based Access:** Dedicated interfaces for students and faculty members.
+- **Mobile-First Design:** Fully adaptable UI that works perfectly on phones and desktops.
 
-Goals
-To improve the current faculty consultation process.
-To provide students and faculty members with a convenient and reliable system.
-To reduce time wasted due to uncertainty in faculty availability. 
+---
 
-Target Users 
-End Users:
-CCS Students
-Can view faculty consultation availability
-CCS Faculty Members
-Set and Update consultation hours
-Sponsors:
-CCS Department - owns the consultation process
+## 🛠️ Developer Setup
 
-Preliminary Risks
-Limited Adoption by Faculty - Some faculty members may not consistently update their availability.
-Technical limitations - limited development experience may affect system stability.
-Time constraints - short development period may limit feature completeness and testing.
-In-Scope 
-User Authentication using Gordon College domain accounts.
-Role-based access (faculty and student).
-CRUD operations for consultation schedules and availability.
-Basic, user-friendly interface for viewing and updating consultation hours.
+### 1. The "Self-Healing" Start
+We've included a script to make setup effortless. If you delete `node_modules` to save space, the script will automatically fix it.
+- **Run:** Double-click `start_gcas.bat` in the root folder.
 
-Out-of-Scope
-Automated notifications (email, push notifications)
-Integration with external calendar systems (e.g. Google Calendar)
-Mobile Application
+### 2. Manual Commands
+```bash
+npm install   # Downloads libraries
+npm run dev   # Starts the app
+```
 
-High-level features (3-6 core functions)
+## 📂 Project Structure
+- `src/components/`: Reusable UI pieces.
+- `src/pages/`: Core page views (Landing, Student/Faculty Login).
+- `src/firebase/`: Connection logic for Google/Institutional Auth.
 
-User authentication using Gordon College domain account.
-CRUD operations for managing consultation schedules and availability.
-Real-time updates of faculty availability status.
-
-Key constraints (time, technology, resources, budget)
-Time constraints. Limited development time that may result in a system with minimal
- features.
-Technology constraints. Average level of experience in system development.
-Budget constraints. The system must be developed with little to no financial cost.
-
-Assumptions
-The system will be easy to understand and use by both students and faculty members.
-The system will be more efficient than the current manual consultation process.
-
-Vision Statement
-Create a consultation management system that helps CCS students and faculty members reduce uncertainty by providing real-time and centralized access to faculty consultation hours. 
-
-
-
-
-
+---
+*Developed for Gordon College CCS Department.*
