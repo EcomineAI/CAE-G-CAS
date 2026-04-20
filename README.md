@@ -32,9 +32,18 @@ Create a centralized management system that reduces uncertainty by providing rea
 
 ## ✨ Core Features
 - **Institutional Auth:** Secure login using Gordon College domain accounts (`@gordoncollege.edu.ph`).
-- **Real-Time Status:** View or update faculty consultation status on the fly.
-- **Role-Based Access:** Dedicated interfaces for students and faculty members.
-- **Mobile-First Design:** Fully adaptable UI that works perfectly on phones and desktops.
+- **Student Dashboard:** View appointment metrics (Approved, Pending, Completed) and recent consultation history.
+- **Faculty Directory:** Real-time visibility of CCS faculty status with a seamless 3-step booking system.
+- **Real-Time Status:** Interactive pills showing `Available`, `Busy`, or `Unavailable` faculty.
+- **Mobile-First Design:** Premium, two-tone UI layout that adapts perfectly to desktop and mobile devices.
+
+---
+
+## 📈 Latest Updates (v1.1.0)
+- **New Faculty Tab:** Implemented a full directory with high-fidelity faculty cards, slot-based booking tables, and request confirmation modals.
+- **Component Refactoring:** Migrated dashboard views into modular files (`DashboardContent.jsx`, `FacultyContent.jsx`) for cleaner code management.
+- **UI/UX Polishing:** Enhanced layout proportions with a 1050px container and refined typography for a professional look.
+- **Dev Speed:** Integrated a "Skip to Dashboard" button in the login page for rapid UI testing.
 
 ---
 
@@ -51,9 +60,13 @@ npm run dev   # Starts the app
 ```
 
 ## 📂 Project Structure
-- `src/components/`: Reusable UI pieces.
-- `src/pages/`: Core page views (Landing, Student/Faculty Login).
-- `src/firebase/`: Connection logic for Google/Institutional Auth.
+- `src/components/`: Reusable UI pieces (Input, etc.).
+- `src/pages/student/`: Student-side views and modular tab components:
+    - `StudentDashboard.jsx` (Main Tab Wrapper)
+    - `DashboardContent.jsx` (Overview Tab)
+    - `FacultyContent.jsx` (Faculty & Booking Tab)
+- `src/pages/faculty/`: Faculty management and dashboard pages.
+- `src/pages/Login/`: Separate institutional login gateways.
 
 ---
 *Developed for Gordon College CCS Department.*
