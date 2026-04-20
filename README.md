@@ -39,7 +39,7 @@ Create a centralized management system that reduces uncertainty by providing rea
 
 ---
 
-## 📈 Latest Updates (v1.1.0)
+## 📈 Latest Updates (v0.1.0)
 - **New Faculty Tab:** Implemented a full directory with high-fidelity faculty cards, slot-based booking tables, and request confirmation modals.
 - **Component Refactoring:** Migrated dashboard views into modular files (`DashboardContent.jsx`, `FacultyContent.jsx`) for cleaner code management.
 - **UI/UX Polishing:** Enhanced layout proportions with a 1050px container and refined typography for a professional look.
