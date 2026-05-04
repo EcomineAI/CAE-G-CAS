@@ -98,9 +98,7 @@ const dashStyles = `
   padding: 0.6rem 1.5rem;
   background-color: var(--nav-bg);
   border-bottom: 1px solid var(--border-color);
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  position: relative;
 }
 
 .logo-section {
@@ -881,6 +879,8 @@ const StudentDashboard = () => {
   // Ensure profile exists for pre-trigger users and check name
   useEffect(() => {
     if (!user) return;
+    // Clear auth-page dark class from <html> so dashboard manages its own theme
+    document.documentElement.className = '';
     ensureProfile();
     
     getProfile(user.id).then(p => {

@@ -12,7 +12,7 @@ const inputStyles = `
   display: block;
   font-size: 0.8rem;
   font-weight: 500;
-  color: #5f6368;
+  color: var(--text-muted);
   margin-bottom: 0.3rem;
   margin-left: 2px;
 }
@@ -26,17 +26,17 @@ const inputStyles = `
 .input-icon {
   position: absolute;
   left: 14px;
-  color: #5f6368;
+  color: var(--input-icon, #5f6368);
   pointer-events: none;
 }
 
 .custom-input {
   width: 100%;
   padding: 13px 16px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--input-border, #d1d5db);
   border-radius: 10px;
-  font-size: 0.95rem;
-  color: #000;
+  font-size: 16px;
+  color: var(--input-text, #000);
   transition: var(--transition);
   background: var(--input-bg);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
@@ -50,11 +50,15 @@ const inputStyles = `
   padding-right: 45px;
 }
 
+.custom-input::placeholder {
+  color: var(--text-muted, #9ca3af);
+}
+
 .custom-input:focus {
   outline: none;
-  border-color: #94a3b8;
-  background: #fff;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02), 0 0 0 4px rgba(0, 0, 0, 0.02);
+  border-color: var(--primary, #FF6B00);
+  background: var(--input-focus-bg, #fff);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02), 0 0 0 3px rgba(255, 107, 0, 0.1);
 }
 
 .password-toggle {
@@ -62,7 +66,7 @@ const inputStyles = `
   right: 14px;
   background: none;
   border: none;
-  color: #5f6368;
+  color: var(--input-icon, #5f6368);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -72,7 +76,7 @@ const inputStyles = `
 }
 
 .password-toggle:hover {
-  color: #000;
+  color: var(--password-hover, #000);
 }
 `;
 

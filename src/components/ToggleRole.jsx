@@ -8,8 +8,8 @@ const toggleRoleStyles = `
 
 .toggle-container {
   display: flex;
-  background: #f0f0f0;
-  border: 1px solid #e0e0e0;
+  background: var(--toggle-bg, #f0f0f0);
+  border: 1px solid var(--toggle-border, #e0e0e0);
   border-radius: 12px;
   position: relative;
   padding: 4px;
@@ -23,7 +23,7 @@ const toggleRoleStyles = `
   left: 4px;
   width: calc(50% - 4px);
   height: calc(100% - 8px);
-  background: white;
+  background: var(--toggle-slider, #fff);
   border-radius: 9px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
   transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -41,7 +41,7 @@ const toggleRoleStyles = `
   background: transparent;
   font-size: 1rem;
   font-weight: 600;
-  color: #5f6368;
+  color: var(--toggle-text, #5f6368);
   cursor: pointer;
   z-index: 2;
   transition: color 0.2s ease;

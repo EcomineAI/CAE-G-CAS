@@ -34,12 +34,12 @@ const buttonStyles = `
 }
 
 .custom-button.secondary {
-  background: #f1f3f4;
-  color: #1a1a1a;
+  background: var(--secondary-btn-bg, #f1f3f4);
+  color: var(--secondary-btn-text, #1a1a1a);
 }
 
 .custom-button.secondary:hover {
-  background: #e8eaed;
+  background: var(--secondary-btn-hover, #e8eaed);
 }
 `;
 
