@@ -98,7 +98,9 @@ const dashStyles = `
   padding: 0.6rem 1.5rem;
   background-color: var(--nav-bg);
   border-bottom: 1px solid var(--border-color);
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .logo-section {

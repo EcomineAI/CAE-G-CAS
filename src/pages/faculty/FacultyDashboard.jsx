@@ -54,22 +54,27 @@ const facultyDashStyles = `
   --shadow: 0 0 0 2px #ffffff;
 }
 
-.faculty-dashboard-wrapper.text-small { font-size: 0.85rem; }
-.faculty-dashboard-wrapper.text-medium { font-size: 1rem; }
-.faculty-dashboard-wrapper.text-large { font-size: 1.15rem; }
+.dashboard-fixed-wrapper.text-small { font-size: 0.85rem; }
+.dashboard-fixed-wrapper.text-medium { font-size: 1rem; }
+.dashboard-fixed-wrapper.text-large { font-size: 1.15rem; }
 
-.faculty-dashboard-wrapper.text-small .nav-link,
-.faculty-dashboard-wrapper.text-small .nav-tab { font-size: 0.8rem; }
-.faculty-dashboard-wrapper.text-large .nav-link,
-.faculty-dashboard-wrapper.text-large .nav-tab { font-size: 1.1rem; }
+.dashboard-fixed-wrapper.text-small .nav-link,
+.dashboard-fixed-wrapper.text-small .nav-tab { font-size: 0.8rem; }
+.dashboard-fixed-wrapper.text-large .nav-link,
+.dashboard-fixed-wrapper.text-large .nav-tab { font-size: 1.1rem; }
 
-.faculty-dashboard-wrapper.text-small h1,
-.faculty-dashboard-wrapper.text-small h2 { font-size: 1.2rem; }
-.faculty-dashboard-wrapper.text-large h1,
-.faculty-dashboard-wrapper.text-large h2 { font-size: 2rem; }
+.dashboard-fixed-wrapper.text-small h1,
+.dashboard-fixed-wrapper.text-small h2 { font-size: 1.2rem; }
+.dashboard-fixed-wrapper.text-large h1,
+.dashboard-fixed-wrapper.text-large h2 { font-size: 2rem; }
 
-.faculty-dashboard-wrapper {
-  min-height: 100vh;
+.dashboard-fixed-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow-y: auto;
   background-color: var(--bg-primary);
   background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
   background-size: 30px 30px;
