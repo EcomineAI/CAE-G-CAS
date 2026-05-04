@@ -49,15 +49,16 @@ Create a centralized management system that reduces uncertainty by providing rea
 
 ---
 
-## 📈 Latest Updates (v0.5.0) — May 4, 2026
-- **Mobile UI Overhaul:** Redesigned student appointments with a modern, high-density card layout optimized for smaller screens.
-- **History Management:** Implemented permanent deletion of past consultation records for both Students and Faculty with safety confirmation popups.
-- **Availability Guardrails:** Automated request blocking for "Unavailable" faculty and interactive warnings for "Busy" faculty status.
-- **Pulsing Live Indicators:** Added status-colored pulsing animations to faculty profile rings for real-time availability visibility.
-- **Tab State Persistence:** Dashboard sections (tabs) now persist across page refreshes using `localStorage` for seamless navigation.
-- **Anti-Zoom Mobile Fix:** Stabilized the mobile UI by disabling auto-zooming during typing through viewport and font-size optimizations.
-- **Name Standardizer:** Standardized all system names to `First Middle Last` format for consistent institutional identity.
-- **Real-time Hardening:** Improved WebSocket lifecycle management to eliminate connection warnings during rapid navigation.
+## 📈 Latest Updates (v0.6.0) — May 5, 2026
+- **Visual Overhaul (GCBG):** Integrated Gordon College building background (`GCBG.jpg`) across all dashboards and login pages with premium frosted-glass (glassmorphism) effects.
+- **History Persistence (Soft Delete):** Implemented a role-based soft-delete system. Students can clear their view of history without deleting the record for Faculty, ensuring record integrity for institutional reporting.
+- **Intelligent Name Parsing:** Refined profile name handling to support multi-word first names (e.g., "June Vic") and middle initials while maintaining standard institutional naming conventions.
+- **Unified Theme System:** Synchronized dark/light mode variables across both student and faculty dashboards for a seamless transition.
+- **Input UX Polish:** Standardized input field aesthetics, fixed muddy colors in light mode, and added browser autofill overrides to maintain visual consistency.
+- **Scroll Cleanliness:** Globally hidden browser scrollbars across the entire application for a more immersive, app-like experience.
+
+### Previous: v0.5.0
+- Mobile UI Overhaul, History Management, Availability Guardrails, Pulsing Live Indicators, Tab Persistence.
 
 ### Previous: v0.3.0
 - Full Supabase Integration, Real-Time Subscriptions, Profile System, Optimistic CRUD, Skeleton Loading, Toast Notifications, Latency Masking.

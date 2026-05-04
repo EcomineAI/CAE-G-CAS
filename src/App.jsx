@@ -86,6 +86,12 @@ body {
   align-items: center;
   color: var(--text-main);
   overflow-x: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 /* ===== Background Image Layer ===== */
