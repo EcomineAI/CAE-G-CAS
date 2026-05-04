@@ -71,6 +71,15 @@ const appStyles = `
   --password-hover: #e4e4e7;
 }
 
+html, body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar, body::-webkit-scrollbar {
+  display: none;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -86,12 +95,6 @@ body {
   align-items: center;
   color: var(--text-main);
   overflow-x: hidden;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
-}
-
-body::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
 }
 
 /* ===== Background Image Layer ===== */

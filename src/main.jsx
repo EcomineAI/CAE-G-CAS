@@ -30,10 +30,18 @@ const indexStyles = `
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  /* Hide scrollbars globally */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 
   @media (max-width: 1024px) {
     font-size: 16px;
   }
+}
+
+:root::-webkit-scrollbar {
+  display: none;
 }
 
 @media (prefers-color-scheme: dark) {
