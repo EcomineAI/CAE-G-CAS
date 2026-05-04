@@ -36,10 +36,22 @@ const inputStyles = `
   border: 1px solid var(--input-border, #d1d5db);
   border-radius: 10px;
   font-size: 16px;
-  color: var(--input-text, #000);
+  color: var(--input-text, #1e293b);
   transition: var(--transition);
-  background: var(--input-bg);
+  background: var(--input-bg, #ffffff);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.custom-input::placeholder {
+  color: var(--input-placeholder, #94a3b8);
+}
+
+.custom-input:-webkit-autofill,
+.custom-input:-webkit-autofill:hover, 
+.custom-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--input-text);
+  -webkit-box-shadow: 0 0 0px 1000px var(--input-bg) inset;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 .custom-input.with-icon {
@@ -50,14 +62,10 @@ const inputStyles = `
   padding-right: 45px;
 }
 
-.custom-input::placeholder {
-  color: var(--text-muted, #9ca3af);
-}
-
 .custom-input:focus {
   outline: none;
   border-color: var(--primary, #FF6B00);
-  background: var(--input-focus-bg, #fff);
+  background: var(--input-focus-bg, #ffffff);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02), 0 0 0 3px rgba(255, 107, 0, 0.1);
 }
 
