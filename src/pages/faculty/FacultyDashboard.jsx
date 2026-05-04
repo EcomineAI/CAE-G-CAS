@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, ensureProfile } from '../../supabase/supabase';
 import { getProfile } from '../../supabase/api';
+import { subscribeToMyProfile } from '../../supabase/realtime';
 import { Layout, Calendar, Clock, Bell, User, Moon, Sun, ChevronDown, CheckCircle, AlertCircle, XCircle, Settings, Menu, X as CloseIcon } from 'lucide-react';
 import FacultyDashboardContent from './FacultyDashboardContent';
 import FacultyScheduleContent from './FacultyScheduleContent';
@@ -461,6 +462,16 @@ const FacultyDashboard = () => {
         setProfileStatus(p.status || 'Available');
       }
     });
+
+    // Subscribe to profile changes (for live status ring updates)
+    const unsub = subscribeToMyProfile(user.id, (updatedProfile) => {
+      setProfileName(updatedProfile.full_name);
+      setProfileAvatar(updatedProfile.avatar_url);
+      setProfileDept(updatedProfile.department);
+      setProfileStatus(updatedProfile.status);
+    });
+
+    return () => unsub();
   }, [user]);
 
   const openProfileModal = () => {

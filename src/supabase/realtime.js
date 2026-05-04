@@ -128,3 +128,32 @@ export const subscribeToAllSchedules = (callback) => {
     if (channel) supabase.removeChannel(channel);
   };
 };
+
+/**
+ * Subscribe to the current user's own profile changes.
+ * Ensures local UI (status rings, names) updates instantly when changed.
+ * @param {string} userId - User ID to monitor
+ * @param {Function} callback - Called with the updated profile data
+ * @returns {Function} unsubscribe function
+ */
+export const subscribeToMyProfile = (userId, callback) => {
+  const channel = supabase
+    .channel(`my-profile-${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+        filter: `id=eq.${userId}`
+      },
+      (payload) => {
+        callback(payload.new);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    if (channel) supabase.removeChannel(channel);
+  };
+};
