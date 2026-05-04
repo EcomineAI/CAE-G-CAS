@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { showNotification } from '../utils/notifications';
 
 // =============================================
 // REALTIME SUBSCRIPTION HELPERS
@@ -60,7 +61,18 @@ export const subscribeToRequests = (userId, role, callback, fetchFn) => {
         table: 'requests',
         filter: `${filterColumn}=eq.${userId}`
       },
-      async () => {
+      async (payload) => {
+        // Handle Notifications
+        if (role === 'faculty' && payload.eventType === 'INSERT') {
+          showNotification('New Appointment Request', `You have a new request from a student.`);
+        } else if (role === 'student' && payload.eventType === 'UPDATE') {
+          const newStatus = payload.new.status;
+          const oldStatus = payload.old.status;
+          if (newStatus !== oldStatus) {
+            showNotification('Appointment Update', `Your request has been ${newStatus.toLowerCase()}.`);
+          }
+        }
+
         const data = await fetchFn();
         callback(data);
       }

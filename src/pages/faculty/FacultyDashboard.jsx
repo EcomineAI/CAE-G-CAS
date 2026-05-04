@@ -11,6 +11,7 @@ import FacultyAboutContent from './FacultyAboutContent';
 import { useAuth } from '../../hooks/useAuth';
 import logo from '../logo.png';
 import SettingsModal from '../../components/SettingsModal';
+import { requestNotificationPermission } from '../../utils/notifications';
 
 const facultyDashStyles = `
 .faculty-dashboard-wrapper.dark {
@@ -500,6 +501,7 @@ const FacultyDashboard = () => {
 
   useEffect(() => {
     if (!user) return;
+    requestNotificationPermission();
     // Clear auth-page dark class from <html> so dashboard manages its own theme
     document.documentElement.className = '';
     // Ensure profile exists (handles pre-trigger users)
