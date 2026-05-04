@@ -1,67 +1,114 @@
-import React from 'react';
-import { User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, CalendarPlus, ClipboardList } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { getStudentRequests } from '../../supabase/api';
+import { subscribeToRequests } from '../../supabase/realtime';
+import { MetricCardSkeleton, DashboardAppointmentSkeleton, withMinDelay } from '../../supabase/ux';
 
-const DashboardContent = () => (
-  <>
-    <div className="welcome-section">
-      <h1 className="welcome-title">Welcome, June Vic M. Abello!</h1>
-      <p className="welcome-subtitle">What would you like to do today?</p>
-    </div>
+const DashboardContent = ({ onTabChange, realName }) => {
+  const { user } = useAuth();
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    <div className="action-cards">
-      <div className="action-card">
-        <h3>Book New Appointment</h3>
-        <p>Find a slot and schedule consultation</p>
-      </div>
-      <div className="action-card">
-        <h3>My Appointment</h3>
-        <p>View All scheduled consultations</p>
-      </div>
-    </div>
+  useEffect(() => {
+    if (!user) return;
+    const fetchRequests = async () => {
+      const data = await withMinDelay(getStudentRequests(user.id), 300);
+      setRequests(data);
+      setLoading(false);
+    };
+    fetchRequests();
 
-    <div className="metric-cards">
-      <div className="metric-card">
-        <h4>Approved</h4>
-        <p>View confirmed appointments</p>
-        <div className="metric-value">1</div>
-      </div>
-      <div className="metric-card">
-        <h4>Pending</h4>
-        <p>Awaiting faculty confirmation</p>
-        <div className="metric-value">2</div>
-      </div>
-      <div className="metric-card">
-        <h4>Completed</h4>
-        <p>Finished consultation</p>
-        <div className="metric-value">3</div>
-      </div>
-      <div className="metric-card">
-        <h4>Cancelled</h4>
-        <p>View cancelled record</p>
-        <div className="metric-value">2</div>
-      </div>
-    </div>
+    // Real-time: auto-update when faculty approves/declines
+    const unsub = subscribeToRequests(user.id, 'student', setRequests, () => getStudentRequests(user.id));
+    return () => unsub();
+  }, [user]);
 
-    <div className="appointments-container">
-      <div className="appointments-header">
-        <h3>Recent &amp; Ongoing Appointments</h3>
-        <a href="#" className="view-all">View All &rarr;</a>
+  const counts = {
+    Approved: requests.filter(r => r.status === 'Approved').length,
+    Pending: requests.filter(r => r.status === 'Pending').length,
+    History: requests.filter(r => ['Completed', 'Cancelled', 'Declined'].includes(r.status)).length,
+  };
+
+  const recentAppointments = requests.slice(0, 3);
+
+  return (
+    <>
+      <div className="welcome-section">
+        <h1 className="welcome-title">Welcome, {realName || user?.displayName || 'User'}!</h1>
+        <p className="welcome-subtitle">What would you like to do today?</p>
       </div>
-      
-      <div className="appointment-card">
-        <div className="appointment-info">
-          <div className="app-avatar">
-             <User size={30} className="app-avatar-icon" />
+
+      <div className="action-cards">
+        <div className="action-card" onClick={() => onTabChange('Faculty')}>
+          <div className="action-icon">
+            <CalendarPlus size={24} />
           </div>
-          <div className="app-details">
-            <h4>Mr. Arnie Armada</h4>
-            <p>2026-04-06 &bull; 7:00am-7:30am</p>
+          <div className="action-content">
+            <h3>Book New Appointment</h3>
+            <p>Find a slot and schedule consultation</p>
           </div>
         </div>
-        <div className="status-badge">Approved</div>
+        <div className="action-card" onClick={() => onTabChange('Appointments')}>
+          <div className="action-icon">
+            <ClipboardList size={24} />
+          </div>
+          <div className="action-content">
+            <h3>My Appointment</h3>
+            <p>View all scheduled consultations</p>
+          </div>
+        </div>
       </div>
-    </div>
-  </>
-);
+
+      {loading ? <MetricCardSkeleton count={4} /> : (
+        <div className="metric-cards" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+          <div className="metric-card" onClick={() => onTabChange('Appointments', 'Approved')}>
+            <h4>Approved</h4>
+            <div className="metric-value">{counts.Approved}</div>
+            <p>Confirmed appointments</p>
+          </div>
+          <div className="metric-card" onClick={() => onTabChange('Appointments', 'Pending')}>
+            <h4>Pending</h4>
+            <div className="metric-value">{counts.Pending}</div>
+            <p>Awaiting confirmation</p>
+          </div>
+          <div className="metric-card" onClick={() => onTabChange('Appointments', 'History')}>
+            <h4>History</h4>
+            <div className="metric-value">{counts.History}</div>
+            <p>Past records</p>
+          </div>
+        </div>
+      )}
+
+      <div className="appointments-container">
+        <div className="appointments-header">
+          <h3>Recent &amp; Ongoing Appointments</h3>
+          <button onClick={() => onTabChange('Appointments')} className="view-all" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            View All &rarr;
+          </button>
+        </div>
+        
+        {loading ? (
+          <DashboardAppointmentSkeleton count={3} />
+        ) : recentAppointments.length === 0 ? (
+          <p style={{ color: 'var(--text-muted)', padding: '1rem' }}>No recent appointments found.</p>
+        ) : recentAppointments.map((app) => (
+          <div className="appointment-card" key={app.id}>
+            <div className="appointment-info">
+              <div className={`app-avatar ${app.status.toLowerCase()}`}>
+                <img src={app.avatar} alt={app.name} style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
+              </div>
+              <div className="app-details">
+                <h4>{app.name}</h4>
+                <p>{app.date} &bull; {app.time}</p>
+              </div>
+            </div>
+            <div className={`status-badge ${app.status.toLowerCase()}`}>{app.status}</div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+};
 
 export default DashboardContent;

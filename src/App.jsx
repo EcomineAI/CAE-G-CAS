@@ -8,6 +8,7 @@ import StudentDashboard from './pages/student/StudentDashboard';
 import StudentRequest from './pages/student/StudentRequest';
 import FacultyDashboard from './pages/faculty/FacultyDashboard';
 import FacultyManage from './pages/faculty/FacultyManage';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const appStyles = `
 :root {
@@ -93,17 +94,35 @@ function App() {
   return (
     <>
       <style>{appStyles}</style>
-      <div className="app-container">
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login/student" element={<StudentLogin />} />
-          <Route path="/login/faculty" element={<FacultyLogin />} />
-          <Route path="/student" element={<StudentDashboard />} />
-          <Route path="/student/request" element={<StudentRequest />} />
-          <Route path="/faculty" element={<FacultyDashboard />} />
-          <Route path="/faculty/manage" element={<FacultyManage />} />
-        </Routes>
-      </div>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login/student" element={<StudentLogin />} />
+        <Route path="/login/faculty" element={<FacultyLogin />} />
+        
+        {/* Student Routes */}
+        <Route path="/student" element={
+          <ProtectedRoute allowedRole="student">
+            <StudentDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/request" element={
+          <ProtectedRoute allowedRole="student">
+            <StudentRequest />
+          </ProtectedRoute>
+        } />
+
+        {/* Faculty Routes */}
+        <Route path="/faculty" element={
+          <ProtectedRoute allowedRole="faculty">
+            <FacultyDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/manage" element={
+          <ProtectedRoute allowedRole="faculty">
+            <FacultyManage />
+          </ProtectedRoute>
+        } />
+      </Routes>
     </>
   );
 }
