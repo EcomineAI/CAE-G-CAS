@@ -463,15 +463,7 @@ const FacultyDashboard = () => {
       }
     });
 
-    // Subscribe to profile changes (for live status ring updates)
-    const unsub = subscribeToMyProfile(user.id, (updatedProfile) => {
-      setProfileName(updatedProfile.full_name);
-      setProfileAvatar(updatedProfile.avatar_url);
-      setProfileDept(updatedProfile.department);
-      setProfileStatus(updatedProfile.status);
-    });
-
-    return () => unsub();
+    return () => {};
   }, [user]);
 
   const openProfileModal = () => {
@@ -510,18 +502,23 @@ const FacultyDashboard = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'Dashboard': return <FacultyDashboardContent onTabChange={handleTabChange} />;
-      case 'Schedule': return <FacultyScheduleContent />;
-      case 'Requests': return <FacultyRequestsContent initialFilter={requestFilter} />;
-      case 'About': return <FacultyAboutContent />;
-      default: return <FacultyDashboardContent onTabChange={handleTabChange} />;
+      case 'Dashboard':
+        return <FacultyDashboardContent onTabChange={handleTabChange} onStatusChange={setProfileStatus} />;
+      case 'Schedule':
+        return <FacultyScheduleContent />;
+      case 'Requests':
+        return <FacultyRequestsContent initialFilter={requestFilter} />;
+      case 'About':
+        return <FacultyAboutContent />;
+      default:
+        return <FacultyDashboardContent onTabChange={handleTabChange} onStatusChange={setProfileStatus} />;
     }
   };
 
   return (
-    <div className={`faculty-dashboard-wrapper ${isDarkMode ? 'dark' : ''} ${isHighContrast ? 'high-contrast' : ''} text-${textSize}`}>
+    <div className={`dashboard-fixed-wrapper ${isDarkMode ? 'dark' : ''} ${isHighContrast ? 'high-contrast' : ''} text-${textSize}`}>
       <style>{facultyDashStyles}</style>
-      
+
       <nav className="faculty-navbar">
         <div className="nav-brand">
           <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)}>

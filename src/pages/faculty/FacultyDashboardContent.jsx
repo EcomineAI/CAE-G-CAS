@@ -320,7 +320,7 @@ const contentStyles = `
 // Debounced status saver — avoids spamming server on rapid toggles
 const saveStatusDebounced = debouncedSave((userId, newStatus) => updateFacultyStatus(userId, newStatus), 500);
 
-const FacultyDashboardContent = ({ onTabChange }) => {
+const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
   const { user } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [status, setStatus] = useState('Available');
@@ -339,6 +339,7 @@ const FacultyDashboardContent = ({ onTabChange }) => {
       if (profile) {
         setDisplayName(profile.full_name || user.displayName || 'Faculty');
         setStatus(profile.status || 'Available');
+        if (onStatusChange) onStatusChange(profile.status || 'Available');
       } else {
         setDisplayName(user.displayName || 'Faculty');
       }
@@ -369,6 +370,7 @@ const FacultyDashboardContent = ({ onTabChange }) => {
   const handleStatusChange = (newStatus) => {
     setStatus(newStatus);
     setIsStatusOpen(false);
+    if (onStatusChange) onStatusChange(newStatus);
     saveStatusDebounced(user.id, newStatus);
     toast.success(`Status updated to ${newStatus}`);
   };

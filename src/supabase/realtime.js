@@ -75,11 +75,10 @@ export const subscribeToRequests = (userId, role, callback, fetchFn) => {
 /**
  * Subscribe to faculty profile status changes.
  * Used by student Faculty Directory to see live status updates.
- * @param {Function} callback - Called with updated faculty list
- * @param {Function} fetchFn - Function to re-fetch the full faculty list
+ * @param {Function} callback - Called with the update payload { new: {id, status, ...} }
  * @returns {Function} unsubscribe function
  */
-export const subscribeToFacultyStatus = (callback, fetchFn) => {
+export const subscribeToFacultyStatus = (callback) => {
   const channel = supabase
     .channel('faculty-status')
     .on(
@@ -90,9 +89,8 @@ export const subscribeToFacultyStatus = (callback, fetchFn) => {
         table: 'profiles',
         filter: 'role=eq.faculty'
       },
-      async () => {
-        const data = await fetchFn();
-        callback(data);
+      (payload) => {
+        callback(payload);
       }
     )
     .subscribe();

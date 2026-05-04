@@ -529,16 +529,19 @@ const FacultyContent = () => {
     fetchFaculty();
 
     // Real-time: faculty status changes
-    const unsub = subscribeToFacultyStatus(
-      (updatedList) => {
-        const mapped = updatedList.map(f => ({
-          ...f,
-          statusColor: f.status === 'Available' ? 'green' : f.status === 'Busy' ? 'yellow' : 'red'
-        }));
-        setFacultyList(mapped);
-      },
-      () => getAllFaculty()
-    );
+    const unsub = subscribeToFacultyStatus((payload) => {
+      const updatedProfile = payload.new;
+      setFacultyList(prev => prev.map(f => {
+        if (f.id === updatedProfile.id) {
+          return {
+            ...f,
+            status: updatedProfile.status,
+            statusColor: updatedProfile.status === 'Available' ? 'green' : updatedProfile.status === 'Busy' ? 'yellow' : 'red'
+          };
+        }
+        return f;
+      }));
+    });
     return () => unsub();
   }, []);
 
