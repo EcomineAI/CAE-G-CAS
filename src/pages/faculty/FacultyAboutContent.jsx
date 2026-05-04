@@ -192,9 +192,9 @@ const aboutStyles = `
 
 const FacultyAboutContent = () => {
   const team = [
-    { name: 'June Vic M. Abello', role: 'BSCS 2A', avatar: '../junevic.png' },
-    { name: 'Erica Mae D. Camintoy', role: 'BSCS 2A', avatar: '../erica.png' },
-    { name: 'Erica Monton', role: 'Former Member', avatar: '../monton.png' },
+    { name: 'June Vic M. Abello', role: 'BSCS 2A', avatar: '/junevic.png' },
+    { name: 'Erica Mae D. Camintoy', role: 'BSCS 2A', avatar: '/erica.png' },
+    { name: 'Erica Monton', role: 'Former Member', avatar: '/monton.png' },
   ];
 
   return (
