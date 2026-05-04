@@ -125,6 +125,28 @@ const aboutStyles = `
   font-style: italic;
 }
 
+@keyframes glow-purple {
+  0% { text-shadow: 0 0 5px rgba(170, 59, 255, 0.3); }
+  50% { text-shadow: 0 0 15px rgba(170, 59, 255, 0.7), 0 0 25px rgba(170, 59, 255, 0.3); }
+  100% { text-shadow: 0 0 5px rgba(170, 59, 255, 0.3); }
+}
+
+@keyframes glow-pink {
+  0% { text-shadow: 0 0 5px rgba(255, 105, 180, 0.3); }
+  50% { text-shadow: 0 0 15px rgba(255, 105, 180, 0.7), 0 0 25px rgba(255, 105, 180, 0.3); }
+  100% { text-shadow: 0 0 5px rgba(255, 105, 180, 0.3); }
+}
+
+@keyframes glow-orange {
+  0% { text-shadow: 0 0 5px rgba(234, 88, 12, 0.3); }
+  50% { text-shadow: 0 0 15px rgba(234, 88, 12, 0.7), 0 0 25px rgba(234, 88, 12, 0.3); }
+  100% { text-shadow: 0 0 5px rgba(234, 88, 12, 0.3); }
+}
+
+.glow-purple { animation: glow-purple 3s infinite; color: #aa3bff !important; }
+.glow-pink { animation: glow-pink 3s infinite; color: #ff69b4 !important; }
+.glow-orange { animation: glow-orange 3s infinite; color: #ea580c !important; }
+
 @media (max-width: 600px) {
   .about-header-box {
     padding: 1.5rem 1rem;
@@ -198,9 +220,9 @@ const aboutStyles = `
 
 const AboutContent = () => {
   const team = [
-    { name: 'June Vic M. Abello', role: 'BSCS 2A', avatar: '/junevic.png' },
-    { name: 'Erica Mae D. Camintoy', role: 'BSCS 2A', avatar: '/erica.png' },
-    { name: 'Erica Monton', role: 'Former Member', avatar: '/monton.png' },
+    { name: 'June Vic M. Abello', role: 'BSCS 2A', avatar: '/junevic.png', glow: 'glow-purple' },
+    { name: 'Erica Mae D. Camintoy', role: 'BSCS 2A', avatar: '/erica.png', glow: 'glow-pink' },
+    { name: 'Erica Monton', role: 'Former Member', avatar: '/monton.png', glow: 'glow-orange' },
   ];
 
   return (
@@ -238,7 +260,7 @@ const AboutContent = () => {
                 />
               </div>
               <div className="member-info">
-                <h4>{member.name}</h4>
+                <h4 className={member.glow}>{member.name}</h4>
                 <p>{member.role}</p>
               </div>
             </div>

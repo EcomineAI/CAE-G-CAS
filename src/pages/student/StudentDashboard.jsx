@@ -922,12 +922,10 @@ const StudentDashboard = () => {
     if (realName && !(/^\d+$/.test(realName))) {
       const parts = realName.split(' ').filter(p => p.trim() !== '');
       if (parts.length >= 3) {
-        // "June Vic M. Doe" -> First: "June Vic", Middle: "M.", Last: "Doe"
         setLastName(parts[parts.length - 1]);
         setMiddleName(parts[parts.length - 2]);
         setFirstName(parts.slice(0, -2).join(' '));
       } else if (parts.length === 2) {
-        // "June Doe" -> First: "June", Last: "Doe"
         setFirstName(parts[0]);
         setLastName(parts[1]);
         setMiddleName('');
