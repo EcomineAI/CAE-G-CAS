@@ -879,8 +879,23 @@ const StudentDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('gcas_student_tab') || 'Dashboard');
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('gcas_student_theme') === 'dark');
+  const [textSize, setTextSize] = useState(() => localStorage.getItem('gcas_student_text_size') || 'medium');
+  const [isHighContrast, setIsHighContrast] = useState(() => localStorage.getItem('gcas_student_high_contrast') === 'true');
   const [initialFilter, setInitialFilter] = useState('All');
+
+  // Persistence Effects
+  useEffect(() => {
+    localStorage.setItem('gcas_student_theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
+
+  useEffect(() => {
+    localStorage.setItem('gcas_student_text_size', textSize);
+  }, [textSize]);
+
+  useEffect(() => {
+    localStorage.setItem('gcas_student_high_contrast', isHighContrast);
+  }, [isHighContrast]);
 
   // Profile State
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -892,8 +907,6 @@ const StudentDashboard = () => {
   const [realAvatar, setRealAvatar] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [textSize, setTextSize] = useState('medium');
-  const [isHighContrast, setIsHighContrast] = useState(false);
 
   const allAvatars = Array.from({ length: 20 }, (_, i) => `https://api.dicebear.com/7.x/lorelei/svg?seed=Student${i + 1}&backgroundColor=e5e7eb,f3f4f6`);
 

@@ -462,7 +462,9 @@ const FacultyDashboard = () => {
     setActiveTab(tab);
     localStorage.setItem('gcas_faculty_tab', tab);
   };
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('gcas_faculty_theme') === 'dark');
+  const [textSize, setTextSize] = useState(() => localStorage.getItem('gcas_faculty_text_size') || 'medium');
+  const [isHighContrast, setIsHighContrast] = useState(() => localStorage.getItem('gcas_faculty_high_contrast') === 'true');
   const [requestFilter, setRequestFilter] = useState('Pending');
   const [profileName, setProfileName] = useState('');
   const [profileAvatar, setProfileAvatar] = useState('');
@@ -471,13 +473,24 @@ const FacultyDashboard = () => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [textSize, setTextSize] = useState('medium');
-  const [isHighContrast, setIsHighContrast] = useState(false);
   
   // Edit Profile Form State
   const [editName, setEditName] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
   const [editDept, setEditDept] = useState('');
+
+  // Persistence Effects
+  useEffect(() => {
+    localStorage.setItem('gcas_faculty_theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
+
+  useEffect(() => {
+    localStorage.setItem('gcas_faculty_text_size', textSize);
+  }, [textSize]);
+
+  useEffect(() => {
+    localStorage.setItem('gcas_faculty_high_contrast', isHighContrast);
+  }, [isHighContrast]);
 
   const { user } = useAuth();
   const navigate = useNavigate();
