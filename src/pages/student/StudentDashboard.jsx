@@ -12,32 +12,34 @@ import { useNavigate } from 'react-router-dom';
 import SettingsModal from '../../components/SettingsModal';
 
 const dashStyles = `
-:root {
-  --bg-primary: #fff9f5;
-  --bg-secondary: #ffffff;
-  --text-primary: #1a1a1a;
-  --text-secondary: #4b5563;
-  --text-muted: #9ca3af;
-  --border-color: #eaeaea;
-  --card-border: #d1d5db;
-  --nav-bg: #ffffff;
-  --accent-orange: #ea580c;
-  --accent-light: #fff7ed;
-  --shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-
 .dashboard-fixed-wrapper.dark {
-  --bg-primary: #121212;
-  --bg-secondary: #1e1e1e;
+  --bg-primary: rgba(18, 18, 18, 0.85);
+  --bg-secondary: rgba(30, 30, 30, 0.9);
   --text-primary: #ffffff;
   --text-secondary: #e5e7eb;
   --text-muted: #9ca3af;
-  --border-color: #2a2a2a;
-  --card-border: #333333;
-  --nav-bg: #1a1a1a;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --card-border: rgba(255, 255, 255, 0.1);
+  --nav-bg: rgba(26, 26, 26, 0.95);
   --accent-orange: #ea580c;
-  --accent-light: #2d1a10;
+  --accent-light: rgba(45, 26, 16, 0.5);
   --shadow: 0 4px 20px rgba(0,0,0,0.4);
+  --overlay-color: rgba(15, 17, 23, 0.78);
+}
+
+:root {
+  --bg-primary: rgba(255, 249, 245, 0.85);
+  --bg-secondary: rgba(255, 255, 255, 0.9);
+  --text-primary: #1a1a1a;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --border-color: rgba(234, 234, 234, 0.5);
+  --card-border: rgba(209, 213, 219, 0.5);
+  --nav-bg: rgba(255, 255, 255, 0.95);
+  --accent-orange: #ea580c;
+  --accent-light: rgba(255, 247, 237, 0.5);
+  --shadow: 0 2px 8px rgba(0,0,0,0.04);
+  --overlay-color: rgba(255, 255, 255, 0.72);
 }
 
 .dashboard-fixed-wrapper.high-contrast {
@@ -73,22 +75,41 @@ const dashStyles = `
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: var(--bg-primary);
-  background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
-  background-size: 30px 30px;
+  background-color: transparent;
   z-index: 50;
   overflow-y: auto;
   font-family: 'Outfit', 'Inter', sans-serif;
   color: var(--text-primary);
   transition: background-color 0.3s, color 0.3s;
-  
-  /* Hide scrollbar */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.dashboard-bg-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: url('/GCBG.jpg') center/cover no-repeat fixed;
+  filter: blur(2px);
+  transform: scale(1.02);
+}
+
+.dashboard-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: var(--overlay-color);
+  backdrop-filter: blur(1px);
 }
 
 .dashboard-fixed-wrapper::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+  display: none;
 }
 
 .top-navbar {
@@ -958,6 +979,8 @@ const StudentDashboard = () => {
     <>
       <style>{dashStyles}</style>
     <div className={`dashboard-fixed-wrapper ${isDarkMode ? 'dark' : ''} ${isHighContrast ? 'high-contrast' : ''} text-${textSize}`}>
+      <div className="dashboard-bg-layer"></div>
+      <div className="dashboard-overlay"></div>
         <nav className="top-navbar">
           <div className="logo-section">
             <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)}>
