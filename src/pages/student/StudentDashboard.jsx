@@ -920,15 +920,12 @@ const StudentDashboard = () => {
 
   const openProfileModal = () => {
     if (realName && !(/^\d+$/.test(realName))) {
-      const parts = realName.split(' ');
-      if (parts.length >= 3) {
-        setFirstName(parts[0]);
-        setMiddleName(parts.slice(1, -1).join(' '));
+      const parts = realName.split(' ').filter(p => p.trim() !== '');
+      if (parts.length >= 2) {
+        // "June Vic Doe" -> First: "June Vic", Last: "Doe"
+        setFirstName(parts.slice(0, -1).join(' '));
         setLastName(parts[parts.length - 1]);
-      } else if (parts.length === 2) {
-        setFirstName(parts[0]);
-        setLastName(parts[1]);
-        setMiddleName('');
+        setMiddleName(''); // Reset middle name so it doesn't "eat" parts of first name
       } else {
         setFirstName(realName);
         setLastName('');

@@ -154,6 +154,7 @@ export const getFacultyRequests = async (facultyId) => {
       schedule:schedules(day, start_time, end_time)
     `)
     .eq('faculty_id', facultyId)
+    .eq('is_faculty_deleted', false)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -240,6 +241,7 @@ export const getStudentRequests = async (studentId) => {
       schedule:schedules(day, start_time, end_time)
     `)
     .eq('student_id', studentId)
+    .eq('is_student_deleted', false)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -337,22 +339,20 @@ export const submitRequest = async (requestData) => {
 };
 
 /**
- * Delete a request (History cleaning).
+ * Soft delete a request (History cleaning).
+ * Hides it from the specific user side.
  */
-export const deleteRequest = async (id) => {
-  console.log('Deleting request ID:', id);
+export const deleteRequest = async (id, role = 'student') => {
+  const column = role === 'faculty' ? 'is_faculty_deleted' : 'is_student_deleted';
   const { data, error } = await supabase
     .from('requests')
-    .delete()
+    .update({ [column]: true, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select();
   
   if (error) {
-    console.error('Error deleting request:', error);
+    console.error('Error soft deleting request:', error);
     return false;
   }
-  
-  console.log('Delete Response Data:', data);
-  // Return true if at least one row was affected
   return data && data.length > 0;
 };

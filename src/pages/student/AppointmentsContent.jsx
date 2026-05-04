@@ -351,7 +351,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
       setRequests,
       requests,
       requests.filter(req => req.id !== reqId),
-      () => deleteRequest(reqId),
+      () => deleteRequest(reqId, 'student'),
       { success: 'Record deleted', error: 'Failed to delete record' }
     );
   };

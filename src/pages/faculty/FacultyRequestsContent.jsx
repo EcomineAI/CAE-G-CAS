@@ -277,7 +277,7 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
       setRequests,
       requests,
       requests.filter(req => req.id !== reqId),
-      () => deleteRequest(reqId),
+      () => deleteRequest(reqId, 'faculty'),
       { success: 'Record deleted from history', error: 'Failed to delete record' }
     );
   };
