@@ -58,7 +58,7 @@ const StudentLogin = () => {
     <div className="app-container">
       <div style={{ textAlign: 'center', margin: '2rem 0 1rem 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '0.25rem' }}>
-          <img src="/src/pages/logo.png" alt="G-CAS Logo" style={{ width: 60, height: 'auto' }} />
+          <img src="/logo.png" alt="G-CAS Logo" style={{ width: 60, height: 'auto' }} />
           <h1 className="gcas-title" style={{ margin: 0 }}>G-CAS</h1>
         </div>
         <p className="subtitle">Gordon College Appointment System</p>

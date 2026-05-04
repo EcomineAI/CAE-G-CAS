@@ -10,7 +10,7 @@ const LandingPage = () => {
     <div className="app-container">
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-          <img src="/src/pages/logo.png" alt="G-CAS Logo" style={{ width: 80, height: 'auto' }} />
+          <img src="/logo.png" alt="G-CAS Logo" style={{ width: 80, height: 'auto' }} />
           <h1 className="gcas-title" style={{ margin: 0 }}>G-CAS</h1>
         </div>
         <p className="subtitle">Gordon College Appointment System</p>
