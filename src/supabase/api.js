@@ -335,3 +335,24 @@ export const submitRequest = async (requestData) => {
   }
   return data;
 };
+
+/**
+ * Delete a request (History cleaning).
+ */
+export const deleteRequest = async (id) => {
+  console.log('Deleting request ID:', id);
+  const { data, error } = await supabase
+    .from('requests')
+    .delete()
+    .eq('id', id)
+    .select();
+  
+  if (error) {
+    console.error('Error deleting request:', error);
+    return false;
+  }
+  
+  console.log('Delete Response Data:', data);
+  // Return true if at least one row was affected
+  return data && data.length > 0;
+};

@@ -119,9 +119,27 @@ const facultyStyles = `
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--text-primary);
+  border: 3px solid var(--border-color);
   flex-shrink: 0;
   overflow: hidden;
+  transition: border-color 0.3s ease;
+  background: transparent;
+}
+
+.faculty-avatar.green { border-color: #22c55e; animation: pulse-green 2s infinite; }
+.faculty-avatar.yellow { border-color: #eab308; animation: pulse-yellow 2s infinite; }
+.faculty-avatar.red { border-color: #ef4444; }
+
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+@keyframes pulse-yellow {
+  0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(234, 179, 8, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
 }
 
 .faculty-info {
@@ -525,6 +543,15 @@ const FacultyContent = () => {
   }, []);
 
   const handleRequestAppointment = async (faculty) => {
+    if (faculty.status === 'Unavailable') {
+      toast.error(`${faculty.name} is currently unavailable and not accepting requests.`);
+      return;
+    }
+    
+    if (faculty.status === 'Busy') {
+      toast.warning(`${faculty.name} is currently busy. Your request might take longer to be approved.`);
+    }
+
     setSelectedFaculty(faculty);
     setLoading(true);
     const schedules = await getSchedulesForFaculty(faculty.id);
@@ -614,8 +641,8 @@ const FacultyContent = () => {
               <div className="faculty-card" key={idx}>
                 <div className="faculty-card-top">
                   <div className="faculty-card-header">
-                    <div className="faculty-avatar">
-                      <img src={faculty.avatar} alt={faculty.name} style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
+                    <div className={`faculty-avatar ${faculty.statusColor}`}>
+                      <img src={faculty.avatar} alt={faculty.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
                     </div>
                     <div className="faculty-info">
                       <div className="faculty-name-row">
@@ -634,8 +661,10 @@ const FacultyContent = () => {
                   <button
                     className="request-btn"
                     onClick={() => handleRequestAppointment(faculty)}
+                    disabled={faculty.status === 'Unavailable'}
+                    style={faculty.status === 'Unavailable' ? { background: 'var(--card-border)', cursor: 'not-allowed', color: 'var(--text-muted)' } : {}}
                   >
-                    View Schedules & Request
+                    {faculty.status === 'Unavailable' ? 'Currently Unavailable' : 'View Schedules & Request'}
                   </button>
                 </div>
               </div>

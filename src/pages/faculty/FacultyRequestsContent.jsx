@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, User, Search, Filter } from 'lucide-react';
+import { Check, X, User, Search, Filter, Trash2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { getFacultyRequests, updateRequestStatus } from '../../supabase/api';
+import { getFacultyRequests, updateRequestStatus, deleteRequest } from '../../supabase/api';
 import { subscribeToRequests } from '../../supabase/realtime';
 import { RequestCardSkeleton, optimistic, withMinDelay } from '../../supabase/ux';
 
@@ -39,11 +39,11 @@ const requestStyles = `
 .filter-row::-webkit-scrollbar { display: none; }
 
 .filter-chip {
-  padding: 0.6rem 1.4rem;
+  padding: 0.4rem 1rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 50px;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-secondary);
   cursor: pointer;
@@ -187,6 +187,31 @@ const requestStyles = `
 /* Dark mode overrides for buttons */
 .dark .btn-approve { background: #064e3b; color: #34d399; border-color: #065f46; }
 .dark .btn-decline { background: #7f1d1d; color: #f87171; border-color: #991b1b; }
+
+@media (max-width: 600px) {
+  .request-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+  
+  .request-main-info {
+    width: 100%;
+  }
+
+  .action-buttons {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+  }
+  
+  .action-btn {
+    justify-content: center;
+    padding: 0.8rem;
+  }
+}
 `;
 
 const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
@@ -195,6 +220,7 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, reqId: null, newStatus: null, actionText: '' });
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, reqId: null });
 
   useEffect(() => {
     setFilter(initialFilter);
@@ -235,6 +261,25 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
       { success: `Request ${newStatus.toLowerCase()}`, error: `Failed to ${newStatus.toLowerCase()} request` }
     );
     setConfirmModal({ isOpen: false, reqId: null, newStatus: null, actionText: '' });
+  };
+
+  const confirmDelete = (id) => {
+    setDeleteModal({ isOpen: true, reqId: id });
+  };
+
+  const executeDelete = async () => {
+    const { reqId } = deleteModal;
+    if (!reqId) return;
+    
+    setDeleteModal({ isOpen: false, reqId: null });
+
+    await optimistic(
+      setRequests,
+      requests,
+      requests.filter(req => req.id !== reqId),
+      () => deleteRequest(reqId),
+      { success: 'Record deleted from history', error: 'Failed to delete record' }
+    );
   };
 
   const filteredRequests = requests.filter(req => {
@@ -327,6 +372,18 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
                 </button>
               </div>
             )}
+
+            {(req.status === 'Completed' || req.status === 'Declined' || req.status === 'Cancelled') && (
+              <div className="action-buttons">
+                <button 
+                  className="action-btn" 
+                  style={{ background: 'transparent', border: '1px solid #ef4444', color: '#ef4444' }}
+                  onClick={() => confirmDelete(req.id)}
+                >
+                  <Trash2 size={16} /> <span>Delete History</span>
+                </button>
+              </div>
+            )}
           </div>
         ))}
 
@@ -357,6 +414,23 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
               >
                 Yes, {confirmModal.newStatus === 'Declined' ? 'Decline' : confirmModal.newStatus === 'Approved' ? 'Approve' : confirmModal.newStatus === 'Completed' ? 'Complete' : confirmModal.newStatus}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {deleteModal.isOpen && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+          <div className="modal-card" style={{ background: 'var(--bg-secondary)', padding: '2.5rem', borderRadius: '16px', maxWidth: '400px', width: '90%', textAlign: 'left', border: '1px solid var(--border-color)', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: '#ef4444', marginBottom: '1rem' }}>
+              <Trash2 size={24} />
+              <h2 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.4rem' }}>Delete History?</h2>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              Are you sure you want to permanently delete this record from your history?
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <button onClick={() => setDeleteModal({ isOpen: false, reqId: null })} style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+              <button onClick={executeDelete} style={{ padding: '0.8rem', borderRadius: '8px', border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Yes, Delete</button>
             </div>
           </div>
         </div>

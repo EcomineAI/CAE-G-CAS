@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Moon, Settings, Menu, X as CloseIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Info, User, Moon, Sun, Settings, Menu, X as CloseIcon } from 'lucide-react';
 import DashboardContent from './DashboardContent';
 import FacultyContent from './FacultyContent';
 import AppointmentsContent from './AppointmentsContent';
@@ -7,8 +7,9 @@ import AboutContent from './AboutContent';
 import logo from '../logo.png';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase, ensureProfile } from '../../supabase/supabase';
-import { getProfile, updateProfile } from '../../supabase/api';
+import { updateProfile, getProfile } from '../../supabase/api';
 import { useNavigate } from 'react-router-dom';
+import SettingsModal from '../../components/SettingsModal';
 
 const dashStyles = `
 :root {
@@ -39,6 +40,33 @@ const dashStyles = `
   --shadow: 0 4px 20px rgba(0,0,0,0.4);
 }
 
+.dashboard-fixed-wrapper.high-contrast {
+  --bg-primary: #000000 !important;
+  --bg-secondary: #111111 !important;
+  --text-primary: #ffffff !important;
+  --text-secondary: #ffffff !important;
+  --text-muted: #ffff00 !important;
+  --border-color: #ffffff !important;
+  --card-border: #ffffff !important;
+  --accent-orange: #ff8c00 !important;
+  --accent-light: #333333 !important;
+  --shadow: 0 0 0 2px #ffffff !important;
+}
+
+.dashboard-fixed-wrapper.text-small { font-size: 0.85rem !important; }
+.dashboard-fixed-wrapper.text-medium { font-size: 1rem !important; }
+.dashboard-fixed-wrapper.text-large { font-size: 1.15rem !important; }
+
+.dashboard-fixed-wrapper.text-small .nav-tab { font-size: 0.8rem !important; }
+.dashboard-fixed-wrapper.text-large .nav-tab { font-size: 1.1rem !important; }
+
+.dashboard-fixed-wrapper.text-small h1,
+.dashboard-fixed-wrapper.text-small h2,
+.dashboard-fixed-wrapper.text-small .welcome-title { font-size: 1.4rem !important; }
+.dashboard-fixed-wrapper.text-large h1,
+.dashboard-fixed-wrapper.text-large h2,
+.dashboard-fixed-wrapper.text-large .welcome-title { font-size: 2.5rem !important; }
+
 .dashboard-fixed-wrapper {
   position: fixed;
   top: 0;
@@ -67,7 +95,7 @@ const dashStyles = `
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 2rem;
+  padding: 0.6rem 1.5rem;
   background-color: var(--nav-bg);
   border-bottom: 1px solid var(--border-color);
   position: relative;
@@ -80,14 +108,14 @@ const dashStyles = `
 }
 
 .logo-image {
-  width: 35px;
+  width: 30px;
   height: auto;
 }
 
 .brand-text {
   font-weight: 600;
   color: var(--text-muted);
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 .mobile-only { display: none; }
@@ -102,13 +130,13 @@ const dashStyles = `
 }
 
 .nav-tab {
-  padding: 0.5rem 1.1rem;
+  padding: 0.4rem 0.9rem;
   border-radius: 20px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-secondary);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -157,7 +185,7 @@ const dashStyles = `
 .user-name {
   font-weight: 500;
   color: var(--text-secondary);
-  font-size: 1rem;
+  font-size: 0.9rem;
   margin: 0;
 }
 
@@ -168,8 +196,8 @@ const dashStyles = `
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   background: var(--bg-secondary);
   border: 2px solid var(--accent-orange);
   border-radius: 50%;
@@ -178,7 +206,7 @@ const dashStyles = `
   justify-content: center;
   color: var(--accent-orange);
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   cursor: pointer;
 }
 
@@ -202,7 +230,7 @@ const dashStyles = `
 .main-content {
   max-width: 1050px;
   margin: 0 auto;
-  padding: 3rem 1rem;
+  padding: 2rem 1rem;
 }
 
 .welcome-section {
@@ -210,7 +238,7 @@ const dashStyles = `
 }
 
 .welcome-title {
-  font-size: 2rem;
+  font-size: 1.6rem;
   font-weight: 500;
   color: var(--text-secondary);
   margin-bottom: 0.3rem;
@@ -246,19 +274,19 @@ const dashStyles = `
 }
 
 .action-icon {
-  width: 55px;
-  height: 55px;
+  width: 45px;
+  height: 45px;
   background: var(--accent-light);
   color: var(--accent-orange);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
+  border-radius: 12px;
   flex-shrink: 0;
 }
 
 .action-content h3 {
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: var(--text-primary);
   margin: 0 0 0.2rem 0;
   font-weight: 600;
@@ -325,7 +353,7 @@ const dashStyles = `
 }
 
 .metric-value {
-  font-size: 2.2rem;
+  font-size: 1.8rem;
   font-weight: 700;
   color: var(--accent-orange);
   margin: 0.2rem 0;
@@ -469,28 +497,17 @@ const dashStyles = `
   color: #ea580c;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .desktop-only { display: none; }
   .mobile-only { display: block; }
 
   .main-content {
-    padding: 1.5rem 1rem;
+    padding: 1.5rem 1rem 5rem 1rem;
   }
   
   .top-navbar {
     padding: 0.6rem 1rem;
-    flex-direction: row;
-    align-items: center;
     justify-content: space-between;
-    gap: 1.5rem;
-    overflow-x: auto;
-    white-space: nowrap;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .top-navbar::-webkit-scrollbar {
-    display: none;
   }
 
   .logo-section {
@@ -504,38 +521,60 @@ const dashStyles = `
     color: var(--accent-orange);
   }
 
-  .nav-tabs {
-    position: static;
-    transform: none;
-    width: auto;
-    justify-content: flex-start;
-    gap: 0.5rem;
-    flex-shrink: 0;
+  .user-info,
+  .dark-mode-toggle,
+  .edit-profile-btn,
+  .nav-logout-btn {
+    display: none;
   }
-
-  .nav-tab {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
-  }
-
   .user-section {
-    width: auto;
-    justify-content: flex-end;
-    gap: 0.8rem;
-    flex-shrink: 0;
+    display: flex;
+    gap: 0.5rem;
   }
-
-  .user-avatar {
-    width: 36px;
-    height: 36px;
-  }
-
-  .dark-mode-toggle {
-    padding: 0.4rem;
-  }
-
   .nav-tabs { display: none; }
   .mobile-menu-btn { display: flex !important; }
+}
+
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  z-index: 1000;
+  justify-content: space-around;
+  align-items: center;
+  backdrop-filter: blur(10px);
+}
+
+@media (max-width: 768px) {
+  .bottom-nav { display: flex; }
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.4rem;
+  flex: 1;
+  transition: all 0.2s;
+}
+
+.bottom-nav-item.active {
+  color: var(--accent-orange);
+}
+
+.bottom-nav-text {
+  font-size: 0.65rem;
+  font-weight: 600;
 }
 
 .mobile-menu-btn {
@@ -594,6 +633,17 @@ const dashStyles = `
 
 .drawer-link.active {
   color: var(--accent-orange);
+}
+
+.mobile-profile-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--bg-primary);
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border-color);
 }
 
 @media (max-width: 600px) {
@@ -807,7 +857,7 @@ const dashStyles = `
 const StudentDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('gcas_student_tab') || 'Dashboard');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [initialFilter, setInitialFilter] = useState('All');
 
@@ -820,6 +870,9 @@ const StudentDashboard = () => {
   const [realName, setRealName] = useState('');
   const [realAvatar, setRealAvatar] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [textSize, setTextSize] = useState('medium');
+  const [isHighContrast, setIsHighContrast] = useState(false);
 
   const allAvatars = Array.from({ length: 20 }, (_, i) => `https://api.dicebear.com/7.x/lorelei/svg?seed=Student${i + 1}&backgroundColor=e5e7eb,f3f4f6`);
 
@@ -844,15 +897,20 @@ const StudentDashboard = () => {
 
   const openProfileModal = () => {
     if (realName && !(/^\d+$/.test(realName))) {
-      const parts = realName.split(', ');
-      const last = parts[0] || '';
-      const rest = parts[1] || '';
-      const first = rest.split(' ')[0] || '';
-      const mid = rest.split(' ').slice(1).join(' ') || '';
-      
-      setLastName(last);
-      setFirstName(first);
-      setMiddleName(mid);
+      const parts = realName.split(' ');
+      if (parts.length >= 3) {
+        setFirstName(parts[0]);
+        setMiddleName(parts.slice(1, -1).join(' '));
+        setLastName(parts[parts.length - 1]);
+      } else if (parts.length === 2) {
+        setFirstName(parts[0]);
+        setLastName(parts[1]);
+        setMiddleName('');
+      } else {
+        setFirstName(realName);
+        setLastName('');
+        setMiddleName('');
+      }
     }
     setSelectedAvatar(realAvatar || allAvatars[0]);
     setShowProfileModal(true);
@@ -864,7 +922,7 @@ const StudentDashboard = () => {
       return;
     }
 
-    const formattedName = `${lastName.trim()}, ${firstName.trim()} ${middleName.trim()}`.trim();
+    const formattedName = `${firstName.trim()} ${middleName.trim()} ${lastName.trim()}`.replace(/\s+/g, ' ').trim();
     
     const updated = await updateProfile(user.id, {
       full_name: formattedName,
@@ -881,6 +939,12 @@ const StudentDashboard = () => {
   const handleTabChange = (tab, filter = 'All') => {
     setInitialFilter(filter);
     setActiveTab(tab);
+    localStorage.setItem('gcas_student_tab', tab);
+  };
+
+  const handleActiveTabSet = (tab) => {
+    setActiveTab(tab);
+    localStorage.setItem('gcas_student_tab', tab);
   };
 
   const handleLogout = async () => {
@@ -891,7 +955,7 @@ const StudentDashboard = () => {
   return (
     <>
       <style>{dashStyles}</style>
-      <div className={`dashboard-fixed-wrapper ${isDarkMode ? 'dark' : ''}`}>
+    <div className={`dashboard-fixed-wrapper ${isDarkMode ? 'dark' : ''} ${isHighContrast ? 'high-contrast' : ''} text-${textSize}`}>
         <nav className="top-navbar">
           <div className="logo-section">
             <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)}>
@@ -930,41 +994,80 @@ const StudentDashboard = () => {
           </div>
 
           <div className="user-section">
-            <button 
-              className="dark-mode-toggle" 
-              aria-label="Toggle Dark Mode"
-              onClick={() => setIsDarkMode(!isDarkMode)}
-            >
-              <Moon size={20} />
-            </button>
-            <div className="user-info">
-              <h4 className="user-name">{realName || user?.displayName || 'User'}</h4>
-              <p className="user-role" style={{ fontSize: '0.75rem', marginTop: '0.1rem' }}>{user?.email ? user.email.split('@')[0] : 'Student'}</p>
-            </div>
-            <div className="user-avatar" style={{ overflow: 'hidden' }} onClick={openProfileModal} title="Edit Profile">
-              <img src={realAvatar || user?.avatarUrl || allAvatars[0]} alt="User Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
-            </div>
-            <button className="edit-profile-btn" onClick={openProfileModal} title="Settings">
-              <Settings size={16} />
-            </button>
+          <button className="dark-mode-toggle desktop-only" onClick={() => setIsDarkMode(!isDarkMode)}>
+            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+          
+          <button className="edit-profile-btn desktop-only" onClick={() => setIsSettingsModalOpen(true)} title="Settings">
+             <Settings size={20} />
+          </button>
 
-            <button 
-              onClick={handleLogout}
-              style={{
-                padding: '0.4rem 0.8rem',
-                borderRadius: '8px',
-                border: '1px solid var(--border-color)',
-                background: 'transparent',
-                color: 'var(--text-secondary)',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              Log Out
-            </button>
+          <div className="user-info desktop-only">
+            <p className="user-name">{realName || 'Student'}</p>
+            <p className="user-role">Gordon College Student</p>
           </div>
-        </nav>
+          
+          <div 
+            className="user-avatar" 
+            onClick={() => {
+              if (window.innerWidth <= 768) {
+                setIsMobileMenuOpen(true);
+              } else {
+                openProfileModal();
+              }
+            }}
+          >
+            {realAvatar ? <img src={realAvatar} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '50%' }} /> : (realName ? realName[0] : 'S')}
+          </div>
+
+          <button 
+            onClick={handleLogout}
+            className="nav-logout-btn"
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              border: '1px solid var(--border-color)',
+              background: 'transparent',
+              color: 'var(--text-secondary)',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              marginLeft: '0.5rem'
+            }}
+          >
+            Log Out
+          </button>
+        </div>
+      </nav>
+
+      <div className="bottom-nav">
+        {[
+          { id: 'Dashboard', icon: LayoutDashboard },
+          { id: 'Faculty', icon: Users },
+          { id: 'Appointments', icon: Calendar }
+        ].map((item) => (
+          <button
+            key={item.id}
+            className={`bottom-nav-item ${activeTab === item.id ? 'active' : ''}`}
+            onClick={() => handleActiveTabSet(item.id)}
+          >
+            <item.icon size={20} />
+            <span className="bottom-nav-text">{item.id}</span>
+          </button>
+        ))}
+      </div>
+
+        <SettingsModal 
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          isDarkMode={isDarkMode}
+          setIsDarkMode={setIsDarkMode}
+          textSize={textSize}
+          setTextSize={setTextSize}
+          isHighContrast={isHighContrast}
+          setIsHighContrast={setIsHighContrast}
+          onLogout={handleLogout}
+        />
 
         <main className="main-content">
           {activeTab === 'Dashboard' && <DashboardContent onTabChange={handleTabChange} realName={realName} />}
@@ -977,7 +1080,6 @@ const StudentDashboard = () => {
           )}
           {activeTab === 'About' && <AboutContent />}
         </main>
-      </div>
 
       {showProfileModal && (
         <div className="modal-overlay">
@@ -1065,18 +1167,41 @@ const StudentDashboard = () => {
             </button>
           </div>
           <div className="drawer-links">
-            {['Dashboard', 'Faculty', 'Appointments', 'About'].map((tab) => (
-              <button
-                key={tab}
-                className={`drawer-link ${activeTab === tab ? 'active' : ''}`}
-                onClick={() => {
-                  handleTabChange(tab);
-                  setIsMobileMenuOpen(false);
-                }}
-              >
-                {tab}
-              </button>
-            ))}
+            <div className="mobile-profile-section">
+              <div className="prof-avatar" style={{ width: '60px', height: '60px', overflow: 'hidden', borderRadius: '50%', border: '2px solid var(--accent-orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-secondary)', color: 'var(--accent-orange)', fontWeight: 700, fontSize: '1.5rem' }}>
+                {realAvatar ? <img src={realAvatar} alt="avatar" style={{ width: '100%' }} /> : (realName ? realName[0] : 'S')}
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '1.2rem', color: 'var(--text-primary)' }}>{realName}</p>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>Student</p>
+              </div>
+            </div>
+            
+            <button className="drawer-link" onClick={() => { setIsDarkMode(!isDarkMode); }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                {isDarkMode ? <Sun size={24} /> : <Moon size={24} />}
+                <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+              </div>
+            </button>
+            
+            <button className="drawer-link" onClick={() => { setActiveTab('About'); setIsMobileMenuOpen(false); }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <Info size={24} />
+                <span>About System</span>
+              </div>
+            </button>
+            <button className="drawer-link" onClick={() => { setIsSettingsModalOpen(true); setIsMobileMenuOpen(false); }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <Settings size={24} />
+                <span>Settings</span>
+              </div>
+            </button>
+            <button className="drawer-link" onClick={() => { openProfileModal(); setIsMobileMenuOpen(false); }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <User size={24} />
+                <span>Edit Profile</span>
+              </div>
+            </button>
           </div>
           
           <div style={{ marginTop: 'auto', padding: '2rem 0', borderTop: '1px solid var(--border-color)' }}>
@@ -1099,6 +1224,7 @@ const StudentDashboard = () => {
           </div>
         </div>
       )}
+    </div>
     </>
   );
 };

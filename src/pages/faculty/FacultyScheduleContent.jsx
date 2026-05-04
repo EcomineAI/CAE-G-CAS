@@ -13,12 +13,12 @@ const scheduleStyles = `
 .schedule-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 2.5rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
 }
 
 .header-title h2 {
-  font-size: 1.8rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
@@ -26,24 +26,23 @@ const scheduleStyles = `
 
 .header-title p {
   color: var(--text-muted);
-  font-size: 0.9rem;
-  margin: 0.3rem 0 0 0;
+  font-size: 0.8rem;
+  margin: 0.1rem 0 0 0;
 }
 
 .add-schedule-btn {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.7rem 1.4rem;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
   background: var(--accent-orange);
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25);
 }
 
 .add-schedule-btn:hover {
@@ -61,8 +60,8 @@ const scheduleStyles = `
 .schedule-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 1.5rem;
+  border-radius: 12px;
+  padding: 1rem;
   position: relative;
   transition: all 0.2s;
 }
@@ -99,17 +98,17 @@ const scheduleStyles = `
 }
 
 .card-day {
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.1rem;
 }
 
 .card-time {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 500;
   color: var(--text-primary);
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.6rem;
 }
 
 .card-notes {
@@ -126,8 +125,8 @@ const scheduleStyles = `
 .slots-info {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-top: 2rem;
+  gap: 0.8rem;
+  margin-top: 1rem;
 }
 
 .slots-label {

@@ -9,6 +9,7 @@ import FacultyRequestsContent from './FacultyRequestsContent';
 import FacultyAboutContent from './FacultyAboutContent';
 import { useAuth } from '../../hooks/useAuth';
 import logo from '../logo.png';
+import SettingsModal from '../../components/SettingsModal';
 
 const facultyDashStyles = `
 :root {
@@ -39,6 +40,33 @@ const facultyDashStyles = `
   --shadow: 0 4px 20px rgba(0,0,0,0.4);
 }
 
+.faculty-dashboard-wrapper.high-contrast {
+  --bg-primary: #000000;
+  --bg-secondary: #111111;
+  --text-primary: #ffffff;
+  --text-secondary: #ffffff;
+  --text-muted: #ffff00;
+  --border-color: #ffffff;
+  --card-border: #ffffff;
+  --accent-orange: #ff8c00;
+  --accent-light: #333333;
+  --shadow: 0 0 0 2px #ffffff;
+}
+
+.faculty-dashboard-wrapper.text-small { font-size: 0.85rem; }
+.faculty-dashboard-wrapper.text-medium { font-size: 1rem; }
+.faculty-dashboard-wrapper.text-large { font-size: 1.15rem; }
+
+.faculty-dashboard-wrapper.text-small .nav-link,
+.faculty-dashboard-wrapper.text-small .nav-tab { font-size: 0.8rem; }
+.faculty-dashboard-wrapper.text-large .nav-link,
+.faculty-dashboard-wrapper.text-large .nav-tab { font-size: 1.1rem; }
+
+.faculty-dashboard-wrapper.text-small h1,
+.faculty-dashboard-wrapper.text-small h2 { font-size: 1.2rem; }
+.faculty-dashboard-wrapper.text-large h1,
+.faculty-dashboard-wrapper.text-large h2 { font-size: 2rem; }
+
 .faculty-dashboard-wrapper {
   min-height: 100vh;
   background-color: var(--bg-primary);
@@ -52,7 +80,7 @@ const facultyDashStyles = `
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.8rem 2rem;
+  padding: 0.5rem 1.5rem;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
   position: sticky;
@@ -67,13 +95,13 @@ const facultyDashStyles = `
 }
 
 .nav-brand img {
-  width: 40px;
+  width: 32px;
   height: auto;
 }
 
 .brand-text-full {
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: var(--text-muted);
 }
 
@@ -83,13 +111,13 @@ const facultyDashStyles = `
 }
 
 .nav-link {
-  padding: 0.5rem 1.1rem;
+  padding: 0.4rem 0.9rem;
   border-radius: 20px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-secondary);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -147,19 +175,37 @@ const facultyDashStyles = `
 .prof-avatar {
   width: 34px;
   height: 34px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  border: 2px solid var(--border-color);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-secondary);
+  transition: border-color 0.3s ease;
+  overflow: hidden;
+}
+
+.prof-avatar.available { border-color: #22c55e; animation: pulse-available 2s infinite; }
+.prof-avatar.busy { border-color: #eab308; animation: pulse-busy 2s infinite; }
+.prof-avatar.unavailable { border-color: #ef4444; }
+
+@keyframes pulse-available {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+@keyframes pulse-busy {
+  0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(234, 179, 8, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
 }
 
 .faculty-main-content {
   max-width: 1050px;
   margin: 0 auto;
-  padding: 3.5rem 1.5rem;
+  padding: 2.5rem 1.5rem;
 }
 
 .edit-profile-btn {
@@ -242,21 +288,64 @@ const facultyDashStyles = `
   font-family: inherit;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .faculty-navbar {
     padding: 0.6rem 1rem;
-    overflow-x: auto;
-    justify-content: flex-start;
-    gap: 1.5rem;
-    white-space: nowrap;
-    scrollbar-width: none;
+    justify-content: space-between;
   }
-  .faculty-navbar::-webkit-scrollbar { display: none; }
   .brand-text-full { display: none; }
-  .nav-user-section { margin-left: auto; }
-  .prof-info { display: none; }
   .nav-links { display: none; }
   .mobile-menu-btn { display: flex !important; }
+  
+  .desktop-only { display: none; }
+  .prof-info { display: none; }
+  .nav-logout-btn { display: none; }
+  
+  .faculty-main-content {
+    padding: 1.5rem 1rem 5rem 1rem; /* Extra padding at bottom for nav */
+  }
+}
+
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  z-index: 1000;
+  justify-content: space-around;
+  align-items: center;
+  backdrop-filter: blur(10px);
+}
+
+@media (max-width: 768px) {
+  .bottom-nav { display: flex; }
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.4rem;
+  flex: 1;
+  transition: all 0.2s;
+}
+
+.bottom-nav-item.active {
+  color: var(--accent-orange);
+}
+
+.bottom-nav-text {
+  font-size: 0.65rem;
+  font-weight: 600;
 }
 
 .mobile-menu-btn {
@@ -316,17 +405,37 @@ const facultyDashStyles = `
 .drawer-link.active {
   color: var(--accent-orange);
 }
+
+.mobile-profile-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--bg-primary);
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border-color);
+}
 `;
 
 const FacultyDashboard = () => {
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('gcas_faculty_tab') || 'Dashboard');
+  
+  const handleActiveTabSet = (tab) => {
+    setActiveTab(tab);
+    localStorage.setItem('gcas_faculty_tab', tab);
+  };
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [requestFilter, setRequestFilter] = useState('Pending');
   const [profileName, setProfileName] = useState('');
   const [profileAvatar, setProfileAvatar] = useState('');
   const [profileDept, setProfileDept] = useState('');
+  const [profileStatus, setProfileStatus] = useState('Available');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [textSize, setTextSize] = useState('medium');
+  const [isHighContrast, setIsHighContrast] = useState(false);
   
   // Edit Profile Form State
   const [editName, setEditName] = useState('');
@@ -349,6 +458,7 @@ const FacultyDashboard = () => {
         setProfileName(p.full_name || user.displayName || 'Faculty Member');
         setProfileAvatar(p.avatar_url || user.avatarUrl);
         setProfileDept(p.department || 'CCS');
+        setProfileStatus(p.status || 'Available');
       }
     });
   }, [user]);
@@ -398,7 +508,7 @@ const FacultyDashboard = () => {
   };
 
   return (
-    <div className={`faculty-dashboard-wrapper ${isDarkMode ? 'dark' : ''}`}>
+    <div className={`faculty-dashboard-wrapper ${isDarkMode ? 'dark' : ''} ${isHighContrast ? 'high-contrast' : ''} text-${textSize}`}>
       <style>{facultyDashStyles}</style>
       
       <nav className="faculty-navbar">
@@ -415,7 +525,7 @@ const FacultyDashboard = () => {
             <button
               key={tab}
               className={`nav-link ${activeTab === tab ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => handleActiveTabSet(tab)}
             >
               {tab}
             </button>
@@ -423,25 +533,37 @@ const FacultyDashboard = () => {
         </div>
 
         <div className="nav-user-section">
-          <button className="theme-toggle" onClick={() => setIsDarkMode(!isDarkMode)}>
-            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
+          <div className="desktop-only" style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+            <button className="theme-toggle" onClick={() => setIsDarkMode(!isDarkMode)}>
+              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <button className="edit-profile-btn" onClick={() => setIsSettingsModalOpen(true)} title="Settings">
+              <Settings size={20} />
+            </button>
+          </div>
           
-          <div className="user-profile-badge">
+          <div className="user-profile-badge" onClick={() => {
+            if (window.innerWidth <= 768) {
+              setIsMobileMenuOpen(true);
+            }
+          }}>
             <div className="prof-info">
               <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem' }}>{profileName || user?.displayName || 'Faculty Member'}</p>
               <p className="prof-role">{profileDept}</p>
             </div>
-            <div className="prof-avatar" style={{ overflow: 'hidden' }} onClick={openProfileModal} title="Edit Profile">
-              {profileAvatar ? <img src={profileAvatar} alt="avatar" style={{ width: '100%' }} /> : <User size={20} />}
+            <div className={`prof-avatar ${profileStatus?.toLowerCase()}`} onClick={(e) => {
+              if (window.innerWidth > 768) {
+                e.stopPropagation();
+                openProfileModal();
+              }
+            }} title="Edit Profile">
+              {profileAvatar ? <img src={profileAvatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={20} />}
             </div>
-            <button className="edit-profile-btn" onClick={openProfileModal} title="Settings">
-              <Settings size={16} />
-            </button>
           </div>
 
           <button 
             onClick={handleLogout}
+            className="nav-logout-btn"
             style={{
               padding: '0.5rem 1rem',
               borderRadius: '8px',
@@ -457,6 +579,35 @@ const FacultyDashboard = () => {
           </button>
         </div>
       </nav>
+
+      <div className="bottom-nav">
+        {[
+          { id: 'Dashboard', icon: Layout },
+          { id: 'Schedule', icon: Calendar },
+          { id: 'Requests', icon: Clock }
+        ].map((item) => (
+          <button
+            key={item.id}
+            className={`bottom-nav-item ${activeTab === item.id ? 'active' : ''}`}
+            onClick={() => handleActiveTabSet(item.id)}
+          >
+            <item.icon size={20} />
+            <span className="bottom-nav-text">{item.id}</span>
+          </button>
+        ))}
+      </div>
+
+      <SettingsModal 
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        isDarkMode={isDarkMode}
+        setIsDarkMode={setIsDarkMode}
+        textSize={textSize}
+        setTextSize={setTextSize}
+        isHighContrast={isHighContrast}
+        setIsHighContrast={setIsHighContrast}
+        onLogout={handleLogout}
+      />
 
       <main className="faculty-main-content">
         {renderContent()}
@@ -516,18 +667,41 @@ const FacultyDashboard = () => {
             </button>
           </div>
           <div className="drawer-links">
-            {['Dashboard', 'Schedule', 'Requests', 'About'].map((tab) => (
-              <button
-                key={tab}
-                className={`drawer-link ${activeTab === tab ? 'active' : ''}`}
-                onClick={() => {
-                  setActiveTab(tab);
-                  setIsMobileMenuOpen(false);
-                }}
-              >
-                {tab}
-              </button>
-            ))}
+            <div className="mobile-profile-section">
+              <div className="prof-avatar" style={{ width: '60px', height: '60px', overflow: 'hidden' }}>
+                {profileAvatar ? <img src={profileAvatar} alt="avatar" style={{ width: '100%' }} /> : <User size={30} />}
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '1.2rem', color: 'var(--text-primary)' }}>{profileName}</p>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>{profileDept}</p>
+              </div>
+            </div>
+            
+            <button className="drawer-link" onClick={() => { setIsDarkMode(!isDarkMode); }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                {isDarkMode ? <Sun size={24} /> : <Moon size={24} />}
+                <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+              </div>
+            </button>
+            
+            <button className="drawer-link" onClick={() => { setActiveTab('About'); setIsMobileMenuOpen(false); }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <Bell size={24} />
+                <span>About System</span>
+              </div>
+            </button>
+            <button className="drawer-link" onClick={() => { setIsSettingsModalOpen(true); setIsMobileMenuOpen(false); }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <Settings size={24} />
+                <span>Settings</span>
+              </div>
+            </button>
+            <button className="drawer-link" onClick={() => { openProfileModal(); setIsMobileMenuOpen(false); }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <User size={24} />
+                <span>Edit Profile</span>
+              </div>
+            </button>
           </div>
           
           <div style={{ marginTop: 'auto', padding: '2rem 0', borderTop: '1px solid var(--border-color)' }}>

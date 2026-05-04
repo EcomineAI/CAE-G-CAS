@@ -10,6 +10,17 @@ const DashboardContent = ({ onTabChange, realName }) => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const formatWelcomeName = (name) => {
+    if (!name) return 'User';
+    if (name.includes(',')) {
+      const parts = name.split(', ');
+      const last = parts[0];
+      const rest = parts[1] || '';
+      return `${rest} ${last}`.trim();
+    }
+    return name;
+  };
+
   useEffect(() => {
     if (!user) return;
     const fetchRequests = async () => {
@@ -35,7 +46,7 @@ const DashboardContent = ({ onTabChange, realName }) => {
   return (
     <>
       <div className="welcome-section">
-        <h1 className="welcome-title">Welcome, {realName || user?.displayName || 'User'}!</h1>
+        <h1 className="welcome-title">Welcome, {formatWelcomeName(realName)}!</h1>
         <p className="welcome-subtitle">What would you like to do today?</p>
       </div>
 

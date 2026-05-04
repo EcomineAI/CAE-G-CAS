@@ -33,7 +33,7 @@ export const subscribeToSchedules = (facultyId, callback, fetchFn) => {
     .subscribe();
 
   return () => {
-    supabase.removeChannel(channel);
+    if (channel) supabase.removeChannel(channel);
   };
 };
 
@@ -68,7 +68,7 @@ export const subscribeToRequests = (userId, role, callback, fetchFn) => {
     .subscribe();
 
   return () => {
-    supabase.removeChannel(channel);
+    if (channel) supabase.removeChannel(channel);
   };
 };
 
@@ -98,7 +98,7 @@ export const subscribeToFacultyStatus = (callback, fetchFn) => {
     .subscribe();
 
   return () => {
-    supabase.removeChannel(channel);
+    if (channel) supabase.removeChannel(channel);
   };
 };
 
@@ -125,6 +125,6 @@ export const subscribeToAllSchedules = (callback) => {
     .subscribe();
 
   return () => {
-    supabase.removeChannel(channel);
+    if (channel) supabase.removeChannel(channel);
   };
 };

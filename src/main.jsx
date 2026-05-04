@@ -113,6 +113,10 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+input, textarea, select {
+  font-size: 16px !important;
+}
 `;
 
 createRoot(document.getElementById('root')).render(

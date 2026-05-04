@@ -1,4 +1,3 @@
-import React from 'react';
 import logo from '../logo.png';
 
 const aboutStyles = `
@@ -199,9 +198,9 @@ const aboutStyles = `
 
 const AboutContent = () => {
   const team = [
-    { name: 'June Vic M. Abello', role: 'BSCS 2A', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=June' },
-    { name: 'Erica Mae D. Camintoy', role: 'BSCS 2A', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Camintoy' },
-    { name: 'Erica Monton', role: 'Former Member', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Monton' },
+    { name: 'June Vic M. Abello', role: 'BSCS 2A', avatar: '../junevic.png' },
+    { name: 'Erica Mae D. Camintoy', role: 'BSCS 2A', avatar: '../erica.png' },
+    { name: 'Erica Monton', role: 'Former Member', avatar: '../monton.png' },
   ];
 
   return (
@@ -232,7 +231,11 @@ const AboutContent = () => {
           {team.map((member, idx) => (
             <div className="team-member" key={idx}>
               <div className="member-avatar">
-                <img src={member.avatar} alt={member.name} />
+                <img 
+                  src={member.avatar} 
+                  alt={member.name} 
+                  onError={(e) => { e.target.style.opacity = '0'; }}
+                />
               </div>
               <div className="member-info">
                 <h4>{member.name}</h4>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { User } from 'lucide-react';
+import { User, Trash2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { getStudentRequests, updateRequestDetails, updateRequestStatus } from '../../supabase/api';
+import { getStudentRequests, updateRequestDetails, updateRequestStatus, deleteRequest } from '../../supabase/api';
 import { subscribeToRequests } from '../../supabase/realtime';
 import { AppointmentRowSkeleton, withMinDelay, optimistic, toast } from '../../supabase/ux';
 
@@ -27,13 +27,13 @@ const appointmentsStyles = `
 }
 
 .filter-tab {
-  padding: 0.6rem 1.5rem;
+  padding: 0.4rem 1.2rem;
   border-radius: 12px;
   background: var(--bg-secondary);
   border: 1px solid var(--card-border);
   color: var(--text-secondary);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
@@ -151,7 +151,13 @@ const appointmentsStyles = `
 .dashboard-fixed-wrapper.dark .status-badge-pill.cancelled { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 .dashboard-fixed-wrapper.dark .status-badge-pill.completed { background: rgba(234, 88, 12, 0.2); color: #fb923c; }
 
+.desktop-only-cell { display: table-cell; }
+.mobile-hide-on-desktop { display: none; }
+
 @media (max-width: 900px) {
+  .desktop-only-cell { display: none !important; }
+  .mobile-hide-on-desktop { display: block !important; }
+  
   .appointments-page h2 {
     font-size: 1.5rem;
     margin-bottom: 1.5rem;
@@ -172,68 +178,79 @@ const appointmentsStyles = `
     display: none;
   }
 
-  .appointments-table tbody td {
-    display: block;
-    width: 100%;
-    padding: 0.5rem 1.2rem;
-    border-bottom: none;
-    text-align: left !important;
+  .appointments-table-container {
+    background: transparent;
+    border: none;
+    box-shadow: none;
   }
 
   .appointments-table tbody tr {
     display: flex;
     flex-direction: column;
-    padding: 1.2rem 0;
-    border-bottom: 1px solid var(--border-color);
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    border: 1px solid var(--card-border);
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+  }
+
+  .appointments-table tbody td {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border-bottom: none;
   }
 
   .faculty-cell {
-    gap: 1rem;
-    margin-bottom: 0.5rem;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.8rem;
   }
 
   .faculty-avatar-circle {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
+    border-width: 2px;
   }
 
   .faculty-name-text {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     font-weight: 700;
   }
 
-  .date-text {
-    font-size: 0.9rem;
-    color: var(--text-muted);
+  .date-time-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 0.8rem;
+    padding: 0.5rem;
+    background: var(--bg-primary);
+    border-radius: 10px;
   }
 
-  .time-text {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    margin-top: 0.2rem;
-  }
-
-  .status-badge-pill {
-    margin-top: 1rem;
-    font-size: 0.9rem;
-    padding: 0.5rem 1.2rem;
-    border-radius: 12px;
-  }
-}
-
-@media (max-width: 600px) {
-  .faculty-avatar-circle {
-    width: 44px;
-    height: 44px;
-  }
-
-  .faculty-name-text {
-    font-size: 1.05rem;
+  .date-text, .time-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
   }
 
   .status-badge-pill {
-    font-size: 0.85rem;
-    padding: 0.4rem 1rem;
+    margin: 0;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 8px;
+    width: fit-content;
+  }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
   }
 }
 `;
@@ -245,6 +262,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
   const [loading, setLoading] = useState(true);
   const [cancelModal, setCancelModal] = useState({ isOpen: false, reqId: null, reason: '' });
   const [editModal, setEditModal] = useState({ isOpen: false, reqId: null, subject: '', details: '' });
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, reqId: null });
 
   useEffect(() => {
     if (!user) return;
@@ -319,6 +337,25 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
     );
   };
 
+  const confirmDelete = (id) => {
+    setDeleteModal({ isOpen: true, reqId: id });
+  };
+
+  const executeDelete = async () => {
+    const { reqId } = deleteModal;
+    if (!reqId) return;
+
+    setDeleteModal({ isOpen: false, reqId: null });
+
+    await optimistic(
+      setRequests,
+      requests,
+      requests.filter(req => req.id !== reqId),
+      () => deleteRequest(reqId),
+      { success: 'Record deleted', error: 'Failed to delete record' }
+    );
+  };
+
   const filteredData = activeFilter === 'All' 
     ? requests 
     : activeFilter === 'History'
@@ -383,25 +420,67 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
                     </div>
                     <div className="faculty-name-info" style={{ display: 'flex', flexDirection: 'column' }}>
                       <span className="faculty-name-text">{app.name}</span>
-                      <div style={{ marginTop: '0.4rem', padding: '0.4rem 0.6rem', background: 'var(--bg-primary)', borderRadius: '8px', fontSize: '0.75rem', borderLeft: '2px solid var(--accent-orange)' }}>
+                      <div style={{ marginTop: '0.3rem', padding: '0.3rem 0.5rem', background: 'var(--bg-primary)', borderRadius: '6px', fontSize: '0.7rem', borderLeft: '2px solid var(--accent-orange)', maxWidth: '200px' }}>
                         <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{app.subject}</div>
-                        <div style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{app.details}</div>
+                        <div style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{app.details}</div>
                       </div>
                     </div>
                   </div>
                 </td>
-                <td style={{ textAlign: 'center' }}>
+                <td className="mobile-hide-on-desktop" style={{ padding: 0 }}>
+                  <div className="date-time-group">
+                    <span className="date-text">{app.date}</span>
+                    <span className="time-text">{app.time}</span>
+                  </div>
+                </td>
+                <td className="mobile-hide-on-desktop" style={{ padding: 0 }}>
+                  <div className="card-footer">
+                    <div className={`status-badge-pill ${app.status.toLowerCase()}`}>
+                      {app.status}
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      {app.status === 'Pending' && (
+                        <button 
+                          onClick={() => handleEdit(app)}
+                          style={{ padding: '0.3rem 0.6rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '0.7rem', fontWeight: 600, cursor: 'pointer' }}
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {(app.status === 'Pending' || app.status === 'Approved') && (
+                        <button 
+                          onClick={() => confirmCancel(app.id)}
+                          style={{ padding: '0.3rem 0.6rem', borderRadius: '6px', border: '1px solid #fecaca', background: '#fee2e2', color: '#ef4444', fontSize: '0.7rem', fontWeight: 600, cursor: 'pointer' }}
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      {(app.status === 'Completed' || app.status === 'Cancelled' || app.status === 'Declined') && (
+                        <button 
+                          onClick={() => confirmDelete(app.id)}
+                          style={{ padding: '0.3rem', borderRadius: '6px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                          title="Delete Record"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </td>
+                
+                {/* Desktop columns (hidden on mobile via the display: flex overhaul) */}
+                <td className="desktop-only-cell" style={{ textAlign: 'center' }}>
                   <span className="date-text">{app.date}</span>
                 </td>
-                <td style={{ textAlign: 'center' }}>
+                <td className="desktop-only-cell" style={{ textAlign: 'center' }}>
                   <span className="time-text">{app.time}</span>
                 </td>
-                <td style={{ textAlign: 'center' }}>
+                <td className="desktop-only-cell" style={{ textAlign: 'center' }}>
                   <div className={`status-badge-pill ${app.status.toLowerCase()}`}>
                     {app.status}
                   </div>
                 </td>
-                <td style={{ textAlign: 'center' }}>
+                <td className="desktop-only-cell" style={{ textAlign: 'center' }}>
                   <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                     {app.status === 'Pending' && (
                       <button 
@@ -414,9 +493,19 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
                     {(app.status === 'Pending' || app.status === 'Approved') && (
                       <button 
                         onClick={() => confirmCancel(app.id)}
-                        style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', border: '1px solid #fecaca', background: '#fee2e2', color: '#ef4444', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+                        style={{ padding: '0.35rem 0.7rem', borderRadius: '8px', border: '1px solid #fecaca', background: '#fee2e2', color: '#ef4444', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
                       >
                         Cancel
+                      </button>
+                    )}
+                    {(app.status === 'Completed' || app.status === 'Cancelled' || app.status === 'Declined') && (
+                      <button 
+                        onClick={() => confirmDelete(app.id)}
+                        style={{ padding: '0.4rem', borderRadius: '8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                        title="Delete Record"
+                      >
+                        <Trash2 size={16} />
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Delete</span>
                       </button>
                     )}
                   </div>
@@ -501,6 +590,33 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
                 style={{ padding: '0.8rem', borderRadius: '8px', border: 'none', background: 'var(--accent-orange)', color: 'white', cursor: 'pointer', fontWeight: 600 }}
               >
                 Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {deleteModal.isOpen && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+          <div className="modal-card" style={{ background: 'var(--bg-secondary)', padding: '2.5rem', borderRadius: '16px', maxWidth: '400px', width: '90%', textAlign: 'left', border: '1px solid var(--border-color)', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: '#ef4444', marginBottom: '1rem' }}>
+              <Trash2 size={24} />
+              <h2 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.4rem' }}>Delete Record?</h2>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              Are you sure you want to remove this appointment record from your history? This action is permanent and cannot be undone.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <button 
+                onClick={() => setDeleteModal({ isOpen: false, reqId: null })}
+                style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
+              >
+                No, Keep it
+              </button>
+              <button 
+                onClick={executeDelete}
+                style={{ padding: '0.8rem', borderRadius: '8px', border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer', fontWeight: 600 }}
+              >
+                Yes, Delete
               </button>
             </div>
           </div>

@@ -49,20 +49,18 @@ Create a centralized management system that reduces uncertainty by providing rea
 
 ---
 
-## 📈 Latest Updates (v0.3.0)
-- **Full Supabase Integration:** All CRUD operations persist to PostgreSQL — schedules, requests, and profiles are fully database-backed.
-- **Real-Time Subscriptions:** Faculty schedule changes, request status updates, and availability toggles sync live across student and faculty views.
-- **Profile System:** Auto-created `profiles` table via database trigger on sign-up. Faculty names and avatars are pulled from the DB instead of hardcoded.
-- **Optimistic UI:** Schedule add/edit/delete and request approve/decline update the UI instantly with rollback on failure.
-- **Skeleton Loading:** Six animated shimmer components replacing all text-based loading states.
-- **Toast Notifications:** Lightweight feedback system for every user action (no external dependencies).
-- **Latency Masking:** withMinDelay (anti-flicker), debouncedSave (status toggle), and prefetch cache (instant tab switches).
-- **SQL Setup Guide:** Added `SUPABASE_SETUP.md` with step-by-step instructions for database setup.
-- **Confirmation Dialogs:** Added "Are you sure?" modals for all critical/destructive actions (declining requests, deleting schedules, cancelling appointments).
-- **Profile Management:** Users (Students & Faculty) can now edit their names and choose from 20 modern, neutral avatars.
-- **Appointment Editing:** Students can now edit the subject and details of their pending requests.
-- **Cloudflare Tunneling:** Added `cloud.py` to instantly expose the local server for mobile device testing.
-- **Cancellation Reasons:** Students must provide a note when cancelling, which is visible to faculty.
+## 📈 Latest Updates (v0.5.0) — May 4, 2026
+- **Mobile UI Overhaul:** Redesigned student appointments with a modern, high-density card layout optimized for smaller screens.
+- **History Management:** Implemented permanent deletion of past consultation records for both Students and Faculty with safety confirmation popups.
+- **Availability Guardrails:** Automated request blocking for "Unavailable" faculty and interactive warnings for "Busy" faculty status.
+- **Pulsing Live Indicators:** Added status-colored pulsing animations to faculty profile rings for real-time availability visibility.
+- **Tab State Persistence:** Dashboard sections (tabs) now persist across page refreshes using `localStorage` for seamless navigation.
+- **Anti-Zoom Mobile Fix:** Stabilized the mobile UI by disabling auto-zooming during typing through viewport and font-size optimizations.
+- **Name Standardizer:** Standardized all system names to `First Middle Last` format for consistent institutional identity.
+- **Real-time Hardening:** Improved WebSocket lifecycle management to eliminate connection warnings during rapid navigation.
+
+### Previous: v0.3.0
+- Full Supabase Integration, Real-Time Subscriptions, Profile System, Optimistic CRUD, Skeleton Loading, Toast Notifications, Latency Masking.
 
 ### Previous: v0.2.0
 - Faculty UI Synchronization, Consultation Schedule Manager, Appointment Requests Hub, Dashboard Deep Linking, Comprehensive Dark Mode.
@@ -70,6 +68,18 @@ Create a centralized management system that reduces uncertainty by providing rea
 ---
 
 ## 📅 Development Activity Log
+
+### **May 4, 2026** — Mobile UX & History Cleanup
+- **Appointments Mobile Overhaul:** Replaced table-based layout with a modern card system on mobile. Improved information hierarchy, added better spacing, and optimized for high-density viewing.
+- **History Deletion System:** Added `deleteRequest` to the API. Integrated "Delete" actions into History tabs for both Students and Faculty with permanent database removal.
+- **Deletion Safety:** Built custom confirmation modals with "Yes, Delete" / "No, Keep" options to prevent accidental history loss.
+- **Availability Logic:** Implemented dynamic request blocking. Faculty set to "Unavailable" can no longer be requested; faculty set to "Busy" trigger a warning toast upon selection.
+- **Pulsing Status Rings:** Added CSS keyframe animations (`pulse-green`, `pulse-yellow`) to faculty profile pictures. Rings now pulse live in the directory and on the faculty dashboard.
+- **Tab Persistence:** Implemented `localStorage` syncing for `activeTab` states. Refreshing the browser now returns users to their last viewed section (Dashboard, Schedule, etc.).
+- **Viewport Stability:** Updated `index.html` and global CSS to prevent mobile browsers from zooming in when focusing on input fields.
+- **Name Format Standard:** Updated name parsing and profile saving logic to enforce `First Middle Last` naming convention across the entire platform.
+- **WebSocket Cleanup:** Hardened `realtime.js` unsubscribe functions with existence checks to silence "WebSocket closed" console warnings during navigation.
+- **Bug Fixes:** Resolved a ReferenceError crash in the Profile Editor and corrected a bug where history records returned after a refresh due to optimistic UI mismatches.
 
 ### **April 27, 2026** — Supabase Integration & UX
 - **Full Database Wiring:** Connected all UI components to Supabase PostgreSQL — schedules, requests, and profiles are fully persisted.

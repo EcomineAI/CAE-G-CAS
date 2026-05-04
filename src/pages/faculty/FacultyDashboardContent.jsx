@@ -20,7 +20,7 @@ const contentStyles = `
 }
 
 .welcome-box h2 {
-  font-size: 2.2rem;
+  font-size: 1.8rem;
   font-weight: 600;
   margin: 0;
   color: var(--text-secondary);
@@ -55,11 +55,36 @@ const contentStyles = `
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+  animation: pulse-dot 2s infinite;
 }
 
-.status-dot.available { background: #22c55e; }
-.status-dot.busy { background: #eab308; }
-.status-dot.unavailable { background: #ef4444; }
+@keyframes pulse-dot {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(0, 0, 0, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+}
+
+.status-dot.available { background: #22c55e; animation-name: pulse-green; }
+.status-dot.busy { background: #eab308; animation-name: pulse-yellow; }
+.status-dot.unavailable { background: #ef4444; animation-name: pulse-red; }
+
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+@keyframes pulse-yellow {
+  0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(234, 179, 8, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
 
 .status-text {
   font-weight: 600;
@@ -97,23 +122,27 @@ const contentStyles = `
 }
 
 .metric-row {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 1.2rem;
   margin-top: 1rem;
 }
 
 .faculty-metric-card {
+  flex: 0 0 180px; /* Fixed width to keep size consistent */
+  text-align: center;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 1rem 1.2rem;
+  padding: 0.8rem 1rem;
   position: relative;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  align-items: center;
 }
 
 .faculty-metric-card::before {
@@ -145,7 +174,7 @@ const contentStyles = `
 }
 
 .metric-num {
-  font-size: 2.2rem;
+  font-size: 1.8rem;
   font-weight: 700;
   color: var(--accent-orange);
   margin: 0.2rem 0;
@@ -162,7 +191,7 @@ const contentStyles = `
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  padding: 1.5rem;
+  padding: 1.2rem;
 }
 
 .section-header {
@@ -281,7 +310,7 @@ const contentStyles = `
 }
 
 @media (max-width: 900px) {
-  .metric-row { grid-template-columns: repeat(3, 1fr); }
+  .metric-row { gap: 1rem; }
   .schedules-grid { grid-template-columns: 1fr; }
   .request-details { grid-template-columns: 1fr; gap: 0.8rem; }
   .pending-request-card { flex-direction: column; align-items: flex-start; }
