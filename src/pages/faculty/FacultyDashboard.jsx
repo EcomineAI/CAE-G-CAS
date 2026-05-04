@@ -71,10 +71,23 @@ const facultyDashStyles = `
 .faculty-dashboard-wrapper.text-large h2 { font-size: 2rem; }
 
 .faculty-dashboard-wrapper {
-  min-height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   background-color: transparent;
+  z-index: 50;
+  overflow-y: auto;
   font-family: 'Inter', sans-serif;
   color: var(--text-primary);
+  transition: background-color 0.3s, color 0.3s;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.faculty-dashboard-wrapper::-webkit-scrollbar {
+  display: none;
 }
 
 .dashboard-bg-layer {
