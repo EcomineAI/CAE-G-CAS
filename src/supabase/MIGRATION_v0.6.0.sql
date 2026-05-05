@@ -9,10 +9,16 @@ ALTER TABLE IF EXISTS public.requests
 ADD COLUMN IF NOT EXISTS is_student_deleted BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS is_faculty_deleted BOOLEAN DEFAULT FALSE;
 
--- 2. Update existing data to have false values
+-- 2. Clean up existing data to prevent constraint violations
+-- If a student deleted something the faculty hasn't, revert the student deletion
+UPDATE public.requests 
+SET is_student_deleted = FALSE 
+WHERE is_faculty_deleted = FALSE AND is_student_deleted = TRUE;
+
+-- Handle nulls
 UPDATE public.requests 
 SET is_student_deleted = FALSE, is_faculty_deleted = FALSE 
-WHERE is_student_deleted IS NULL;
+WHERE is_student_deleted IS NULL OR is_faculty_deleted IS NULL;
 
 -- 3. Enforce deletion logic at the database level:
 -- A student cannot delete (is_student_deleted=true) unless the faculty has already deleted it (is_faculty_deleted=true)
