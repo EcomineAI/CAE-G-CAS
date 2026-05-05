@@ -14,12 +14,33 @@
     <meta property="og:description" content="Secure and efficient appointment system for Gordon College students and faculty." />
     <meta property="og:image" content="https://cae-g-cas.vercel.app/logo.png" />
 
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://cae-g-cas.vercel.app/" />
-    <meta property="twitter:title" content="G-CAS | Gordon College Appointment System" />
-    <meta property="twitter:description" content="Secure and efficient appointment system for Gordon College students and faculty." />
-    <meta property="twitter:image" content="https://cae-g-cas.vercel.app/logo.png" />
+    <!-- PWA / Mobile Settings -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#ea580c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="G-CAS" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+
+    <style>
+      /* Aggressive Scrollbar Suppression */
+      html, body {
+        overflow: hidden !important;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+        height: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      ::-webkit-scrollbar {
+        display: none !important;
+      }
+      #root {
+        height: 100%;
+        width: 100%;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
