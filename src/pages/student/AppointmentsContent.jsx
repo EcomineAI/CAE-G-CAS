@@ -457,9 +457,21 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
                       )}
                       {(app.status === 'Completed' || app.status === 'Cancelled' || app.status === 'Declined') && (
                         <button 
-                          onClick={() => confirmDelete(app.id)}
-                          style={{ padding: '0.3rem', borderRadius: '6px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                          title="Delete Record"
+                          onClick={() => app.is_faculty_deleted ? confirmDelete(app.id) : null}
+                          disabled={!app.is_faculty_deleted}
+                          style={{ 
+                            padding: '0.3rem', 
+                            borderRadius: '6px', 
+                            border: `1px solid ${app.is_faculty_deleted ? '#ef4444' : 'var(--border-color)'}`, 
+                            background: 'transparent', 
+                            color: app.is_faculty_deleted ? '#ef4444' : 'var(--text-muted)', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            cursor: app.is_faculty_deleted ? 'pointer' : 'not-allowed',
+                            opacity: app.is_faculty_deleted ? 1 : 0.6
+                          }}
+                          title={app.is_faculty_deleted ? "Delete Record" : "Cannot delete until faculty removes this record"}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -500,9 +512,21 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
                     )}
                     {(app.status === 'Completed' || app.status === 'Cancelled' || app.status === 'Declined') && (
                       <button 
-                        onClick={() => confirmDelete(app.id)}
-                        style={{ padding: '0.4rem', borderRadius: '8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                        title="Delete Record"
+                        onClick={() => app.is_faculty_deleted ? confirmDelete(app.id) : null}
+                        disabled={!app.is_faculty_deleted}
+                        style={{ 
+                          padding: '0.4rem', 
+                          borderRadius: '8px', 
+                          border: `1px solid ${app.is_faculty_deleted ? '#ef4444' : 'var(--border-color)'}`, 
+                          background: 'transparent', 
+                          color: app.is_faculty_deleted ? '#ef4444' : 'var(--text-muted)', 
+                          cursor: app.is_faculty_deleted ? 'pointer' : 'not-allowed', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '0.4rem',
+                          opacity: app.is_faculty_deleted ? 1 : 0.6
+                        }}
+                        title={app.is_faculty_deleted ? "Delete Record" : "Cannot delete until faculty removes this record"}
                       >
                         <Trash2 size={16} />
                         <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Delete</span>

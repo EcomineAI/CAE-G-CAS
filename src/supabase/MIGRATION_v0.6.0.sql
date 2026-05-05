@@ -14,5 +14,17 @@ UPDATE public.requests
 SET is_student_deleted = FALSE, is_faculty_deleted = FALSE 
 WHERE is_student_deleted IS NULL;
 
+-- 3. Enforce deletion logic at the database level:
+-- A student cannot delete (is_student_deleted=true) unless the faculty has already deleted it (is_faculty_deleted=true)
+ALTER TABLE public.requests 
+DROP CONSTRAINT IF EXISTS student_delete_after_faculty;
+
+ALTER TABLE public.requests
+ADD CONSTRAINT student_delete_after_faculty 
+CHECK (
+  (is_student_deleted = FALSE) OR 
+  (is_student_deleted = TRUE AND is_faculty_deleted = TRUE)
+);
+
 -- 3. Enable Realtime for the profiles table
 -- ALTER publication supabase_realtime ADD TABLE profiles;

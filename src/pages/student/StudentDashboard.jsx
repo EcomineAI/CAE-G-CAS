@@ -10,7 +10,6 @@ import { supabase, ensureProfile } from '../../supabase/supabase';
 import { updateProfile, getProfile } from '../../supabase/api';
 import { useNavigate } from 'react-router-dom';
 import SettingsModal from '../../components/SettingsModal';
-import { requestNotificationPermission } from '../../utils/notifications';
 
 const dashStyles = `
 .dashboard-fixed-wrapper.dark {
@@ -914,7 +913,6 @@ const StudentDashboard = () => {
   // Ensure profile exists for pre-trigger users and check name
   useEffect(() => {
     if (!user) return;
-    requestNotificationPermission();
     // Clear auth-page dark class from <html> so dashboard manages its own theme
     document.documentElement.className = '';
     ensureProfile();

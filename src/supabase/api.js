@@ -260,7 +260,8 @@ export const getStudentRequests = async (studentId) => {
     date: req.request_date,
     status: req.status,
     subject: req.subject,
-    details: req.details
+    details: req.details,
+    is_faculty_deleted: req.is_faculty_deleted
   }));
 };
 
@@ -344,11 +345,18 @@ export const submitRequest = async (requestData) => {
  */
 export const deleteRequest = async (id, role = 'student') => {
   const column = role === 'faculty' ? 'is_faculty_deleted' : 'is_student_deleted';
-  const { data, error } = await supabase
+  
+  let query = supabase
     .from('requests')
     .update({ [column]: true, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select();
+    .eq('id', id);
+
+  // If a student is trying to delete, enforce that faculty must have deleted it first
+  if (role === 'student') {
+    query = query.eq('is_faculty_deleted', true);
+  }
+
+  const { data, error } = await query.select();
   
   if (error) {
     console.error('Error soft deleting request:', error);
