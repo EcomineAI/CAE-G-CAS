@@ -129,6 +129,7 @@ const facultyDashStyles = `
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex: 1;
 }
 
 .nav-brand img {
@@ -145,6 +146,8 @@ const facultyDashStyles = `
 .nav-links {
   display: flex;
   gap: 1rem;
+  justify-content: center;
+  flex: 1;
 }
 
 .nav-link {
@@ -174,6 +177,8 @@ const facultyDashStyles = `
   display: flex;
   align-items: center;
   gap: 1.2rem;
+  justify-content: flex-end;
+  flex: 1;
 }
 
 .theme-toggle {
@@ -542,6 +547,7 @@ const FacultyDashboard = () => {
   };
 
   const handleLogout = async () => {
+    localStorage.removeItem('gcas_faculty_tab');
     await supabase.auth.signOut();
     navigate('/');
   };

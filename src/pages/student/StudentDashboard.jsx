@@ -126,6 +126,7 @@ const dashStyles = `
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex: 1;
 }
 
 .logo-image {
@@ -145,9 +146,8 @@ const dashStyles = `
 .nav-tabs {
   display: flex;
   gap: 0.8rem;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  justify-content: center;
+  flex: 1;
 }
 
 .nav-tab {
@@ -196,6 +196,8 @@ const dashStyles = `
   display: flex;
   align-items: center;
   gap: 1rem;
+  justify-content: flex-end;
+  flex: 1;
 }
 
 .user-info {
@@ -984,6 +986,7 @@ const StudentDashboard = () => {
   };
 
   const handleLogout = async () => {
+    localStorage.removeItem('gcas_student_tab');
     await supabase.auth.signOut();
     navigate('/');
   };

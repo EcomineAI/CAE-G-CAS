@@ -49,6 +49,8 @@ const SettingsModal = ({
           position: relative;
           animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
           color: var(--text-primary);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
         }
 
         @keyframes fadeIn {
