@@ -456,19 +456,13 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
                         </button>
                       )}
                       {(app.status === 'Completed' || app.status === 'Cancelled' || app.status === 'Declined') && (
-                        app.is_faculty_deleted ? (
-                          <button 
-                            onClick={() => confirmDelete(app.id)}
-                            style={{ padding: '0.3rem', borderRadius: '6px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                            title="Delete Record"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        ) : (
-                          <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500, padding: '0.3rem 0.6rem', background: 'var(--accent-light)', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                            <span style={{ opacity: 0.7 }}>🔒</span> Faculty Pending
-                          </div>
-                        )
+                        <button 
+                          onClick={() => confirmDelete(app.id)}
+                          style={{ padding: '0.3rem', borderRadius: '6px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                          title="Delete Record"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       )}
                     </div>
                   </div>
@@ -505,21 +499,14 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
                       </button>
                     )}
                     {(app.status === 'Completed' || app.status === 'Cancelled' || app.status === 'Declined') && (
-                      app.is_faculty_deleted ? (
-                        <button 
-                          onClick={() => confirmDelete(app.id)}
-                          style={{ padding: '0.4rem', borderRadius: '8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                          title="Delete Record"
-                        >
-                          <Trash2 size={16} />
-                          <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Delete</span>
-                        </button>
-                      ) : (
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, padding: '0.4rem 0.8rem', background: 'var(--accent-light)', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.4rem' }} title="This record can only be cleared once the faculty member has removed it from their history.">
-                          <span style={{ fontSize: '1rem' }}>🔒</span> 
-                          <span>Faculty History Lock</span>
-                        </div>
-                      )
+                      <button 
+                        onClick={() => confirmDelete(app.id)}
+                        style={{ padding: '0.4rem', borderRadius: '8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                        title="Delete Record"
+                      >
+                        <Trash2 size={16} />
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Delete</span>
+                      </button>
                     )}
                   </div>
                 </td>
