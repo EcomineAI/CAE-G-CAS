@@ -573,6 +573,12 @@ const FacultyContent = () => {
       return;
     }
 
+    // Check if slot is full (Conflict Error)
+    if (slot.filled >= slot.max_slots) {
+      toast.error('Conflict Error: This consultation slot is already fully booked.');
+      return;
+    }
+
     setSelectedSlot(slot);
     setShowDetailsModal(true);
   };
@@ -718,8 +724,13 @@ const FacultyContent = () => {
                       </td>
                       <td style={slot.notes ? { borderBottom: 'none' } : {}}>{slot.max_slots - (slot.filled || 0)} / {slot.max_slots}</td>
                       <td style={slot.notes ? { borderBottom: 'none' } : {}}>
-                        <button className="book-slot-btn" onClick={() => handleBookSlot(slot)}>
-                          Request Slot
+                        <button 
+                          className="book-slot-btn" 
+                          onClick={() => handleBookSlot(slot)}
+                          disabled={slot.filled >= slot.max_slots}
+                          style={slot.filled >= slot.max_slots ? { background: 'var(--text-muted)', cursor: 'not-allowed' } : {}}
+                        >
+                          {slot.filled >= slot.max_slots ? 'Full' : 'Request Slot'}
                         </button>
                       </td>
                     </tr>

@@ -309,7 +309,7 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
             className={`filter-chip ${filter === f ? 'active' : ''}`}
             onClick={() => setFilter(f)}
           >
-            {f} {f !== 'All' ? `(${getCount(f)})` : ''}
+            {f} {!loading && f !== 'All' ? `(${getCount(f)})` : ''}
           </div>
         ))}
       </div>
