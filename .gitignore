@@ -24,3 +24,19 @@ cloudflared.exe
 *.njsproj
 *.sln
 *.sw?
+
+# Agentic and Local Metadata
+.agents/
+.gemini/
+.env
+.env.local
+
+# Archives and Temporary files
+*.rar
+*.zip
+*.7z
+*.tar.gz
+*.log
+node_modules/
+dist/
+dist-ssr/
