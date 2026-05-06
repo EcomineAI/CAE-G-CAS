@@ -457,9 +457,10 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
                       )}
                       {(app.status === 'Completed' || app.status === 'Cancelled' || app.status === 'Declined') && (
                         <button 
-                          onClick={() => confirmDelete(app.id)}
-                          style={{ padding: '0.3rem', borderRadius: '6px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                          title="Delete Record"
+                          onClick={() => app.facultyDeleted ? confirmDelete(app.id) : null}
+                          disabled={!app.facultyDeleted}
+                          style={{ padding: '0.3rem', borderRadius: '6px', border: `1px solid ${app.facultyDeleted ? '#ef4444' : '#d1d5db'}`, background: 'transparent', color: app.facultyDeleted ? '#ef4444' : '#9ca3af', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: app.facultyDeleted ? 'pointer' : 'not-allowed', opacity: app.facultyDeleted ? 1 : 0.5 }}
+                          title={app.facultyDeleted ? 'Delete Record' : 'Waiting for faculty to clear their record first'}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -499,14 +500,20 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
                       </button>
                     )}
                     {(app.status === 'Completed' || app.status === 'Cancelled' || app.status === 'Declined') && (
-                      <button 
-                        onClick={() => confirmDelete(app.id)}
-                        style={{ padding: '0.4rem', borderRadius: '8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                        title="Delete Record"
-                      >
-                        <Trash2 size={16} />
-                        <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Delete</span>
-                      </button>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
+                        <button 
+                          onClick={() => app.facultyDeleted ? confirmDelete(app.id) : null}
+                          disabled={!app.facultyDeleted}
+                          style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', border: `1px solid ${app.facultyDeleted ? '#ef4444' : '#d1d5db'}`, background: app.facultyDeleted ? 'transparent' : '#f9fafb', color: app.facultyDeleted ? '#ef4444' : '#9ca3af', cursor: app.facultyDeleted ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: app.facultyDeleted ? 1 : 0.6 }}
+                          title={app.facultyDeleted ? 'Delete Record' : 'Waiting for faculty to clear their record first'}
+                        >
+                          <Trash2 size={16} />
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Delete</span>
+                        </button>
+                        {!app.facultyDeleted && (
+                          <span style={{ fontSize: '0.65rem', color: '#9ca3af', textAlign: 'right', maxWidth: '120px', lineHeight: 1.3 }}>Waiting for faculty to clear first</span>
+                        )}
+                      </div>
                     )}
                   </div>
                 </td>

@@ -95,6 +95,8 @@ create table if not exists public.requests (
   subject text,
   details text,
   cancel_reason text,
+  is_student_deleted boolean default false,
+  is_faculty_deleted boolean default false,
   status text default 'Pending' check (status in ('Pending','Approved','Declined','Completed','Cancelled')),
   request_date date default current_date,
   created_at timestamptz default now(),

@@ -260,7 +260,8 @@ export const getStudentRequests = async (studentId) => {
     date: req.request_date,
     status: req.status,
     subject: req.subject,
-    details: req.details
+    details: req.details,
+    facultyDeleted: req.is_faculty_deleted ?? false
   }));
 };
 
