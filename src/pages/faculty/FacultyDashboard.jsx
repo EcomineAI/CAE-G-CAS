@@ -56,19 +56,48 @@ const facultyDashStyles = `
   --shadow: 0 0 0 2px #ffffff;
 }
 
-.faculty-dashboard-wrapper.text-small { font-size: 0.85rem; }
-.faculty-dashboard-wrapper.text-medium { font-size: 1rem; }
-.faculty-dashboard-wrapper.text-large { font-size: 1.15rem; }
+.faculty-dashboard-wrapper.text-small { font-size: 0.85rem !important; }
+.faculty-dashboard-wrapper.text-medium { font-size: 1rem !important; }
+.faculty-dashboard-wrapper.text-large { font-size: 1.15rem !important; }
 
-.faculty-dashboard-wrapper.text-small .nav-link,
-.faculty-dashboard-wrapper.text-small .nav-tab { font-size: 0.8rem; }
-.faculty-dashboard-wrapper.text-large .nav-link,
-.faculty-dashboard-wrapper.text-large .nav-tab { font-size: 1.1rem; }
-
+/* Headers scaling */
 .faculty-dashboard-wrapper.text-small h1,
-.faculty-dashboard-wrapper.text-small h2 { font-size: 1.2rem; }
+.faculty-dashboard-wrapper.text-small h2 { font-size: 1.4rem !important; }
 .faculty-dashboard-wrapper.text-large h1,
-.faculty-dashboard-wrapper.text-large h2 { font-size: 2rem; }
+.faculty-dashboard-wrapper.text-large h2 { font-size: 2.5rem !important; }
+
+/* Subtext scaling */
+.faculty-dashboard-wrapper.text-small p,
+.faculty-dashboard-wrapper.text-small .requests-header p { font-size: 0.75rem !important; }
+.faculty-dashboard-wrapper.text-large p,
+.faculty-dashboard-wrapper.text-large .requests-header p { font-size: 1rem !important; }
+
+/* Metrics scaling */
+.faculty-dashboard-wrapper.text-small .metric-num { font-size: 1.5rem !important; }
+.faculty-dashboard-wrapper.text-large .metric-num { font-size: 2.2rem !important; }
+
+/* Navigation scaling */
+.faculty-dashboard-wrapper.text-small .nav-link { font-size: 0.8rem !important; }
+.faculty-dashboard-wrapper.text-large .nav-link { font-size: 1.1rem !important; }
+
+/* Card and Label scaling */
+.faculty-dashboard-wrapper.text-small h3,
+.faculty-dashboard-wrapper.text-small h4,
+.faculty-dashboard-wrapper.text-small .metric-title,
+.faculty-dashboard-wrapper.text-small .metric-sub,
+.faculty-dashboard-wrapper.text-small .status-pill-small,
+.faculty-dashboard-wrapper.text-small .brand-text-full,
+.faculty-dashboard-wrapper.text-small .brand-text-mobile,
+.faculty-dashboard-wrapper.text-small .filter-chip { font-size: 0.7rem !important; }
+
+.faculty-dashboard-wrapper.text-large h3,
+.faculty-dashboard-wrapper.text-large h4,
+.faculty-dashboard-wrapper.text-large .metric-title,
+.faculty-dashboard-wrapper.text-large .metric-sub,
+.faculty-dashboard-wrapper.text-large .status-pill-small,
+.faculty-dashboard-wrapper.text-large .brand-text-full,
+.faculty-dashboard-wrapper.text-large .brand-text-mobile,
+.faculty-dashboard-wrapper.text-large .filter-chip { font-size: 1.1rem !important; }
 
 .faculty-dashboard-wrapper {
   position: fixed;

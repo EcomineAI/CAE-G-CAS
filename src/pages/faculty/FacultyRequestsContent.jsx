@@ -109,9 +109,9 @@ const requestStyles = `
 }
 
 .status-pill-small {
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  padding: 0.2rem 0.6rem;
+  padding: 0.2rem 0.8rem;
   border-radius: 20px;
   text-transform: uppercase;
 }

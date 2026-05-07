@@ -59,15 +59,44 @@ const dashStyles = `
 .dashboard-fixed-wrapper.text-medium { font-size: 1rem !important; }
 .dashboard-fixed-wrapper.text-large { font-size: 1.15rem !important; }
 
-.dashboard-fixed-wrapper.text-small .nav-tab { font-size: 0.8rem !important; }
-.dashboard-fixed-wrapper.text-large .nav-tab { font-size: 1.1rem !important; }
-
+/* Headers scaling */
 .dashboard-fixed-wrapper.text-small h1,
 .dashboard-fixed-wrapper.text-small h2,
 .dashboard-fixed-wrapper.text-small .welcome-title { font-size: 1.4rem !important; }
 .dashboard-fixed-wrapper.text-large h1,
 .dashboard-fixed-wrapper.text-large h2,
 .dashboard-fixed-wrapper.text-large .welcome-title { font-size: 2.5rem !important; }
+
+/* Subtext scaling */
+.dashboard-fixed-wrapper.text-small p,
+.dashboard-fixed-wrapper.text-small .welcome-subtitle { font-size: 0.75rem !important; }
+.dashboard-fixed-wrapper.text-large p,
+.dashboard-fixed-wrapper.text-large .welcome-subtitle { font-size: 1rem !important; }
+
+/* Metrics scaling */
+.dashboard-fixed-wrapper.text-small .metric-value { font-size: 1.5rem !important; }
+.dashboard-fixed-wrapper.text-large .metric-value { font-size: 2.2rem !important; }
+
+/* Navigation scaling */
+.dashboard-fixed-wrapper.text-small .nav-tab { font-size: 0.8rem !important; }
+.dashboard-fixed-wrapper.text-large .nav-tab { font-size: 1.1rem !important; }
+
+/* Card and Table scaling */
+.dashboard-fixed-wrapper.text-small h3,
+.dashboard-fixed-wrapper.text-small h4,
+.dashboard-fixed-wrapper.text-small th,
+.dashboard-fixed-wrapper.text-small td,
+.dashboard-fixed-wrapper.text-small .status-badge-pill,
+.dashboard-fixed-wrapper.text-small .brand-text,
+.dashboard-fixed-wrapper.text-small .filter-tab { font-size: 0.7rem !important; }
+
+.dashboard-fixed-wrapper.text-large h3,
+.dashboard-fixed-wrapper.text-large h4,
+.dashboard-fixed-wrapper.text-large th,
+.dashboard-fixed-wrapper.text-large td,
+.dashboard-fixed-wrapper.text-large .status-badge-pill,
+.dashboard-fixed-wrapper.text-large .brand-text,
+.dashboard-fixed-wrapper.text-large .filter-tab { font-size: 1.1rem !important; }
 
 .dashboard-fixed-wrapper {
   position: fixed;
