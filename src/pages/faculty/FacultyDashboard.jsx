@@ -458,6 +458,17 @@ const facultyDashStyles = `
   margin-bottom: 2rem;
   border: 1px solid var(--border-color);
 }
+
+.brand-text-mobile {
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--accent-orange);
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .brand-text-mobile { display: block; }
+}
 `;
 
 const FacultyDashboard = () => {
@@ -585,6 +596,7 @@ const FacultyDashboard = () => {
           </button>
           <img src={logo} alt="GCAS" />
           <span className="brand-text-full">Gordon College Appointment System</span>
+          <span className="brand-text-mobile mobile-only">GCAS</span>
         </div>
 
         <div className="nav-links">
@@ -600,7 +612,7 @@ const FacultyDashboard = () => {
         </div>
 
         <div className="nav-user-section">
-          <div className="desktop-only" style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
             <button className="theme-toggle" onClick={() => setIsDarkMode(!isDarkMode)}>
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>

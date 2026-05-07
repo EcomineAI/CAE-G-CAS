@@ -1035,11 +1035,11 @@ const StudentDashboard = () => {
           </div>
 
           <div className="user-section">
-          <button className="dark-mode-toggle desktop-only" onClick={() => setIsDarkMode(!isDarkMode)}>
+          <button className="dark-mode-toggle" onClick={() => setIsDarkMode(!isDarkMode)}>
             {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
           
-          <button className="edit-profile-btn desktop-only" onClick={() => setIsSettingsModalOpen(true)} title="Settings">
+          <button className="edit-profile-btn" onClick={() => setIsSettingsModalOpen(true)} title="Settings">
              <Settings size={20} />
           </button>
 
