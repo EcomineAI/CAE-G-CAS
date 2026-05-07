@@ -114,6 +114,13 @@ These are **small, reusable building blocks** used by multiple pages.
 
 ---
 
+### `SettingsModal.jsx`
+**What it does:** **Global Settings!** A premium interactive modal that handles Dark Mode, Font Size, High Contrast, and Logout. It uses global CSS variables and local storage to persist user preferences.
+
+**Used by:** Student and Faculty Dashboards
+
+---
+
 ## 📁 `src/hooks/` — Custom React Hooks
 
 ### `useAuth.js`
@@ -185,6 +192,8 @@ These are **small, reusable building blocks** used by multiple pages.
 | `getAllFaculty()` | Lists all faculty members with real names, avatars, and live status | Student faculty directory |
 | `getSchedulesForFaculty(facultyId)` | Gets a faculty's schedules (used by students when booking) | Student booking flow |
 | `submitRequest(data)` | Creates a new appointment request | Student "Submit" button |
+| `checkActiveRequest(sid, fid)` | **Conflict Prevention!** Checks if a student already has a pending/approved request with a specific faculty member. | Student booking flow |
+| `deleteRequest(id, role)` | **History Sync!** Soft-deletes a request for a specific user role using the `is_student_deleted` or `is_faculty_deleted` flags. Records are only fully removed when both parties delete them. | Student/Faculty appointment tabs |
 
 **Key fix from original:** The old version had hardcoded placeholders like `'Faculty Name'` and `'Faculty Member'`. Now it pulls real data from the `profiles` table using SQL JOINs.
 
@@ -278,6 +287,7 @@ The G-CAS circular logo used in the landing page and dashboard navbars.
 - **Mobile responsive** — Sidebar collapses to bottom tab bar on small screens
 - **Profile Standards** — Enforces profile completion (real name formatting) for students with numeric account names.
 - **Editable Profiles** — Allows students to change their name and avatar.
+- **Settings Modal** — Integrates the `SettingsModal` for accessibility (Font Size, Contrast) and theme management.
 - **Logout** — Clears the Supabase session and redirects to landing page.
 
 ---
@@ -317,7 +327,8 @@ Shows:
 - **Filter tabs** — All, Approved, Pending, Cancelled, Completed (with counts)
 - **Table** — Faculty name + avatar, date, time slot, status badge (color-coded)
 - **Actions** — **Edit** (subject/details) and **Cancel** (with reason) for pending requests.
-- **Modals** — Premium confirmation dialogs for both editing and cancelling.
+- **Soft Delete** — Allows students to remove appointments from their history view without deleting them for the faculty member.
+- **Modals** — Premium confirmation dialogs for editing, cancelling, and deleting.
 
 **Data source:** `getStudentRequests(user.id)`
 **UX:** Skeleton table rows, real-time updates when faculty changes status, custom confirmation modals.
@@ -352,6 +363,7 @@ Shows:
 - **Top navbar** — Logo, faculty name (from profile DB), dark mode toggle, logout
 - **Content area** — Swaps between tab components
 - **Tab communication** — Passes `onTabChange(tab, filter)` down so clicking metric cards can navigate to specific filtered tabs
+- **Settings Modal** — Allows faculty to toggle Dark Mode, High Contrast, and Font Size via the sidebar settings icon.
 - **Editable Profiles** — Allows faculty to change their name, department, and avatar.
 
 **Also calls** `ensureProfile()` and fetches `getProfile()` for the display name and profile picture.
@@ -398,6 +410,7 @@ Shows:
 - **Filter tabs** — All, Pending, Approved, Declined, Completed (with counts)
 - **Request cards** — Student avatar + name, subject, details, day/time, status badge
 - **Action buttons** — Approve (checkmark) and Decline (X) for pending requests
+- **Soft Delete** — Allows faculty to clear their request list. If the student hasn't deleted their copy yet, the record remains in the database but is hidden from the faculty.
 
 **Data source:** `getFacultyRequests(user.id)`
 **UX:** Skeleton rows, optimistic approve/decline with rollback, real-time subscription (sees new requests instantly)
@@ -445,9 +458,11 @@ main.jsx → App.jsx (routing)
     │           ├── FacultyContent (browse + book)
     │           │     ├── api.getAllFaculty() → Supabase DB
     │           │     ├── api.getSchedulesForFaculty() → Supabase DB
+    │           │     ├── api.checkActiveRequest() → Conflict check
     │           │     └── api.submitRequest() → Supabase DB
     │           └── AppointmentsContent (history)
-    │                 └── api.getStudentRequests() → Supabase DB
+    │                 ├── api.getStudentRequests() → Supabase DB
+    │                 └── api.deleteRequest() → Soft delete
     │
     ├── "/faculty" → ProtectedRoute (checks auth + role)
     │       │
@@ -461,7 +476,13 @@ main.jsx → App.jsx (routing)
     │           │     ├── api.updateSchedule() → Supabase DB
     │           │     └── api.deleteSchedule() → Supabase DB
     │           └── FacultyRequestsContent (approve/decline)
-    │                 └── api.updateRequestStatus() → Supabase DB
+    │                 ├── api.updateRequestStatus() → Supabase DB
+    │                 └── api.deleteRequest() → Soft delete
+    │
+    ├── Settings & Accessibility
+    │     ├── Dark Mode (CSS Variables)
+    │     ├── Font Size (S/M/L)
+    │     └── High Contrast Mode
     │
     └── Real-time subscriptions (WebSocket)
           ├── Schedule changes → Both sides update

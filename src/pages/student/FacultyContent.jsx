@@ -393,6 +393,19 @@ const facultyStyles = `
   margin-bottom: 1.5rem;
 }
 
+.details-modal-card h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.details-modal-card .subtitle {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
 .modal-details h4 {
   font-size: 0.9rem;
   font-weight: 700;
@@ -493,6 +506,55 @@ const facultyStyles = `
     padding: 0.7rem;
     font-size: 0.9rem;
   }
+}
+
+.details-info-box {
+  background: var(--accent-light);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.form-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.cancel-btn {
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.cancel-btn:hover {
+  background: var(--border-color);
+}
+
+.submit-btn {
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent-orange);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .submit-btn:hover {
@@ -757,7 +819,7 @@ const FacultyContent = () => {
             <h2>Consultation Details</h2>
             <p className="subtitle">Provide details for your appointment</p>
             
-            <div className="details-info-box" style={{ background: 'var(--accent-light)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+            <div className="details-info-box">
               <strong>{selectedFaculty.name}</strong> • {selectedSlot.day} • {selectedSlot.start_time.slice(0, 5)} - {selectedSlot.end_time.slice(0, 5)}
             </div>
 
@@ -778,7 +840,6 @@ const FacultyContent = () => {
                 <label className="form-label">Reason/ Details</label>
                 <textarea 
                   className="form-textarea"
-                  style={{ width: '100%', minHeight: '100px', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', outline: 'none' }}
                   placeholder="Describe what you need help with...."
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
@@ -787,10 +848,10 @@ const FacultyContent = () => {
               </div>
 
               <div className="modal-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '2rem' }}>
-                <button type="button" className="cancel-btn" style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', cursor: 'pointer' }} onClick={handleCancelDetails}>
+                <button type="button" className="cancel-btn" onClick={handleCancelDetails}>
                   Cancel
                 </button>
-                <button type="submit" className="submit-btn" style={{ padding: '0.8rem', borderRadius: '8px', border: 'none', background: 'var(--accent-orange)', color: 'white', fontWeight: 700, cursor: 'pointer' }}>
+                <button type="submit" className="submit-btn">
                   Submit Request
                 </button>
               </div>
