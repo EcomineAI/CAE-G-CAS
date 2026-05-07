@@ -545,8 +545,6 @@ const dashStyles = `
   }
 
   .user-info,
-  .dark-mode-toggle,
-  .edit-profile-btn,
   .nav-logout-btn {
     display: none;
   }
