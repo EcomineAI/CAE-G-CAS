@@ -52,7 +52,7 @@ const requestStyles = `
 }
 
 .filter-chip.active {
-  background: var(--bg-primary);
+  background: var(--accent-light);
   border-color: var(--accent-orange);
   color: var(--accent-orange);
 }
@@ -309,7 +309,7 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
             className={`filter-chip ${filter === f ? 'active' : ''}`}
             onClick={() => setFilter(f)}
           >
-            {f} {!loading && f !== 'All' ? `(${getCount(f)})` : ''}
+            {f === 'All' ? 'All' : `${f} (${getCount(f)})`}
           </div>
         ))}
       </div>
@@ -388,8 +388,8 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
         ))}
 
         {filteredRequests.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-            No {filter.toLowerCase()} requests found.
+          <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-muted)', background: 'var(--bg-secondary)', borderRadius: '16px', border: '1px dashed var(--border-color)', marginTop: '1rem' }}>
+            No {filter === 'All' ? '' : filter.toLowerCase()} requests found.
           </div>
         )}
       </div>

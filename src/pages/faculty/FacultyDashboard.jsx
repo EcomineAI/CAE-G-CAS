@@ -79,7 +79,7 @@ const facultyDashStyles = `
   background-color: transparent;
   z-index: 50;
   overflow-y: auto;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', 'Inter', sans-serif;
   color: var(--text-primary);
   transition: background-color 0.3s, color 0.3s;
   scrollbar-width: none;

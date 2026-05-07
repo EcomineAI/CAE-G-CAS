@@ -425,7 +425,7 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
       {loading ? <MetricCardSkeleton count={4} /> : (
         <div className="metric-row">
           <div className="faculty-metric-card" onClick={() => onTabChange('Requests', 'All')}>
-            <p className="metric-title">Total Request</p>
+            <p className="metric-title">Total Requests</p>
             <div className="metric-num">{totalRequests}</div>
             <p className="metric-sub">All received</p>
           </div>
@@ -458,7 +458,7 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
 
       <div className="section-box">
         <div className="section-header">
-          <h3>Pending Request</h3>
+          <h3>Pending Requests</h3>
           <span className="view-all-link" onClick={() => onTabChange('Requests', 'All')}>View All <ArrowRight size={14} /></span>
         </div>
 

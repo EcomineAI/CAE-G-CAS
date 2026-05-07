@@ -27,8 +27,8 @@ const appointmentsStyles = `
 }
 
 .filter-tab {
-  padding: 0.4rem 1.2rem;
-  border-radius: 12px;
+  padding: 0.45rem 1.25rem;
+  border-radius: 50px;
   background: var(--bg-secondary);
   border: 1px solid var(--card-border);
   color: var(--text-secondary);
@@ -40,14 +40,9 @@ const appointmentsStyles = `
 }
 
 .filter-tab.active {
-  border-color: #f97316;
+  border-color: var(--accent-orange);
   background: var(--accent-light);
   color: var(--accent-orange);
-}
-
-.filter-tab.active-all {
-  border-color: #f97316;
-  color: #16a34a;
 }
 
 .filter-tab:hover {
@@ -381,13 +376,16 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
   return (
     <div className="appointments-page">
       <style>{appointmentsStyles}</style>
-      <h2>My Appointment Overview</h2>
+      <div style={{ marginBottom: '2rem' }}>
+        <h2 style={{ margin: 0 }}>My Appointment Overview</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.3rem' }}>Track and manage your consultation requests</p>
+      </div>
 
       <div className="filter-tabs">
         {filters.map((filter) => (
           <div 
             key={filter.value}
-            className={`filter-tab ${activeFilter === filter.value ? (filter.value === 'All' ? 'active-all' : 'active') : ''}`}
+            className={`filter-tab ${activeFilter === filter.value ? 'active' : ''}`}
             onClick={() => handleFilterClick(filter.value)}
           >
             {filter.label}
@@ -410,7 +408,14 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
             {loading ? (
               <AppointmentRowSkeleton count={4} />
             ) : filteredData.length === 0 ? (
-              <tr><td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No appointments found.</td></tr>
+              <tr>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+                  <div style={{ color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>No appointments found</span>
+                    <span style={{ fontSize: '0.85rem' }}>Your {activeFilter === 'All' ? '' : activeFilter.toLowerCase()} records will appear here.</span>
+                  </div>
+                </td>
+              </tr>
             ) : filteredData.map((app) => (
               <tr key={app.id}>
                 <td>

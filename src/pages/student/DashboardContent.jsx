@@ -65,7 +65,7 @@ const DashboardContent = ({ onTabChange, realName }) => {
             <ClipboardList size={24} />
           </div>
           <div className="action-content">
-            <h3>My Appointment</h3>
+            <h3>My Appointments</h3>
             <p>View all scheduled consultations</p>
           </div>
         </div>
