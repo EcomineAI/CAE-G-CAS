@@ -405,11 +405,6 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
             <span className="status-text">{status}</span>
             <ChevronDown size={18} />
           </div>
-
-          <button className="nav-btn" style={{ marginLeft: '1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.5rem', color: 'var(--text-secondary)', position: 'relative' }}>
-            <Bell size={20} />
-            <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#ef4444', color: 'white', fontSize: '0.6rem', padding: '2px 5px', borderRadius: '50%', fontWeight: 700 }}>3</span>
-          </button>
           
           {isStatusOpen && (
             <div className="status-dropdown">
@@ -464,6 +459,15 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
 
       <div className="section-box">
         <div className="section-header">
+          <h3>Monthly Calendar Overview</h3>
+          <span className="view-all-link" onClick={() => onTabChange('Schedule')}>Manage Slots <ArrowRight size={14} /></span>
+        </div>
+        
+        <CalendarView schedules={schedules} requests={requests} />
+      </div>
+
+      <div className="section-box">
+        <div className="section-header">
           <h3>Pending Requests</h3>
           <span className="view-all-link" onClick={() => onTabChange('Requests', 'All')}>View All <ArrowRight size={14} /></span>
         </div>
@@ -495,15 +499,6 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
             No pending requests.
           </div>
         )}
-      </div>
-
-      <div className="section-box">
-        <div className="section-header">
-          <h3>Monthly Calendar Overview</h3>
-          <span className="view-all-link" onClick={() => onTabChange('Schedule')}>Manage Slots <ArrowRight size={14} /></span>
-        </div>
-        
-        <CalendarView schedules={schedules} requests={requests} />
       </div>
 
 

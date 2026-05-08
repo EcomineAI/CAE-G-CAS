@@ -49,7 +49,14 @@ Create a centralized management system that reduces uncertainty by providing rea
 
 ---
 
-## 📈 Latest Updates (v0.7.1) — May 9, 2026
+## 📈 Latest Updates (v0.7.5) — May 9, 2026
+- **Date-Specific Scheduling (#38):** Faculty can now create one-time consultation slots for specific calendar dates, in addition to weekly recurring slots. Includes a native date picker and validation to prevent past-date scheduling.
+- **Auto-Divided Time Allocation (#47):** Implemented an intelligent time-splitting system. For slots with multiple students, G-CAS automatically calculates and displays specific 15–20 minute windows for each student (e.g., 7:30–7:45 AM) to prevent overcrowding and long wait times.
+- **Categorized Faculty Titles (#18):** Replaced free-text title fields with professional presets (Academic, Professional, Administrative) to ensure standardized faculty profiles.
+- **Enhanced Dashboard Layout:** Moved the Monthly Calendar Overview to the top of the Faculty Dashboard for immediate visibility of availability and appointments.
+- **Room Dropdowns:** Standardized room selection with a structured list of available rooms (300-500) and "Online" options.
+
+### Previous: v0.7.1
 - **Bug Fixes:** Resolved a critical `ReferenceError` where the `Bell` icon was used in the Student Dashboard without being imported. Fixed a syntax error (missing comma) in the PWA `manifest.json`.
 
 ### Previous: v0.7.0

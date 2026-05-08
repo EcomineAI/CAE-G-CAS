@@ -4,8 +4,9 @@ import { useAuth } from '../../hooks/useAuth';
 import { getStudentRequests, updateRequestDetails, updateRequestStatus, deleteRequest } from '../../supabase/api';
 import { subscribeToRequests } from '../../supabase/realtime';
 import { AppointmentRowSkeleton, withMinDelay, optimistic, toast } from '../../supabase/ux';
-import { formatTimeRange } from '../../utils/dateUtils';
+import { calculateStudentSlot, formatTimeRange } from '../../utils/dateUtils';
 import { STATUS_LABELS } from '../../utils/constants';
+import { Clock } from 'lucide-react';
 
 const appointmentsStyles = `
 .appointments-page {
@@ -353,6 +354,21 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
     );
   };
 
+  const getDividedTime = (app) => {
+    if (app.status !== 'Approved') return app.startTime ? formatTimeRange(app.startTime, app.endTime) : app.time;
+    
+    const slotRequests = requests
+      .filter(r => r.schedule_id === app.schedule_id && r.date === app.date && r.status === 'Approved')
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    
+    const index = slotRequests.findIndex(r => r.id === app.id);
+    if (index === -1) return app.startTime ? formatTimeRange(app.startTime, app.endTime) : app.time;
+
+    const timeStr = app.startTime ? formatTimeRange(app.startTime, app.endTime) : app.time;
+    const [start, end] = timeStr.split(' - ');
+    return calculateStudentSlot(start, end, app.max_slots || 5, index);
+  };
+
   const filteredData = activeFilter === 'All' 
     ? requests 
     : activeFilter === 'History'
@@ -451,7 +467,13 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
                 <td className="mobile-hide-on-desktop" style={{ padding: 0 }}>
                   <div className="date-time-group">
                     <span className="date-text">{app.date}</span>
-                    <span className="time-text">{app.startTime ? formatTimeRange(app.startTime, app.endTime) : app.time}</span>
+                    <span className="time-text">
+                      <Clock size={12} />
+                      {getDividedTime(app)}
+                      {app.status === 'Approved' && app.max_slots > 1 && (
+                        <span style={{ fontSize: '0.6rem', color: 'var(--accent-orange)', fontWeight: 700 }}> (SPECIFIC)</span>
+                      )}
+                    </span>
                   </div>
                 </td>
                 <td className="mobile-hide-on-desktop" style={{ padding: 0 }}>
@@ -495,7 +517,12 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
                   <span className="date-text">{app.date}</span>
                 </td>
                 <td className="desktop-only-cell" style={{ textAlign: 'center' }}>
-                  <span className="time-text">{app.startTime ? formatTimeRange(app.startTime, app.endTime) : app.time}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                    <span className="time-text">{getDividedTime(app)}</span>
+                    {app.status === 'Approved' && app.max_slots > 1 && (
+                      <span style={{ fontSize: '0.6rem', background: 'var(--accent-light)', color: 'var(--accent-orange)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>SPECIFIC TIME</span>
+                    )}
+                  </div>
                 </td>
                 <td className="desktop-only-cell" style={{ textAlign: 'center' }}>
                   <div className={`status-badge-pill ${app.status.toLowerCase()}`}>

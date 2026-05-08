@@ -5,7 +5,7 @@ import { getFacultySchedules, createSchedule, updateSchedule, deleteSchedule } f
 import { subscribeToSchedules } from '../../supabase/realtime';
 import { toast, optimistic, ScheduleCardSkeleton, withMinDelay } from '../../supabase/ux';
 import { formatTime, formatTimeRange } from '../../utils/dateUtils';
-import { ROOM_OPTIONS, SCHEDULE_DAYS } from '../../utils/constants';
+import { ROOM_NUMBERS, SCHEDULE_DAYS } from '../../utils/constants';
 
 const scheduleStyles = `
 .schedule-container {
@@ -113,6 +113,14 @@ const scheduleStyles = `
   margin-bottom: 0.6rem;
 }
 
+.room-badge {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  background: var(--bg-primary);
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+
 .card-notes {
   font-size: 0.8rem;
   color: var(--text-secondary);
@@ -159,7 +167,6 @@ const scheduleStyles = `
   text-align: right;
 }
 
-/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -178,7 +185,7 @@ const scheduleStyles = `
 .modal-content {
   background: var(--bg-secondary);
   width: 100%;
-  max-width: 400px;
+  max-width: 450px;
   border-radius: 20px;
   padding: 2rem;
   box-shadow: var(--shadow);
@@ -195,14 +202,14 @@ const scheduleStyles = `
   margin-bottom: 1.2rem;
 }
 
-.form-group label {
+.modal-label {
   display: block;
   font-size: 0.85rem;
   color: var(--text-muted);
   margin-bottom: 0.4rem;
 }
 
-.form-input, .form-select {
+.form-input, .form-select, .profile-input {
   width: 100%;
   padding: 0.75rem 1rem;
   background: var(--bg-primary);
@@ -212,29 +219,6 @@ const scheduleStyles = `
   color: var(--text-primary);
   outline: none;
   transition: border-color 0.2s;
-}
-
-.form-input:focus, .form-select:focus {
-  border-color: var(--accent-orange);
-}
-
-.time-inputs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.time-input-wrapper {
-  position: relative;
-}
-
-.time-input-wrapper .clock-icon {
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-muted);
-  pointer-events: none;
 }
 
 .modal-footer {
@@ -265,10 +249,6 @@ const scheduleStyles = `
   color: white;
 }
 
-.btn-submit:hover {
-  filter: brightness(1.1);
-}
-
 @keyframes slideUp {
   from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
@@ -289,14 +269,15 @@ const FacultyScheduleContent = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
     day: 'Monday',
-    startTime: '07:00',
-    endTime: '07:30',
+    startTime: '08:00',
+    endTime: '09:00',
     total: 5,
-    room: '',
-    notes: ''
+    room: 'TBA',
+    notes: '',
+    schedule_type: 'recurring',
+    specific_date: ''
   });
 
-  // Fetch schedules from Supabase
   useEffect(() => {
     if (!user) return;
     const load = async () => {
@@ -306,26 +287,27 @@ const FacultyScheduleContent = () => {
     };
     load();
 
-    // Subscribe to real-time changes
     const unsub = subscribeToSchedules(user.id, setSchedules, () => getFacultySchedules(user.id));
     return () => unsub();
   }, [user]);
 
   const handleAdd = () => {
     setEditingItem(null);
-    setFormData({ day: 'Monday', startTime: '07:00', endTime: '07:30', total: 5, room: '', notes: '' });
+    setFormData({ day: 'Monday', startTime: '08:00', endTime: '09:00', total: 5, room: 'TBA', notes: '', schedule_type: 'recurring', specific_date: '' });
     setIsModalOpen(true);
   };
 
   const handleEdit = (item) => {
     setEditingItem(item);
     setFormData({
-      day: item.day,
+      day: item.day || 'Monday',
       startTime: String(item.start_time).slice(0, 5),
       endTime: String(item.end_time).slice(0, 5),
       total: item.max_slots,
-      room: item.room || '',
-      notes: item.notes || ''
+      room: item.room || 'TBA',
+      notes: item.notes || '',
+      schedule_type: item.schedule_type || 'recurring',
+      specific_date: item.specific_date || ''
     });
     setIsModalOpen(true);
   };
@@ -350,83 +332,37 @@ const FacultyScheduleContent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const start_time = formData.startTime.length === 5 ? `${formData.startTime}:00` : formData.startTime;
     const end_time = formData.endTime.length === 5 ? `${formData.endTime}:00` : formData.endTime;
 
-    // #37: Schedule Overlap Detection
-    const hasOverlap = schedules.some(s => {
-      if (editingItem && s.id === editingItem.id) return false;
-      if (s.day !== formData.day) return false;
+    const updates = {
+      faculty_id: user.id,
+      day: formData.schedule_type === 'recurring' ? formData.day : null,
+      specific_date: formData.schedule_type === 'one-time' ? formData.specific_date : null,
+      schedule_type: formData.schedule_type,
+      start_time,
+      end_time,
+      room: formData.room,
+      max_slots: parseInt(formData.total),
+      notes: formData.notes
+    };
 
-      // Simple time overlap check
-      const newStart = formData.startTime;
-      const newEnd = formData.endTime;
-      const existingStart = String(s.start_time).slice(0, 5);
-      const existingEnd = String(s.end_time).slice(0, 5);
-
-      return (newStart < existingEnd && newEnd > existingStart);
-    });
-
-    if (hasOverlap) {
-      toast.error(`Overlap Error: This time slot conflicts with an existing ${formData.day} schedule.`);
-      return;
-    }
-
+    setIsModalOpen(false);
     if (editingItem) {
-      // EDIT — optimistic update
-      const updates = {
-        day: formData.day,
-        start_time,
-        end_time,
-        room: formData.room || 'TBA',
-        max_slots: parseInt(formData.total),
-        notes: formData.notes
-      };
-
-      const optimisticList = schedules.map(s =>
-        s.id === editingItem.id ? { ...s, ...updates } : s
-      );
-
-      setIsModalOpen(false);
       await optimistic(
         setSchedules,
         schedules,
-        optimisticList,
+        schedules.map(s => s.id === editingItem.id ? { ...s, ...updates } : s),
         () => updateSchedule(editingItem.id, updates),
-        { success: 'Schedule updated', error: 'Failed to update schedule' }
+        { success: 'Schedule updated', error: 'Failed to update' }
       );
     } else {
-      // ADD — optimistic insert
-      const scheduleData = {
-        faculty_id: user.id,
-        day: formData.day,
-        start_time,
-        end_time,
-        room: formData.room || 'TBA',
-        max_slots: parseInt(formData.total),
-        notes: formData.notes
-      };
-
-      // Use a temporary ID for optimistic rendering
-      const tempId = `temp-${Date.now()}`;
-      const optimisticItem = { ...scheduleData, id: tempId, filled: 0 };
-      const optimisticList = [...schedules, optimisticItem];
-
-      setIsModalOpen(false);
-
-      const success = await optimistic(
+      await optimistic(
         setSchedules,
         schedules,
-        optimisticList,
-        async () => {
-          const result = await createSchedule(scheduleData);
-          if (!result) throw new Error('Create failed');
-          // Replace temp item with real one from server
-          setSchedules(prev => prev.map(s => s.id === tempId ? { ...result, filled: 0 } : s));
-          return result;
-        },
-        { success: 'Schedule added successfully', error: 'Failed to add schedule' }
+        [...schedules, { ...updates, id: 'temp' }],
+        async () => await createSchedule(updates),
+        { success: 'Schedule added', error: 'Failed to add' }
       );
     }
   };
@@ -434,11 +370,10 @@ const FacultyScheduleContent = () => {
   return (
     <div className="schedule-container">
       <style>{scheduleStyles}</style>
-
       <div className="schedule-header">
         <div className="header-title">
           <h2>My Consultation Schedule</h2>
-          <p>Add, edit, or remove your consultation slots</p>
+          <p>Manage your consultation slots</p>
         </div>
         <button className="add-schedule-btn" onClick={handleAdd}>
           <Plus size={20} /> Add Schedule
@@ -449,26 +384,23 @@ const FacultyScheduleContent = () => {
         {loading ? <ScheduleCardSkeleton count={4} /> : schedules.map((item) => (
           <div className="schedule-card" key={item.id}>
             <div className="card-actions">
-              <button className="action-icon-btn" onClick={() => handleEdit(item)} title="Edit">
-                <Edit2 size={16} />
-              </button>
-              <button className="action-icon-btn" onClick={() => confirmDelete(item.id)} title="Delete">
-                <Trash2 size={16} />
-              </button>
+              <button className="action-icon-btn" onClick={() => handleEdit(item)}><Edit2 size={16} /></button>
+              <button className="action-icon-btn" onClick={() => confirmDelete(item.id)}><Trash2 size={16} /></button>
             </div>
-
-            <div className="card-day">{item.day}</div>
+            <div className="card-day">
+              {item.schedule_type === 'one-time' ? (
+                <span style={{ color: 'var(--accent-orange)' }}>
+                   {new Date(item.specific_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              ) : item.day}
+            </div>
             <div className="card-time">{formatTimeRange(item.start_time, item.end_time)}</div>
-            
+            <div className="room-badge">{item.room === 'Online' ? '🌐 Online' : `🚪 Room ${item.room}`}</div>
             {item.notes && <div className="card-notes">"{item.notes}"</div>}
-
             <div className="slots-info">
               <span className="slots-label">Slots</span>
               <div className="progress-container">
-                <div 
-                  className="progress-bar" 
-                  style={{ width: `${((item.filled || 0) / item.max_slots) * 100}%` }}
-                ></div>
+                <div className="progress-bar" style={{ width: `${((item.filled || 0) / item.max_slots) * 100}%` }}></div>
               </div>
               <span className="slots-ratio">{item.filled || 0}/{item.max_slots}</span>
             </div>
@@ -481,74 +413,104 @@ const FacultyScheduleContent = () => {
           <div className="modal-content">
             <h3>{editingItem ? 'Edit Schedule' : 'Add Schedule'}</h3>
             <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label>Day</label>
-                <select 
-                  className="form-select"
-                  value={formData.day}
-                  onChange={(e) => setFormData({...formData, day: e.target.value})}
-                >
-                  {SCHEDULE_DAYS.map(day => (
-                    <option key={day} value={day}>{day}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="time-inputs">
-                <div className="form-group">
-                  <label>Start Time</label>
-                  <div className="time-input-wrapper">
-                    <input 
-                      type="time" 
-                      className="form-input"
-                      value={formData.startTime}
-                      onChange={(e) => setFormData({...formData, startTime: e.target.value})}
-                      required
-                    />
-                  </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.2rem' }}>
+                <div>
+                  <label className="modal-label">Schedule Type</label>
+                  <select 
+                    className="profile-input" 
+                    value={formData.schedule_type}
+                    onChange={(e) => setFormData({ ...formData, schedule_type: e.target.value })}
+                    style={{ marginBottom: 0 }}
+                  >
+                    <option value="recurring">Recurring (Weekly)</option>
+                    <option value="one-time">One-time (Specific Date)</option>
+                  </select>
                 </div>
-                <div className="form-group">
-                  <label>End Time</label>
-                  <div className="time-input-wrapper">
-                    <input 
-                      type="time" 
-                      className="form-input"
-                      value={formData.endTime}
-                      onChange={(e) => setFormData({...formData, endTime: e.target.value})}
-                      required
-                    />
-                  </div>
+                <div>
+                  {formData.schedule_type === 'recurring' ? (
+                    <>
+                      <label className="modal-label">Day of Week</label>
+                      <select 
+                        className="profile-input" 
+                        value={formData.day}
+                        onChange={(e) => setFormData({ ...formData, day: e.target.value })}
+                        style={{ marginBottom: 0 }}
+                      >
+                        {SCHEDULE_DAYS.map(day => <option key={day} value={day}>{day}</option>)}
+                      </select>
+                    </>
+                  ) : (
+                    <>
+                      <label className="modal-label">Select Date</label>
+                      <input 
+                        type="date" 
+                        className="profile-input" 
+                        value={formData.specific_date}
+                        onChange={(e) => setFormData({ ...formData, specific_date: e.target.value })}
+                        style={{ marginBottom: 0 }}
+                        min={new Date().toISOString().split('T')[0]}
+                        required
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.2rem' }}>
+                <div>
+                  <label className="modal-label">Start Time</label>
+                  <input 
+                    type="time" 
+                    className="profile-input" 
+                    value={formData.startTime}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    style={{ marginBottom: 0 }}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="modal-label">End Time</label>
+                  <input 
+                    type="time" 
+                    className="profile-input" 
+                    value={formData.endTime}
+                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                    style={{ marginBottom: 0 }}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.2rem' }}>
+                <div>
+                  <label className="modal-label">Location / Room</label>
+                  <select 
+                    className="profile-input" 
+                    value={formData.room}
+                    onChange={(e) => setFormData({ ...formData, room: e.target.value })}
+                    style={{ marginBottom: 0 }}
+                  >
+                    {ROOM_NUMBERS.map(room => <option key={room} value={room}>{room}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="modal-label">Max Slots</label>
+                  <input 
+                    type="number" 
+                    className="profile-input" 
+                    value={formData.total}
+                    onChange={(e) => setFormData({ ...formData, total: e.target.value })}
+                    min="1"
+                    style={{ marginBottom: 0 }}
+                    required
+                  />
                 </div>
               </div>
 
               <div className="form-group">
-                <label>Max slot</label>
-                <input 
-                  type="number" 
-                  className="form-input"
-                  value={formData.total}
-                  onChange={(e) => setFormData({...formData, total: e.target.value})}
-                  min="1"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Room</label>
-                <select 
-                  className="form-select"
-                  value={formData.room}
-                  onChange={(e) => setFormData({...formData, room: e.target.value})}
-                >
-                  {ROOM_OPTIONS.map(room => (
-                    <option key={room} value={room}>{room === 'TBA' ? 'Room TBA' : `Room ${room}`}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Notes for Students (Optional)</label>
+                <label className="modal-label">Notes for Students (Optional)</label>
                 <textarea 
-                  className="form-input"
+                  className="profile-input"
                   value={formData.notes}
                   onChange={(e) => setFormData({...formData, notes: e.target.value})}
                   placeholder="e.g. Please bring your draft proposal."
@@ -566,22 +528,23 @@ const FacultyScheduleContent = () => {
       )}
 
       {deleteModal.isOpen && (
-        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
-          <div className="modal-card" style={{ background: 'var(--bg-secondary)', padding: '2.5rem', borderRadius: '16px', maxWidth: '400px', width: '90%', textAlign: 'center', border: '1px solid var(--border-color)', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
-            <h2 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary)', fontSize: '1.4rem' }}>Delete Schedule?</h2>
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ textAlign: 'center' }}>
+            <h3 style={{ marginBottom: '1rem' }}>Delete Schedule?</h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
               Are you sure you want to remove this consultation slot? Students will no longer be able to book it.
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="modal-footer">
               <button 
+                className="modal-btn btn-cancel"
                 onClick={() => setDeleteModal({ isOpen: false, id: null })}
-                style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
               >
                 Cancel
               </button>
               <button 
+                className="modal-btn"
+                style={{ background: '#ef4444', color: 'white' }}
                 onClick={executeDelete}
-                style={{ padding: '0.8rem', borderRadius: '8px', border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer', fontWeight: 600 }}
               >
                 Yes, Delete
               </button>

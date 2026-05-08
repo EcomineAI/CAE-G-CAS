@@ -38,7 +38,24 @@ export const CONSULTATION_TYPES = [
 ];
 
 // Days of the week for schedule forms
-export const SCHEDULE_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+export const SCHEDULE_DAYS = ['Monday', 'Tuesday', 'Wednesday',  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday"
+];
+
+export const FACULTY_TITLES = {
+  "Academic": ["Instructor", "Assistant Professor", "Associate Professor", "Professor", "Visiting Professor"],
+  "Professional": ["Doctor", "Engineer", "Architect", "Attorney", "CPA", "RN", "RPh", "RMT", "LPT"],
+  "Administrative": ["Dean", "Department Head", "Program Coordinator", "Director", "Chief", "Officer"],
+  "General": ["Mr.", "Ms.", "Mrs.", "Miss"]
+};
+
+export const ROOM_NUMBERS = [
+  "TBA",
+  "Online",
+  ...Array.from({ length: 201 }, (_, i) => String(300 + i))
+];
 
 // Request status labels
 export const STATUS_LABELS = {

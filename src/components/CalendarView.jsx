@@ -28,8 +28,11 @@ const CalendarView = ({ schedules = [], requests = [] }) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const dayName = new Date(year, month, d).toLocaleDateString('en-US', { weekday: 'long' });
     
-    // Find schedules for this day of the week
-    const daySchedules = schedules.filter(s => s.day === dayName);
+    // Find schedules for this day
+    const daySchedules = schedules.filter(s => 
+      (s.schedule_type === 'recurring' && s.day === dayName) || 
+      (s.schedule_type === 'one-time' && s.specific_date === dateStr)
+    );
     
     // Find requests for this specific date
     const dayRequests = requests.filter(r => r.date === dateStr);

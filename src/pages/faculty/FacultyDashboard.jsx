@@ -10,7 +10,7 @@ import FacultyRequestsContent from './FacultyRequestsContent';
 import FacultyAboutContent from './FacultyAboutContent';
 import { useAuth } from '../../hooks/useAuth';
 import logo from '../logo.png';
-import { PH_PREFIXES, PH_SUFFIXES } from '../../utils/constants';
+import { PH_PREFIXES, PH_SUFFIXES, FACULTY_TITLES } from '../../utils/constants';
 import SettingsModal from '../../components/SettingsModal';
 import NotificationCenter from '../../components/NotificationCenter';
 
@@ -558,6 +558,7 @@ const FacultyDashboard = () => {
   const [editDept, setEditDept] = useState('');
   const [editPrefix, setEditPrefix] = useState('');
   const [editSuffix, setEditSuffix] = useState('');
+  const [editTitle, setEditTitle] = useState('');
 
   // Persistence Effects
   useEffect(() => {
@@ -593,6 +594,7 @@ const FacultyDashboard = () => {
         setProfileStatus(p.status || 'Available');
         setEditPrefix(p.name_prefix || '');
         setEditSuffix(p.name_suffix || '');
+        setEditTitle(p.title || '');
         
         // #51: Load accessibility prefs
         if (p.accessibility_prefs) {
@@ -644,7 +646,8 @@ const FacultyDashboard = () => {
       name_prefix: editPrefix,
       name_suffix: editSuffix,
       avatar_url: editAvatar,
-      department: editDept
+      department: editDept,
+      title: editTitle
     });
     if (updated) {
       setProfileName(editName);
@@ -880,14 +883,35 @@ const FacultyDashboard = () => {
               ))}
             </div>
 
-            <label className="modal-label">Department / Title</label>
-            <input 
-              type="text" 
-              className="profile-input" 
-              value={editDept}
-              onChange={(e) => setEditDept(e.target.value)}
-              placeholder="e.g. CCS Faculty"
-            />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div>
+                <label className="modal-label">Professional Title</label>
+                <select 
+                  className="profile-input" 
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  style={{ marginBottom: 0 }}
+                >
+                  <option value="">None</option>
+                  {Object.entries(FACULTY_TITLES).map(([group, list]) => (
+                    <optgroup key={group} label={group}>
+                      {list.map(t => <option key={t} value={t}>{t}</option>)}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="modal-label">Department</label>
+                <input 
+                  type="text" 
+                  className="profile-input" 
+                  value={editDept}
+                  onChange={(e) => setEditDept(e.target.value)}
+                  placeholder="e.g. CCS"
+                  style={{ marginBottom: 0 }}
+                />
+              </div>
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <button onClick={() => setShowProfileModal(false)} style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', cursor: 'pointer' }}>Cancel</button>

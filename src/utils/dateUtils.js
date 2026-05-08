@@ -106,3 +106,36 @@ export const formatRelativeTime = (isoStr) => {
 
 export const formatTimeAgo = formatRelativeTime;
 
+/**
+ * Calculates a specific student's time window within a larger slot.
+ * Example: 07:30 - 08:30 with 4 slots. Student index 1 (2nd) gets 07:45 - 08:00.
+ */
+export const calculateStudentSlot = (startTime, endTime, maxSlots, studentIndex) => {
+  if (!startTime || !endTime || maxSlots <= 1) return formatTimeRange(startTime, endTime);
+  
+  try {
+    const parse = (t) => {
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + m;
+    };
+    
+    const startMins = parse(startTime);
+    const endMins = parse(endTime);
+    const totalMins = endMins - startMins;
+    const durationPerSlot = Math.floor(totalMins / maxSlots);
+    
+    const studentStartMins = startMins + (studentIndex * durationPerSlot);
+    const studentEndMins = studentStartMins + durationPerSlot;
+    
+    const toTimeStr = (mins) => {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+    
+    return formatTimeRange(toTimeStr(studentStartMins), toTimeStr(studentEndMins));
+  } catch {
+    return formatTimeRange(startTime, endTime);
+  }
+};
+

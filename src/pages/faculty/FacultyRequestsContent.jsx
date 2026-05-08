@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Check, X, User, Search, Filter, Trash2, Eye } from 'lucide-react';
+import { Check, X, User, Search, Filter, Trash2, Eye, Clock } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { getFacultyRequests, updateRequestStatus, deleteRequest, markRequestSeen } from '../../supabase/api';
 import { subscribeToRequests } from '../../supabase/realtime';
 import { RequestCardSkeleton, optimistic, withMinDelay } from '../../supabase/ux';
-import { formatTimeRange } from '../../utils/dateUtils';
+import { calculateStudentSlot, formatTimeRange } from '../../utils/dateUtils';
 import { STATUS_LABELS } from '../../utils/constants';
 
 const requestStyles = `
@@ -186,6 +186,23 @@ const requestStyles = `
   background: #fecaca;
 }
 
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.divided-tag {
+  background: var(--accent-light);
+  color: var(--accent-orange);
+  font-size: 0.65rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
 /* Dark mode overrides for buttons */
 .dark .btn-approve { background: #064e3b; color: #34d399; border-color: #065f46; }
 .dark .btn-decline { background: #7f1d1d; color: #f87171; border-color: #991b1b; }
@@ -224,7 +241,6 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, reqId: null, newStatus: null, actionText: '' });
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, reqId: null });
   const [declineModal, setDeclineModal] = useState({ isOpen: false, reqId: null, reason: '' });
-  const seenRef = useRef(new Set()); // track which request IDs we've already marked seen
 
   useEffect(() => {
     setFilter(initialFilter);
@@ -239,14 +255,12 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
     };
     fetchRequests();
 
-    // Real-time subscription
     const unsub = subscribeToRequests(user.id, 'faculty', setRequests, () => getFacultyRequests(user.id));
     return () => unsub();
   }, [user]);
 
   const handleAction = async (id, newStatus) => {
     if (newStatus === 'Declined') {
-      // #31: Collect decline reason before proceeding
       setDeclineModal({ isOpen: true, reqId: id, reason: '' });
       return;
     }
@@ -260,7 +274,7 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
   const executeDecline = async () => {
     const { reqId, reason } = declineModal;
     if (!reqId) return;
-    if (!reason.trim()) return; // guard — UI shows error
+    if (!reason.trim()) return;
     setDeclineModal({ isOpen: false, reqId: null, reason: '' });
     await optimistic(
       setRequests, requests,
@@ -298,6 +312,19 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
       () => deleteRequest(reqId, 'faculty'),
       { success: 'Record deleted from history', error: 'Failed to delete record' }
     );
+  };
+
+  const getDividedTime = (req) => {
+    if (req.status !== 'Approved') return req.time;
+    const slotRequests = requests
+      .filter(r => r.schedule_id === req.schedule_id && r.date === req.date && r.status === 'Approved')
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    
+    const index = slotRequests.findIndex(r => r.id === req.id);
+    if (index === -1) return req.time;
+
+    const [start, end] = req.time.split(' - ');
+    return calculateStudentSlot(start, end, req.max_slots || 5, index);
   };
 
   const filteredRequests = requests.filter(req => {
@@ -345,7 +372,6 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
                    {req.status !== 'Pending' && (
                      <span className={`status-pill-small ${req.status.toLowerCase()}`}>{req.status}</span>
                    )}
-                   {/* #33: "Seen" indicator */}
                    {req.status === 'Pending' && req.facultySeen && (
                      <span style={{ fontSize: '0.65rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '2px' }}>
                        <Eye size={10} /> Seen
@@ -353,12 +379,16 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
                    )}
                  </div>
                 <div className="request-meta">
-                  {req.day} •{' '}
-                  {req.startTime ? formatTimeRange(req.startTime, req.endTime) : req.time}
+                  {req.day} • {req.date}
                 </div>
-                <div className="request-meta" style={{ fontSize: '0.7rem' }}>{req.date}</div>
+                <div className="detail-item">
+                  <Clock size={14} />
+                  <span>{getDividedTime(req)}</span>
+                  {req.status === 'Approved' && req.max_slots > 1 && (
+                    <span className="divided-tag">Divided Slot</span>
+                  )}
+                </div>
                 
-                {/* Student request info */}
                 <div style={{ marginTop: '0.8rem', padding: '0.8rem', background: 'var(--bg-primary)', borderRadius: '12px', borderLeft: '3px solid var(--accent-orange)', fontSize: '0.85rem' }}>
                   <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
                     {req.subject}
@@ -371,7 +401,6 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
                   <div style={{ color: 'var(--text-secondary)', lineHeight: '1.4' }}>{req.details}</div>
                 </div>
 
-                {/* #31: Decline reason from faculty */}
                 {req.declineReason && (
                   <div style={{ marginTop: '0.8rem', padding: '0.6rem', background: '#fee2e2', borderRadius: '8px', borderLeft: '3px solid #ef4444', fontSize: '0.8rem', color: '#b91c1c' }}>
                     <strong>Decline Reason:</strong> "{req.declineReason}"
