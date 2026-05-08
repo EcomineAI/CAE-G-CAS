@@ -49,13 +49,17 @@ Create a centralized management system that reduces uncertainty by providing rea
 
 ---
 
-## 📈 Latest Updates (v0.7.0) — May 9, 2026
+## 📈 Latest Updates (v0.7.1) — May 9, 2026
+- **Bug Fixes:** Resolved a critical `ReferenceError` where the `Bell` icon was used in the Student Dashboard without being imported. Fixed a syntax error (missing comma) in the PWA `manifest.json`.
+
+### Previous: v0.7.0
 - **Monthly Calendar Overview (#38):** Replaced the static schedule list with a full interactive month view on the Faculty Dashboard. Supports navigation, highlights today, and shows color-coded indicators for both schedules and appointments.
 - **Real-Time Notification Center (#47, #48):** Added a dedicated notification panel with unread badges. Users receive instant alerts for approvals, declines, and cancellations without needing to check specific tabs.
 - **Accessibility Suite (#51):** Integrated toggles for **Reduced Motion** (disables animations) and **Dyslexia Friendly Font** (OpenDyslexic typeface) in the Settings modal to improve platform inclusivity.
 - **Philippine Name Standards (#18):** Refined the profile system with grouped dropdowns for Philippine-specific prefixes (Dr., Engr., Atty.) and suffixes (Jr., III, Ph.D.) to ensure academic and professional titles are correctly captured.
 - **Scheduling Guardrails (#37):** Implemented backend overlap detection. Faculty are now alerted if they attempt to create conflicting consultation slots on the same day.
 - **PWA Integration (#43):** Added a manifest and mobile meta tags to support "Add to Home Screen" functionality on iOS and Android for a standalone app experience.
+
 
 ### Previous: v0.6.0
 - **Visual Overhaul (GCBG):** Integrated Gordon College building background (`GCBG.jpg`) across all dashboards and login pages with premium frosted-glass (glassmorphism) effects.

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, Calendar, Info, User, Moon, Sun, Settings, Menu, X as CloseIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Info, User, Moon, Sun, Settings, Bell, Menu, X as CloseIcon } from 'lucide-react';
 import DashboardContent from './DashboardContent';
 import FacultyContent from './FacultyContent';
 import AppointmentsContent from './AppointmentsContent';
