@@ -7,11 +7,12 @@ import AboutContent from './AboutContent';
 import logo from '../logo.png';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase, ensureProfile } from '../../supabase/supabase';
-import { updateProfile, getProfile } from '../../supabase/api';
+import { updateProfile, getProfile, uploadAvatar } from '../../supabase/api';
 import { useNavigate } from 'react-router-dom';
 import { PH_PREFIXES, PH_SUFFIXES } from '../../utils/constants';
 import SettingsModal from '../../components/SettingsModal';
 import NotificationCenter from '../../components/NotificationCenter';
+import { Camera } from 'lucide-react';
 
 const dashStyles = `
 .dashboard-fixed-wrapper.dark {
@@ -971,6 +972,8 @@ const StudentDashboard = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
 
   const allAvatars = Array.from({ length: 20 }, (_, i) => `https://api.dicebear.com/7.x/lorelei/svg?seed=Student${i + 1}&backgroundColor=e5e7eb,f3f4f6`);
 
@@ -1049,8 +1052,20 @@ const StudentDashboard = () => {
 
   const handleSaveProfile = async () => {
     if (!firstName.trim() || !lastName.trim()) {
-      alert("First name and Last name are required.");
+      import('../../supabase/ux').then(({ toast }) => toast.error("First name and Last name are required."));
       return;
+    }
+
+    let finalAvatarUrl = selectedAvatar;
+
+    if (avatarFile) {
+      const uploadedUrl = await uploadAvatar(user.id, avatarFile);
+      if (uploadedUrl) {
+        finalAvatarUrl = uploadedUrl;
+      } else {
+        import('../../supabase/ux').then(({ toast }) => toast.error('Failed to upload image.'));
+        return;
+      }
     }
 
     const formattedName = `${selectedPrefix} ${firstName.trim()} ${middleName.trim()} ${lastName.trim()} ${selectedSuffix}`.replace(/\s+/g, ' ').trim();
@@ -1059,13 +1074,30 @@ const StudentDashboard = () => {
       full_name: formattedName,
       name_prefix: selectedPrefix,
       name_suffix: selectedSuffix,
-      avatar_url: selectedAvatar
+      avatar_url: finalAvatarUrl
     });
 
     if (updated) {
       setRealName(formattedName);
-      setRealAvatar(selectedAvatar);
+      setRealAvatar(finalAvatarUrl);
+      setAvatarFile(null);
+      setAvatarPreview(null);
       setShowProfileModal(false);
+      import('../../supabase/ux').then(({ toast }) => toast.success('Profile updated successfully!'));
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        import('../../supabase/ux').then(({ toast }) => toast.error('File size must be less than 2MB.'));
+        return;
+      }
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setAvatarPreview(reader.result);
+      reader.readAsDataURL(file);
     }
   };
 
@@ -1333,15 +1365,44 @@ const StudentDashboard = () => {
               placeholder="e.g. Dela Cruz"
             />
 
-            <label className="modal-label">Choose an Avatar</label>
-            <div className="avatar-grid">
-              {allAvatars.map((url, i) => (
+            <label className="modal-label">Profile Picture</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem', background: 'var(--bg-primary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--accent-orange)', flexShrink: 0, position: 'relative' }}>
                 <img 
-                  key={`avatar-${i}`} src={url} alt={`Avatar option ${i+1}`} 
-                  className={`avatar-option ${selectedAvatar === url ? 'selected' : ''}`}
-                  onClick={() => setSelectedAvatar(url)}
+                  src={avatarPreview || selectedAvatar || 'https://via.placeholder.com/150'} 
+                  alt="Profile" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                 />
-              ))}
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Upload a photo (Max 2MB)</p>
+                <input 
+                  type="file" 
+                  id="avatar-upload-student" 
+                  accept="image/*" 
+                  onChange={handleFileChange} 
+                  style={{ display: 'none' }} 
+                />
+                <label 
+                  htmlFor="avatar-upload-student" 
+                  style={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '0.5rem', 
+                    padding: '0.5rem 1rem', 
+                    background: 'var(--bg-secondary)', 
+                    border: '1px solid var(--border-color)', 
+                    borderRadius: '8px', 
+                    fontSize: '0.85rem', 
+                    fontWeight: 600, 
+                    cursor: 'pointer',
+                    color: 'var(--text-primary)'
+                  }}
+                >
+                  <Camera size={16} />
+                  Change Photo
+                </label>
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: /^\d+$/.test(realName) ? '1fr' : '1fr 1fr', gap: '1rem' }}>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, ensureProfile } from '../../supabase/supabase';
-import { getProfile } from '../../supabase/api';
+import { getProfile, updateProfile, uploadAvatar } from '../../supabase/api';
 import { subscribeToMyProfile } from '../../supabase/realtime';
-import { Layout, Calendar, Clock, Bell, User, Moon, Sun, ChevronDown, CheckCircle, AlertCircle, XCircle, Settings, Menu, X as CloseIcon } from 'lucide-react';
+import { Layout, Calendar, Clock, Bell, User, Moon, Sun, ChevronDown, CheckCircle, AlertCircle, XCircle, Settings, Menu, X as CloseIcon, Camera } from 'lucide-react';
 import FacultyDashboardContent from './FacultyDashboardContent';
 import FacultyScheduleContent from './FacultyScheduleContent';
 import FacultyRequestsContent from './FacultyRequestsContent';
@@ -559,6 +559,8 @@ const FacultyDashboard = () => {
   const [editPrefix, setEditPrefix] = useState('');
   const [editSuffix, setEditSuffix] = useState('');
   const [editTitle, setEditTitle] = useState('');
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
 
   // Persistence Effects
   useEffect(() => {
@@ -639,22 +641,51 @@ const FacultyDashboard = () => {
 
   const handleSaveProfile = async () => {
     if (!user) return;
-    const { updateProfile } = await import('../../supabase/api');
+    
+    let finalAvatarUrl = editAvatar;
+
+    if (avatarFile) {
+      const uploadedUrl = await uploadAvatar(user.id, avatarFile);
+      if (uploadedUrl) {
+        finalAvatarUrl = uploadedUrl;
+      } else {
+        import('../../supabase/ux').then(({ toast }) => toast.error('Failed to upload image.'));
+        return;
+      }
+    }
+
     const fullName = `${editPrefix} ${editName.trim()} ${editSuffix}`.replace(/\s+/g, ' ').trim();
     const updated = await updateProfile(user.id, {
       full_name: fullName,
       name_prefix: editPrefix,
       name_suffix: editSuffix,
-      avatar_url: editAvatar,
+      avatar_url: finalAvatarUrl,
       department: editDept,
       title: editTitle
     });
+
     if (updated) {
       setProfileName(editName);
-      setProfileAvatar(editAvatar);
+      setProfileAvatar(finalAvatarUrl);
       setProfileDept(editDept);
+      setAvatarFile(null);
+      setAvatarPreview(null);
       setShowProfileModal(false);
       import('../../supabase/ux').then(({ toast }) => toast.success('Profile updated successfully!'));
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        import('../../supabase/ux').then(({ toast }) => toast.error('File size must be less than 2MB.'));
+        return;
+      }
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setAvatarPreview(reader.result);
+      reader.readAsDataURL(file);
     }
   };
 
@@ -872,15 +903,44 @@ const FacultyDashboard = () => {
               placeholder="e.g. John Doe"
             />
 
-            <label className="modal-label">Choose Avatar</label>
-            <div className="avatar-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', maxHeight: '200px', overflowY: 'auto', paddingRight: '10px' }}>
-              {allAvatars.map((url, i) => (
+            <label className="modal-label">Profile Picture</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem', background: 'var(--bg-primary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--accent-orange)', flexShrink: 0, position: 'relative' }}>
                 <img 
-                  key={`avatar-${i}`} src={url} alt={`Avatar option ${i+1}`} 
-                  className={`avatar-option ${editAvatar === url ? 'selected' : ''}`}
-                  onClick={() => setEditAvatar(url)}
+                  src={avatarPreview || editAvatar || 'https://via.placeholder.com/150'} 
+                  alt="Profile" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                 />
-              ))}
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Upload a professional photo (Max 2MB)</p>
+                <input 
+                  type="file" 
+                  id="avatar-upload" 
+                  accept="image/*" 
+                  onChange={handleFileChange} 
+                  style={{ display: 'none' }} 
+                />
+                <label 
+                  htmlFor="avatar-upload" 
+                  style={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '0.5rem', 
+                    padding: '0.5rem 1rem', 
+                    background: 'var(--bg-secondary)', 
+                    border: '1px solid var(--border-color)', 
+                    borderRadius: '8px', 
+                    fontSize: '0.85rem', 
+                    fontWeight: 600, 
+                    cursor: 'pointer',
+                    color: 'var(--text-primary)'
+                  }}
+                >
+                  <Camera size={16} />
+                  Change Photo
+                </label>
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>

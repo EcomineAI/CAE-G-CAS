@@ -423,3 +423,29 @@ export const deleteRequest = async (id, role = 'student') => {
   }
   return true;
 };
+
+/**
+ * Upload profile avatar to Supabase Storage.
+ */
+export const uploadAvatar = async (userId, file) => {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Date.now()}.${fileExt}`;
+  const filePath = `${userId}/${fileName}`;
+
+  // Upload file
+  const { error: uploadError } = await supabase.storage
+    .from('profiles')
+    .upload(filePath, file);
+
+  if (uploadError) {
+    console.error('Error uploading avatar:', uploadError);
+    return null;
+  }
+
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('profiles')
+    .getPublicUrl(filePath);
+
+  return publicUrl;
+};

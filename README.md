@@ -49,14 +49,14 @@ Create a centralized management system that reduces uncertainty by providing rea
 
 ---
 
-## 📈 Latest Updates (v0.7.6) — May 9, 2026
-- **Appointment Capacity Guard (#1):** Implemented a database-level trigger (`enforce_slot_capacity`) that prevents overbooking. If a slot is full (Pending + Approved requests = max_slots), new requests are blocked with a clear error message.
-- **Faculty Feedback Notes (#21):** Faculty can now provide optional instructions or notes when approving a request (e.g., "Bring your thesis draft"). These notes are displayed prominently on the student's dashboard.
-- **Improved Decline Communication (#31):** Mandatory decline reasons are now required and shared with students to improve transparency.
-- **Archiving Policy (#19):** Replaced hard-deletion of history with a soft-archiving system. Records are hidden from active views but preserved in the database for auditing and history.
-- **API Optimization:** Enhanced data fetching to include scheduling metadata (max_slots) and communication logs in a single pass.
+## 📈 Latest Updates (v0.7.7) — May 9, 2026
+- **Real Profile Picture Upload (#16):** Replaced static avatar presets with a device-native file upload system. Users can now upload custom professional photos directly to Supabase Storage. Includes client-side compression (Max 2MB) and secure user-isolated storage buckets.
+- **Supabase Storage Integration:** Configured the `profiles` storage bucket with RLS policies to ensure users can only manage their own media while allowing public read access for profile visibility.
+- **Enhanced Profile UI:** Added image previewing and a standardized "Change Photo" workflow across both student and faculty dashboards.
 
-### Previous: v0.7.5
+### Previous: v0.7.6
+- **Appointment Capacity Guard (#1):** Database-level overbooking prevention.
+- **Faculty Feedback Notes (#21):** Approval instructions for students.
 - **Date-Specific Scheduling (#38):** Added support for one-time consultation slots.
 - **Auto-Divided Time Allocation (#47):** Implemented intelligent sub-slot calculation.
 - **Bug Fixes:** Resolved a critical `ReferenceError` where the `Bell` icon was used in the Student Dashboard without being imported. Fixed a syntax error (missing comma) in the PWA `manifest.json`.
