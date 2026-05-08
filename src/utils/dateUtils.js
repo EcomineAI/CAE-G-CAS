@@ -103,3 +103,6 @@ export const formatRelativeTime = (isoStr) => {
     return '';
   }
 };
+
+export const formatTimeAgo = formatRelativeTime;
+

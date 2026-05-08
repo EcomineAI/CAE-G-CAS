@@ -10,7 +10,9 @@ import FacultyRequestsContent from './FacultyRequestsContent';
 import FacultyAboutContent from './FacultyAboutContent';
 import { useAuth } from '../../hooks/useAuth';
 import logo from '../logo.png';
+import { PH_PREFIXES, PH_SUFFIXES } from '../../utils/constants';
 import SettingsModal from '../../components/SettingsModal';
+import NotificationCenter from '../../components/NotificationCenter';
 
 const facultyDashStyles = `
 .faculty-dashboard-wrapper.dark {
@@ -98,6 +100,34 @@ const facultyDashStyles = `
 .faculty-dashboard-wrapper.text-large .brand-text-full,
 .faculty-dashboard-wrapper.text-large .brand-text-mobile,
 .faculty-dashboard-wrapper.text-large .filter-chip { font-size: 1.1rem !important; }
+
+/* Accessibility Classes */
+.faculty-dashboard-wrapper.reduced-motion * {
+  animation: none !important;
+  transition: none !important;
+}
+
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('https://cdn.jsdelivr.net/npm/opendyslexic@1.0.3/OpenDyslexic-Regular.otf');
+}
+
+.faculty-dashboard-wrapper.dyslexic-font {
+  font-family: 'OpenDyslexic', sans-serif !important;
+}
+
+.faculty-dashboard-wrapper.dyslexic-font h1,
+.faculty-dashboard-wrapper.dyslexic-font h2,
+.faculty-dashboard-wrapper.dyslexic-font h3,
+.faculty-dashboard-wrapper.dyslexic-font p,
+.faculty-dashboard-wrapper.dyslexic-font span,
+.faculty-dashboard-wrapper.dyslexic-font button,
+.faculty-dashboard-wrapper.dyslexic-font input,
+.faculty-dashboard-wrapper.dyslexic-font textarea,
+.faculty-dashboard-wrapper.dyslexic-font select {
+  font-family: 'OpenDyslexic', sans-serif !important;
+}
+
 
 .faculty-dashboard-wrapper {
   position: fixed;
@@ -510,6 +540,7 @@ const FacultyDashboard = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('gcas_faculty_theme') === 'dark');
   const [textSize, setTextSize] = useState(() => localStorage.getItem('gcas_faculty_text_size') || 'medium');
   const [isHighContrast, setIsHighContrast] = useState(() => localStorage.getItem('gcas_faculty_high_contrast') === 'true');
+  const [accessibilityPrefs, setAccessibilityPrefs] = useState({ reducedMotion: false, dyslexicFont: false });
   const [requestFilter, setRequestFilter] = useState('Pending');
   const [profileName, setProfileName] = useState('');
   const [profileAvatar, setProfileAvatar] = useState('');
@@ -518,11 +549,15 @@ const FacultyDashboard = () => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   
   // Edit Profile Form State
   const [editName, setEditName] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
   const [editDept, setEditDept] = useState('');
+  const [editPrefix, setEditPrefix] = useState('');
+  const [editSuffix, setEditSuffix] = useState('');
 
   // Persistence Effects
   useEffect(() => {
@@ -556,10 +591,41 @@ const FacultyDashboard = () => {
         setProfileAvatar(p.avatar_url || user.avatarUrl);
         setProfileDept(p.department || 'CCS');
         setProfileStatus(p.status || 'Available');
+        setEditPrefix(p.name_prefix || '');
+        setEditSuffix(p.name_suffix || '');
+        
+        // #51: Load accessibility prefs
+        if (p.accessibility_prefs) {
+          setAccessibilityPrefs(p.accessibility_prefs);
+        }
       }
     });
 
     return () => {};
+  }, [user]);
+
+  // Notification Listener for unread count
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+      setUnreadCount(count || 0);
+    };
+    fetchUnread();
+
+    const channel = supabase
+      .channel('fac-notif-count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, () => {
+        fetchUnread();
+      })
+      .subscribe();
+    
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   const openProfileModal = () => {
@@ -572,8 +638,11 @@ const FacultyDashboard = () => {
   const handleSaveProfile = async () => {
     if (!user) return;
     const { updateProfile } = await import('../../supabase/api');
+    const fullName = `${editPrefix} ${editName.trim()} ${editSuffix}`.replace(/\s+/g, ' ').trim();
     const updated = await updateProfile(user.id, {
-      full_name: editName,
+      full_name: fullName,
+      name_prefix: editPrefix,
+      name_suffix: editSuffix,
       avatar_url: editAvatar,
       department: editDept
     });
@@ -584,6 +653,17 @@ const FacultyDashboard = () => {
       setShowProfileModal(false);
       import('../../supabase/ux').then(({ toast }) => toast.success('Profile updated successfully!'));
     }
+  };
+
+  const updateAccessibilityPref = async (key, value) => {
+    const newPrefs = { ...accessibilityPrefs, [key]: value };
+    setAccessibilityPrefs(newPrefs);
+    
+    // Save to DB using the Spread updateProfile
+    const { updateProfile } = await import('../../supabase/api');
+    await updateProfile(user.id, {
+      accessibility_prefs: newPrefs
+    });
   };
 
   const handleLogout = async () => {
@@ -613,7 +693,7 @@ const FacultyDashboard = () => {
   };
 
   return (
-    <div className={`faculty-dashboard-wrapper ${isDarkMode ? 'dark' : ''} ${isHighContrast ? 'high-contrast' : ''} text-${textSize}`}>
+    <div className={`faculty-dashboard-wrapper ${isDarkMode ? 'dark' : ''} ${isHighContrast ? 'high-contrast' : ''} text-${textSize} ${accessibilityPrefs.reducedMotion ? 'reduced-motion' : ''} ${accessibilityPrefs.dyslexicFont ? 'dyslexic-font' : ''}`}>
       <style>{facultyDashStyles}</style>
       <div className="dashboard-bg-layer"></div>
       <div className="dashboard-overlay"></div>
@@ -642,6 +722,17 @@ const FacultyDashboard = () => {
 
         <div className="nav-user-section">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+            <button 
+              className="theme-toggle" 
+              onClick={() => setIsNotifOpen(!isNotifOpen)} 
+              style={{ position: 'relative' }}
+              title="Notifications"
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#ef4444', color: 'white', fontSize: '0.6rem', padding: '2px 5px', borderRadius: '50%', fontWeight: 700 }}>{unreadCount}</span>
+              )}
+            </button>
             <button className="theme-toggle" onClick={() => setIsDarkMode(!isDarkMode)}>
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
@@ -714,7 +805,15 @@ const FacultyDashboard = () => {
         setTextSize={setTextSize}
         isHighContrast={isHighContrast}
         setIsHighContrast={setIsHighContrast}
+        accessibilityPrefs={accessibilityPrefs}
+        updateAccessibilityPref={updateAccessibilityPref}
         onLogout={handleLogout}
+      />
+
+      <NotificationCenter 
+        userId={user?.id}
+        isOpen={isNotifOpen}
+        onClose={() => setIsNotifOpen(false)}
       />
 
       <main className="faculty-main-content">
@@ -726,6 +825,41 @@ const FacultyDashboard = () => {
           <div className="modal-card" style={{ background: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '16px', width: '95%', maxWidth: '450px', maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--card-border)', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
             <h2 style={{ marginTop: 0, marginBottom: '1rem', textAlign: 'left', color: 'var(--text-primary)', fontSize: '1.4rem' }}>Edit Profile</h2>
             
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.2rem' }}>
+              <div>
+                <label className="modal-label">Prefix (Optional)</label>
+                <select 
+                  className="profile-input" 
+                  style={{ marginBottom: 0 }}
+                  value={editPrefix}
+                  onChange={(e) => setEditPrefix(e.target.value)}
+                >
+                  <option value="">None</option>
+                  {Object.entries(PH_PREFIXES).map(([group, list]) => (
+                    <optgroup key={group} label={group}>
+                      {list.map(p => <option key={p} value={p}>{p}</option>)}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="modal-label">Suffix (Optional)</label>
+                <select 
+                  className="profile-input" 
+                  style={{ marginBottom: 0 }}
+                  value={editSuffix}
+                  onChange={(e) => setEditSuffix(e.target.value)}
+                >
+                  <option value="">None</option>
+                  {Object.entries(PH_SUFFIXES).map(([group, list]) => (
+                    <optgroup key={group} label={group}>
+                      {list.map(s => <option key={s} value={s}>{s}</option>)}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <label className="modal-label">Full Name</label>
             <input 
               type="text" 

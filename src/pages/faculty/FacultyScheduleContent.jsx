@@ -4,6 +4,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { getFacultySchedules, createSchedule, updateSchedule, deleteSchedule } from '../../supabase/api';
 import { subscribeToSchedules } from '../../supabase/realtime';
 import { toast, optimistic, ScheduleCardSkeleton, withMinDelay } from '../../supabase/ux';
+import { formatTime, formatTimeRange } from '../../utils/dateUtils';
+import { ROOM_OPTIONS, SCHEDULE_DAYS } from '../../utils/constants';
 
 const scheduleStyles = `
 .schedule-container {
@@ -352,6 +354,25 @@ const FacultyScheduleContent = () => {
     const start_time = formData.startTime.length === 5 ? `${formData.startTime}:00` : formData.startTime;
     const end_time = formData.endTime.length === 5 ? `${formData.endTime}:00` : formData.endTime;
 
+    // #37: Schedule Overlap Detection
+    const hasOverlap = schedules.some(s => {
+      if (editingItem && s.id === editingItem.id) return false;
+      if (s.day !== formData.day) return false;
+
+      // Simple time overlap check
+      const newStart = formData.startTime;
+      const newEnd = formData.endTime;
+      const existingStart = String(s.start_time).slice(0, 5);
+      const existingEnd = String(s.end_time).slice(0, 5);
+
+      return (newStart < existingEnd && newEnd > existingStart);
+    });
+
+    if (hasOverlap) {
+      toast.error(`Overlap Error: This time slot conflicts with an existing ${formData.day} schedule.`);
+      return;
+    }
+
     if (editingItem) {
       // EDIT — optimistic update
       const updates = {
@@ -437,7 +458,7 @@ const FacultyScheduleContent = () => {
             </div>
 
             <div className="card-day">{item.day}</div>
-            <div className="card-time">{String(item.start_time).slice(0, 5)} - {String(item.end_time).slice(0, 5)}</div>
+            <div className="card-time">{formatTimeRange(item.start_time, item.end_time)}</div>
             
             {item.notes && <div className="card-notes">"{item.notes}"</div>}
 
@@ -467,7 +488,7 @@ const FacultyScheduleContent = () => {
                   value={formData.day}
                   onChange={(e) => setFormData({...formData, day: e.target.value})}
                 >
-                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
+                  {SCHEDULE_DAYS.map(day => (
                     <option key={day} value={day}>{day}</option>
                   ))}
                 </select>
@@ -513,13 +534,15 @@ const FacultyScheduleContent = () => {
 
               <div className="form-group">
                 <label>Room</label>
-                <input 
-                  type="text" 
-                  className="form-input"
+                <select 
+                  className="form-select"
                   value={formData.room}
                   onChange={(e) => setFormData({...formData, room: e.target.value})}
-                  placeholder="e.g. 521"
-                />
+                >
+                  {ROOM_OPTIONS.map(room => (
+                    <option key={room} value={room}>{room === 'TBA' ? 'Room TBA' : `Room ${room}`}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="form-group">

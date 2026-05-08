@@ -4,6 +4,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { getStudentRequests, updateRequestDetails, updateRequestStatus, deleteRequest } from '../../supabase/api';
 import { subscribeToRequests } from '../../supabase/realtime';
 import { AppointmentRowSkeleton, withMinDelay, optimistic, toast } from '../../supabase/ux';
+import { formatTimeRange } from '../../utils/dateUtils';
+import { STATUS_LABELS } from '../../utils/constants';
 
 const appointmentsStyles = `
 .appointments-page {
@@ -425,17 +427,31 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
                     </div>
                     <div className="faculty-name-info" style={{ display: 'flex', flexDirection: 'column' }}>
                       <span className="faculty-name-text">{app.name}</span>
-                      <div style={{ marginTop: '0.3rem', padding: '0.3rem 0.5rem', background: 'var(--bg-primary)', borderRadius: '6px', fontSize: '0.7rem', borderLeft: '2px solid var(--accent-orange)', maxWidth: '200px' }}>
-                        <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{app.subject}</div>
-                        <div style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{app.details}</div>
+                      <div style={{ marginTop: '0.3rem', padding: '0.4rem 0.6rem', background: 'var(--bg-primary)', borderRadius: '8px', fontSize: '0.75rem', borderLeft: '3px solid var(--accent-orange)', maxWidth: '240px' }}>
+                        <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.1rem' }}>
+                          {app.subject}
+                          {app.consultationType && app.consultationType !== 'General' && (
+                            <span style={{ marginLeft: '0.4rem', fontSize: '0.6rem', padding: '0.05rem 0.3rem', background: 'var(--accent-light)', color: 'var(--accent-orange)', borderRadius: '4px', fontWeight: 600 }}>
+                              {app.consultationType}
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ color: 'var(--text-muted)', lineHeight: '1.3' }}>{app.details}</div>
                       </div>
+
+                      {/* #31: Decline Reason */}
+                      {app.status === 'Declined' && app.declineReason && (
+                        <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#fee2e2', borderRadius: '6px', borderLeft: '3px solid #ef4444', fontSize: '0.75rem', color: '#b91c1c' }}>
+                          <strong>Decline Reason:</strong> "{app.declineReason}"
+                        </div>
+                      )}
                     </div>
                   </div>
                 </td>
                 <td className="mobile-hide-on-desktop" style={{ padding: 0 }}>
                   <div className="date-time-group">
                     <span className="date-text">{app.date}</span>
-                    <span className="time-text">{app.time}</span>
+                    <span className="time-text">{app.startTime ? formatTimeRange(app.startTime, app.endTime) : app.time}</span>
                   </div>
                 </td>
                 <td className="mobile-hide-on-desktop" style={{ padding: 0 }}>
@@ -479,7 +495,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
                   <span className="date-text">{app.date}</span>
                 </td>
                 <td className="desktop-only-cell" style={{ textAlign: 'center' }}>
-                  <span className="time-text">{app.time}</span>
+                  <span className="time-text">{app.startTime ? formatTimeRange(app.startTime, app.endTime) : app.time}</span>
                 </td>
                 <td className="desktop-only-cell" style={{ textAlign: 'center' }}>
                   <div className={`status-badge-pill ${app.status.toLowerCase()}`}>

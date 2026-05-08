@@ -10,6 +10,8 @@ const SettingsModal = ({
   setTextSize, 
   isHighContrast, 
   setIsHighContrast,
+  accessibilityPrefs = {},
+  updateAccessibilityPref = () => {},
   onLogout 
 }) => {
   if (!isOpen) return null;
@@ -336,6 +338,50 @@ const SettingsModal = ({
                 <span>{size.label}</span>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="settings-section">
+          <span className="section-label">Accessibility</span>
+          
+          <div className="settings-row">
+            <div className="row-info">
+              <div className="row-icon">
+                <Check size={20} />
+              </div>
+              <div className="row-text">
+                <h3>Reduced Motion</h3>
+                <p>Disable animations</p>
+              </div>
+            </div>
+            <label className="switch">
+              <input 
+                type="checkbox" 
+                checked={accessibilityPrefs.reducedMotion || false} 
+                onChange={() => updateAccessibilityPref('reducedMotion', !accessibilityPrefs.reducedMotion)} 
+              />
+              <span className="slider"></span>
+            </label>
+          </div>
+
+          <div className="settings-row">
+            <div className="row-info">
+              <div className="row-icon">
+                <Type size={20} />
+              </div>
+              <div className="row-text">
+                <h3>Dyslexia Font</h3>
+                <p>OpenDyslexic typeface</p>
+              </div>
+            </div>
+            <label className="switch">
+              <input 
+                type="checkbox" 
+                checked={accessibilityPrefs.dyslexicFont || false} 
+                onChange={() => updateAccessibilityPref('dyslexicFont', !accessibilityPrefs.dyslexicFont)} 
+              />
+              <span className="slider"></span>
+            </label>
           </div>
         </div>
 

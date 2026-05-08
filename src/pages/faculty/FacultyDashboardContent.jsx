@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Calendar, Clock, User, ArrowRight } from 'lucide-react';
+import { ChevronDown, Calendar, Clock, User, ArrowRight, Bell } from 'lucide-react';
+import CalendarView from '../../components/CalendarView';
 import { useAuth } from '../../hooks/useAuth';
 import { getFacultyRequests, getFacultySchedules, getProfile, updateFacultyStatus } from '../../supabase/api';
 import { subscribeToRequests, subscribeToSchedules } from '../../supabase/realtime';
@@ -404,6 +405,11 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
             <span className="status-text">{status}</span>
             <ChevronDown size={18} />
           </div>
+
+          <button className="nav-btn" style={{ marginLeft: '1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.5rem', color: 'var(--text-secondary)', position: 'relative' }}>
+            <Bell size={20} />
+            <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#ef4444', color: 'white', fontSize: '0.6rem', padding: '2px 5px', borderRadius: '50%', fontWeight: 700 }}>3</span>
+          </button>
           
           {isStatusOpen && (
             <div className="status-dropdown">
@@ -493,23 +499,13 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
 
       <div className="section-box">
         <div className="section-header">
-          <h3>My Consultation Schedules</h3>
-          <span className="view-all-link" onClick={() => onTabChange('Schedule')}>Manage <ArrowRight size={14} /></span>
+          <h3>Monthly Calendar Overview</h3>
+          <span className="view-all-link" onClick={() => onTabChange('Schedule')}>Manage Slots <ArrowRight size={14} /></span>
         </div>
-
-        <div className="schedules-grid">
-          {schedules.length > 0 ? schedules.slice(0, 2).map(sched => (
-            <div className="schedule-day-card" key={sched.id}>
-              <div className="day-title">{sched.day}</div>
-              <div className="time-row-bold">{String(sched.start_time).slice(0, 5)} - {String(sched.end_time).slice(0, 5)}</div>
-              <div className="room-row">Room {sched.room}</div>
-              <div className="slots-left">{sched.max_slots - sched.filled || 0} slots left</div>
-            </div>
-          )) : (
-            <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>No schedules found.</div>
-          )}
-        </div>
+        
+        <CalendarView schedules={schedules} requests={requests} />
       </div>
+
 
     </div>
   );
