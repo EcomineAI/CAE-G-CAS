@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { User, CheckCircle } from 'lucide-react';
+import { User, CheckCircle, WifiOff } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest } from '../../supabase/api';
+import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount } from '../../supabase/api';
 import { subscribeToFacultyStatus } from '../../supabase/realtime';
 import { FacultyCardSkeleton, toast, withMinDelay } from '../../supabase/ux';
+import { formatTimeRange } from '../../utils/dateUtils';
+import { MAX_ACTIVE_REQUESTS } from '../../utils/constants';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 
 const facultyStyles = `
 .faculty-header h1 {
@@ -577,6 +580,8 @@ const FacultyContent = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [subject, setSubject] = useState('');
   const [reason, setReason] = useState('');
+  const [submittedReqId, setSubmittedReqId] = useState(null); // #34: for receipt
+  const { isOnline } = useNetworkStatus(); // #44: offline detection
 
   useEffect(() => {
     const fetchFaculty = async () => {
@@ -627,8 +632,22 @@ const FacultyContent = () => {
 
   const handleBookSlot = async (slot) => {
     if (!user || !selectedFaculty) return;
-    
-    // Check for active request
+
+    // #40: Student request limit
+    const activeCount = await getActiveRequestCount(user.id);
+    if (activeCount >= MAX_ACTIVE_REQUESTS) {
+      toast.error(`You already have ${MAX_ACTIVE_REQUESTS} active requests. Complete or cancel one before booking again.`);
+      return;
+    }
+
+    // #39: Per-slot duplicate guard
+    const slotTaken = await checkActiveRequestForSlot(user.id, slot.id);
+    if (slotTaken) {
+      toast.error('You already have an active request for this specific slot.');
+      return;
+    }
+
+    // Original per-faculty guard
     const hasActive = await checkActiveRequest(user.id, selectedFaculty.id);
     if (hasActive) {
       toast.error('You already have an active request with this faculty member.');
@@ -649,6 +668,12 @@ const FacultyContent = () => {
     e.preventDefault();
     if (!user || !selectedSlot) return;
 
+    // #44: Offline guard
+    if (!isOnline) {
+      toast.error('You are offline. Please reconnect and try again.');
+      return; // keep modal open
+    }
+
     const requestData = {
       student_id: user.id,
       faculty_id: selectedFaculty.id,
@@ -661,10 +686,12 @@ const FacultyContent = () => {
 
     const result = await submitRequest(requestData);
     if (result) {
+      setSubmittedReqId(result.id); // #34: store for receipt
       setShowDetailsModal(false);
       setShowConfirmation(true);
       toast.success('Request sent! Awaiting faculty approval');
     } else {
+      // #44: Don't close modal on failure — let user retry
       toast.error('Failed to submit request. Please try again.');
     }
   };
@@ -688,6 +715,13 @@ const FacultyContent = () => {
   return (
     <>
       <style>{facultyStyles}</style>
+
+      {/* #44: Offline banner */}
+      {!isOnline && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 1rem', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '10px', marginBottom: '1rem', fontSize: '0.85rem', color: '#b91c1c', fontWeight: 600 }}>
+          <WifiOff size={16} /> You're offline. Bookings won't save until you reconnect.
+        </div>
+      )}
 
       <div className="faculty-header">
         <h1>Faculty Directory</h1>
@@ -713,7 +747,14 @@ const FacultyContent = () => {
                 <div className="faculty-card-top">
                   <div className="faculty-card-header">
                     <div className={`faculty-avatar ${faculty.statusColor}`}>
-                      <img src={faculty.avatar} alt={faculty.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                      {faculty.avatar ? (
+                        <img src={faculty.avatar} alt={faculty.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                          onError={e => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
+                        />
+                      ) : null}
+                      <span style={{ display: faculty.avatar ? 'none' : 'flex', width: '100%', height: '100%', borderRadius: '50%', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.1rem', background: 'var(--accent-light)', color: 'var(--accent-orange)' }}>
+                        {faculty.name?.[0] ?? '?'}
+                      </span>
                     </div>
                     <div className="faculty-info">
                       <div className="faculty-name-row">
@@ -781,7 +822,7 @@ const FacultyContent = () => {
                     <tr>
                       <td style={slot.notes ? { borderBottom: 'none' } : {}}><strong>{slot.day}</strong></td>
                       <td style={slot.notes ? { borderBottom: 'none' } : {}}>
-                        {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}<br/>
+                        <strong>{formatTimeRange(slot.start_time, slot.end_time)}</strong><br/>
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Room {slot.room || 'TBA'}</span>
                       </td>
                       <td style={slot.notes ? { borderBottom: 'none' } : {}}>{slot.max_slots - (slot.filled || 0)} / {slot.max_slots}</td>
@@ -820,7 +861,10 @@ const FacultyContent = () => {
             <p className="subtitle">Provide details for your appointment</p>
             
             <div className="details-info-box">
-              <strong>{selectedFaculty.name}</strong> • {selectedSlot.day} • {selectedSlot.start_time.slice(0, 5)} - {selectedSlot.end_time.slice(0, 5)}
+              <strong>{selectedFaculty.name}</strong> • {selectedSlot.day} • <strong>{formatTimeRange(selectedSlot.start_time, selectedSlot.end_time)}</strong>
+              {!isOnline && (
+                <div style={{ marginTop: '0.5rem', color: '#ef4444', fontSize: '0.8rem', fontWeight: 600 }}>⚠️ You're offline — submission will fail</div>
+              )}
             </div>
 
             <form onSubmit={handleSubmitDetails}>
@@ -862,25 +906,50 @@ const FacultyContent = () => {
 
       {showConfirmation && selectedSlot && selectedFaculty && (
         <div className="modal-overlay">
-          <div className="modal-card">
-            <div className="modal-icon">
-              <CheckCircle size={50} />
+          <div className="modal-card" style={{ textAlign: 'left', maxWidth: '460px' }}>
+            {/* Receipt header */}
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ color: '#22c55e', marginBottom: '0.5rem' }}><CheckCircle size={48} /></div>
+              <h2 style={{ margin: 0, fontSize: '1.3rem', color: 'var(--text-primary)' }}>Request Submitted!</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.3rem' }}>
+                Your request is now pending faculty approval.
+              </p>
             </div>
-            <h2>Appointment Request Sent!</h2>
-            <p className="modal-desc">
-              Your request has been submitted. It will stay in "Pending" until the Faculty member approves it.
-            </p>
-            <div className="modal-details">
-              <h4>Request Summary:</h4>
-              <ul style={{ textAlign: 'left', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                <li>Faculty: {selectedFaculty.name}</li>
-                <li>Time: {selectedSlot.day}, {selectedSlot.start_time.slice(0, 5)} - {selectedSlot.end_time.slice(0, 5)}</li>
-              </ul>
+
+            {/* Receipt body */}
+            <div style={{ background: 'var(--bg-primary)', borderRadius: '12px', padding: '1.2rem', border: '1px solid var(--border-color)', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem', paddingBottom: '0.8rem', borderBottom: '1px dashed var(--border-color)' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reference No.</span>
+                <span style={{ fontFamily: 'monospace', fontSize: '0.9rem', fontWeight: 700, color: 'var(--accent-orange)' }}>
+                  REQ-{submittedReqId ? submittedReqId.slice(0, 8).toUpperCase() : '--------'}
+                </span>
+              </div>
+              {[
+                ['Faculty', selectedFaculty.name],
+                ['Day', selectedSlot.day],
+                ['Time', formatTimeRange(selectedSlot.start_time, selectedSlot.end_time)],
+                ['Room', `Room ${selectedSlot.room || 'TBA'}`],
+                ['Topic', subject],
+                ['Submitted', new Date().toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })],
+              ].map(([label, value]) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{label}</span>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 600, textAlign: 'right', maxWidth: '55%' }}>{value}</span>
+                </div>
+              ))}
             </div>
-            <button className="modal-done-btn" style={{ marginTop: '1.5rem', width: '100%' }} onClick={handleDone}>Return to Directory</button>
+
+            <button
+              className="submit-btn"
+              style={{ width: '100%', padding: '0.9rem' }}
+              onClick={handleDone}
+            >
+              View in My Appointments →
+            </button>
           </div>
         </div>
       )}
+
     </>
   );
 };

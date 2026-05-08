@@ -165,8 +165,7 @@ export const getFacultyRequests = async (facultyId) => {
   return (data || []).map(req => {
     let studentName = req.student?.full_name || 'Unknown Student';
     const studentId = req.student?.email ? req.student.email.split('@')[0] : req.student_id;
-    
-    // Only append ID if the name isn't already just the ID (only numbers)
+
     if (!(/^\d+$/.test(studentName)) && studentId) {
       studentName = `${studentName} (${studentId})`;
     }
@@ -174,8 +173,11 @@ export const getFacultyRequests = async (facultyId) => {
     return {
       id: req.id,
       name: studentName,
-      avatar: req.student?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${req.student_id}`,
+      avatar: req.student?.avatar_url || null,
+      avatarSeed: req.student_id,
       day: req.schedule?.day || 'TBD',
+      startTime: req.schedule?.start_time || null,
+      endTime: req.schedule?.end_time || null,
       time: req.schedule
         ? `${String(req.schedule.start_time).slice(0, 5)} - ${String(req.schedule.end_time).slice(0, 5)}`
         : 'TBD',
@@ -183,7 +185,13 @@ export const getFacultyRequests = async (facultyId) => {
       status: req.status,
       subject: req.subject,
       details: req.details,
-      cancel_reason: req.cancel_reason
+      consultationType: req.consultation_type || 'General',
+      cancel_reason: req.cancel_reason,
+      declineReason: req.decline_reason || null,
+      facultySeen: req.faculty_seen_at || null,
+      statusLog: req.status_log || [],
+      messages: req.messages || [],
+      facultyNote: req.faculty_note || null,
     };
   });
 };
@@ -191,12 +199,18 @@ export const getFacultyRequests = async (facultyId) => {
 /**
  * Update request status (Approved, Declined, Completed, Cancelled).
  */
-export const updateRequestStatus = async (requestId, newStatus, cancelReason = null) => {
+/**
+ * Update request status. Accepts optional cancelReason (student) or declineReason (faculty).
+ */
+export const updateRequestStatus = async (requestId, newStatus, cancelReason = null, declineReason = null) => {
   const updates = { status: newStatus, updated_at: new Date().toISOString() };
-  if (cancelReason !== null) {
-    updates.cancel_reason = cancelReason;
-  }
-  
+  if (cancelReason !== null) updates.cancel_reason = cancelReason;
+  if (declineReason !== null) updates.decline_reason = declineReason;
+
+  // Append to status_log if column exists
+  const logEntry = JSON.stringify({ status: newStatus, at: new Date().toISOString() });
+  // We use a raw rpc or just append client-side; the trigger handles it server-side
+
   const { error } = await supabase
     .from('requests')
     .update(updates)
@@ -252,8 +266,11 @@ export const getStudentRequests = async (studentId) => {
   return (data || []).map(req => ({
     id: req.id,
     name: req.faculty?.full_name || 'Faculty Member',
-    avatar: req.faculty?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${req.faculty_id}`,
+    avatar: req.faculty?.avatar_url || null,
+    avatarSeed: req.faculty_id,
     day: req.schedule?.day || 'TBD',
+    startTime: req.schedule?.start_time || null,
+    endTime: req.schedule?.end_time || null,
     time: req.schedule
       ? `${String(req.schedule.start_time).slice(0, 5)} - ${String(req.schedule.end_time).slice(0, 5)}`
       : 'TBD',
@@ -261,6 +278,12 @@ export const getStudentRequests = async (studentId) => {
     status: req.status,
     subject: req.subject,
     details: req.details,
+    consultationType: req.consultation_type || 'General',
+    declineReason: req.decline_reason || null,
+    cancelReason: req.cancel_reason || null,
+    facultySeen: req.faculty_seen_at || null,
+    statusLog: req.status_log || [],
+    messages: req.messages || [],
     facultyDeleted: req.is_faculty_deleted ?? false
   }));
 };
@@ -282,6 +305,52 @@ export const checkActiveRequest = async (studentId, facultyId) => {
     return false;
   }
   return data && data.length > 0;
+};
+
+/**
+ * Check if student already has an active request for a SPECIFIC schedule slot. (#39)
+ */
+export const checkActiveRequestForSlot = async (studentId, scheduleId) => {
+  const { data, error } = await supabase
+    .from('requests')
+    .select('id')
+    .eq('student_id', studentId)
+    .eq('schedule_id', scheduleId)
+    .in('status', ['Pending', 'Approved']);
+
+  if (error) {
+    console.error('Error checking slot request:', error);
+    return false;
+  }
+  return data && data.length > 0;
+};
+
+/**
+ * Get count of active (Pending + Approved) requests for a student. (#40)
+ */
+export const getActiveRequestCount = async (studentId) => {
+  const { count, error } = await supabase
+    .from('requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('student_id', studentId)
+    .in('status', ['Pending', 'Approved']);
+
+  if (error) return 0;
+  return count || 0;
+};
+
+/**
+ * Mark a request as seen by faculty. (#33)
+ * Called once when faculty first renders the request card.
+ */
+export const markRequestSeen = async (requestId) => {
+  const { error } = await supabase
+    .from('requests')
+    .update({ faculty_seen_at: new Date().toISOString() })
+    .eq('id', requestId)
+    .is('faculty_seen_at', null); // only set once
+
+  if (error) console.error('Error marking request seen:', error);
 };
 
 // ==========================================

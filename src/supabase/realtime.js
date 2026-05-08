@@ -155,3 +155,26 @@ export const subscribeToMyProfile = (userId, callback) => {
     if (channel) supabase.removeChannel(channel);
   };
 };
+
+/**
+ * #45: createRealtimeReconnect
+ * When the browser tab regains focus after being hidden (common on mobile),
+ * removes all stale channels and re-calls the provided re-subscribe function.
+ * Usage: in useEffect, return createRealtimeReconnect(() => reSubscribeAll());
+ */
+export const createRealtimeReconnect = (resubscribeFn) => {
+  let lastHidden = false;
+
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') {
+      lastHidden = true;
+    } else if (document.visibilityState === 'visible' && lastHidden) {
+      lastHidden = false;
+      supabase.removeAllChannels().then(() => resubscribeFn());
+    }
+  };
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+};
+

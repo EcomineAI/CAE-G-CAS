@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Check, X, User, Search, Filter, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Check, X, User, Search, Filter, Trash2, Eye } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { getFacultyRequests, updateRequestStatus, deleteRequest } from '../../supabase/api';
+import { getFacultyRequests, updateRequestStatus, deleteRequest, markRequestSeen } from '../../supabase/api';
 import { subscribeToRequests } from '../../supabase/realtime';
 import { RequestCardSkeleton, optimistic, withMinDelay } from '../../supabase/ux';
+import { formatTimeRange } from '../../utils/dateUtils';
+import { STATUS_LABELS } from '../../utils/constants';
 
 const requestStyles = `
 .requests-container {
@@ -221,6 +223,8 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
   const [loading, setLoading] = useState(true);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, reqId: null, newStatus: null, actionText: '' });
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, reqId: null });
+  const [declineModal, setDeclineModal] = useState({ isOpen: false, reqId: null, reason: '' });
+  const seenRef = useRef(new Set()); // track which request IDs we've already marked seen
 
   useEffect(() => {
     setFilter(initialFilter);
@@ -242,7 +246,8 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
 
   const handleAction = async (id, newStatus) => {
     if (newStatus === 'Declined') {
-      setConfirmModal({ isOpen: true, reqId: id, newStatus, actionText: 'decline this student request' });
+      // #31: Collect decline reason before proceeding
+      setDeclineModal({ isOpen: true, reqId: id, reason: '' });
       return;
     }
     if (newStatus === 'Completed') {
@@ -250,6 +255,19 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
       return;
     }
     await executeAction(id, newStatus);
+  };
+
+  const executeDecline = async () => {
+    const { reqId, reason } = declineModal;
+    if (!reqId) return;
+    if (!reason.trim()) return; // guard — UI shows error
+    setDeclineModal({ isOpen: false, reqId: null, reason: '' });
+    await optimistic(
+      setRequests, requests,
+      requests.map(req => req.id === reqId ? { ...req, status: 'Declined', declineReason: reason } : req),
+      () => updateRequestStatus(reqId, 'Declined', null, reason),
+      { success: 'Request declined', error: 'Failed to decline request' }
+    );
   };
 
   const executeAction = async (id, newStatus) => {
@@ -327,19 +345,38 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
                    {req.status !== 'Pending' && (
                      <span className={`status-pill-small ${req.status.toLowerCase()}`}>{req.status}</span>
                    )}
+                   {/* #33: "Seen" indicator */}
+                   {req.status === 'Pending' && req.facultySeen && (
+                     <span style={{ fontSize: '0.65rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                       <Eye size={10} /> Seen
+                     </span>
+                   )}
                  </div>
                 <div className="request-meta">
-                  {req.day} • {req.time}
+                  {req.day} •{' '}
+                  {req.startTime ? formatTimeRange(req.startTime, req.endTime) : req.time}
                 </div>
-                <div className="request-meta" style={{ fontSize: '0.7rem' }}>
-                  {req.date}
-                </div>
+                <div className="request-meta" style={{ fontSize: '0.7rem' }}>{req.date}</div>
                 
-                {/* Student's request info */}
+                {/* Student request info */}
                 <div style={{ marginTop: '0.8rem', padding: '0.8rem', background: 'var(--bg-primary)', borderRadius: '12px', borderLeft: '3px solid var(--accent-orange)', fontSize: '0.85rem' }}>
-                  <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>{req.subject}</div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
+                    {req.subject}
+                    {req.consultationType && req.consultationType !== 'General' && (
+                      <span style={{ marginLeft: '0.5rem', fontSize: '0.65rem', padding: '0.1rem 0.4rem', background: 'var(--accent-light)', color: 'var(--accent-orange)', borderRadius: '4px', fontWeight: 600 }}>
+                        {req.consultationType}
+                      </span>
+                    )}
+                  </div>
                   <div style={{ color: 'var(--text-secondary)', lineHeight: '1.4' }}>{req.details}</div>
                 </div>
+
+                {/* #31: Decline reason from faculty */}
+                {req.declineReason && (
+                  <div style={{ marginTop: '0.8rem', padding: '0.6rem', background: '#fee2e2', borderRadius: '8px', borderLeft: '3px solid #ef4444', fontSize: '0.8rem', color: '#b91c1c' }}>
+                    <strong>Decline Reason:</strong> "{req.declineReason}"
+                  </div>
+                )}
 
                 {req.status === 'Cancelled' && req.cancel_reason && (
                   <div style={{ marginTop: '0.8rem', padding: '0.6rem', background: '#fee2e2', borderRadius: '8px', borderLeft: '3px solid #ef4444', fontSize: '0.8rem', color: '#b91c1c' }}>
@@ -394,6 +431,50 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
         )}
       </div>
 
+      {/* #31: Decline Reason Modal */}
+      {declineModal.isOpen && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+          <div className="modal-card" style={{ background: 'var(--bg-secondary)', padding: '2.5rem', borderRadius: '16px', maxWidth: '420px', width: '90%', textAlign: 'left', border: '1px solid var(--border-color)', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: '#ef4444', marginBottom: '1rem' }}>
+              <X size={22} />
+              <h2 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.3rem' }}>Decline Request</h2>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.2rem' }}>
+              Please provide a reason. This will be shown to the student so they know what to do next.
+            </p>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                Reason for declining <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <textarea
+                value={declineModal.reason}
+                onChange={e => setDeclineModal({ ...declineModal, reason: e.target.value })}
+                placeholder="e.g. Schedule conflict. Please rebook next week during my Tuesday slot."
+                rows={3}
+                style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: `1px solid ${declineModal.reason.trim() ? 'var(--border-color)' : '#ef4444'}`, background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
+              />
+              {!declineModal.reason.trim() && (
+                <p style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '0.3rem' }}>A reason is required before declining.</p>
+              )}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <button
+                onClick={() => setDeclineModal({ isOpen: false, reqId: null, reason: '' })}
+                style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeDecline}
+                disabled={!declineModal.reason.trim()}
+                style={{ padding: '0.8rem', borderRadius: '8px', border: 'none', background: declineModal.reason.trim() ? '#ef4444' : '#d1d5db', color: 'white', cursor: declineModal.reason.trim() ? 'pointer' : 'not-allowed', fontWeight: 600 }}
+              >
+                Decline Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {confirmModal.isOpen && (
         <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
           <div className="modal-card" style={{ background: 'var(--bg-secondary)', padding: '2.5rem', borderRadius: '16px', maxWidth: '400px', width: '90%', textAlign: 'center', border: '1px solid var(--border-color)', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
@@ -402,17 +483,17 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
               Do you really want to <strong>{confirmModal.actionText}</strong>? This action cannot be undone.
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <button 
+              <button
                 onClick={() => setConfirmModal({ isOpen: false, reqId: null, newStatus: null, actionText: '' })}
                 style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={() => executeAction(confirmModal.reqId, confirmModal.newStatus)}
                 style={{ padding: '0.8rem', borderRadius: '8px', border: 'none', background: 'var(--accent-orange)', color: 'white', cursor: 'pointer', fontWeight: 600 }}
               >
-                Yes, {confirmModal.newStatus === 'Declined' ? 'Decline' : confirmModal.newStatus === 'Approved' ? 'Approve' : confirmModal.newStatus === 'Completed' ? 'Complete' : confirmModal.newStatus}
+                Yes, {confirmModal.newStatus === 'Completed' ? 'Mark Complete' : confirmModal.newStatus}
               </button>
             </div>
           </div>
@@ -439,4 +520,7 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
   );
 };
 
+
 export default FacultyRequestsContent;
+
+
