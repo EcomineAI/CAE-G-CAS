@@ -587,6 +587,8 @@ const FacultyDashboard = () => {
   const [profileAvatar, setProfileAvatar] = useState('');
   const [profileDept, setProfileDept] = useState('');
   const [profileStatus, setProfileStatus] = useState('Available');
+  const [profilePrefix, setProfilePrefix] = useState('');
+  const [profileSuffix, setProfileSuffix] = useState('');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);

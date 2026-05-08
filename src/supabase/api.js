@@ -150,7 +150,7 @@ export const getFacultyRequests = async (facultyId) => {
     .from('requests')
     .select(`
       *,
-      student:profiles!requests_student_id_fkey(full_name, avatar_url, email),
+      student:profiles!requests_student_id_fkey(full_name, avatar_url, email, name_prefix, name_suffix),
       schedule:schedules(day, start_time, end_time, max_slots)
     `)
     .eq('faculty_id', facultyId)

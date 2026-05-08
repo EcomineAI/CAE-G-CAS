@@ -49,12 +49,13 @@ Create a centralized management system that reduces uncertainty by providing rea
 
 ---
 
-## 📈 Latest Updates (v0.7.8) — May 9, 2026
-- **Profile Name Redesign (#18):** Decoupled professional prefixes and suffixes from the `full_name` database field. Names are now stored cleanly, while titles are managed via independent "toggle" chips above the name input.
-- **Refined Faculty Titles:** Standardized professional titles to strictly "Academic" and "Administrative" categories to maintain institutional focus.
-- **Dynamic Name Rendering:** Implemented intelligent UI components that dynamically combine prefixes, base names, and suffixes for consistent professional display across the dashboard and headers.
+## 📈 Latest Updates (v0.7.9) — May 9, 2026
+- **Bug Fix (Hotfix):** Resolved a critical `ReferenceError` in `FacultyDashboard.jsx` where `profilePrefix` and `profileSuffix` were accessed before being defined in the component state.
+- **Data Mapping Optimization:** Refined the `getFacultyRequests` and `getStudentRequests` API calls to correctly propagate professional titles through the request lifecycle.
 
-### Previous: v0.7.7
+### Previous: v0.7.8
+- **Profile Name Redesign (#18):** Decoupled professional prefixes and suffixes from the `full_name` database field.
+- **Refined Faculty Titles:** Standardized professional titles to strictly "Academic" and "Administrative" categories.
 - **Real Profile Picture Upload (#16):** Supabase Storage integration for custom photos.
 - **Storage Security:** Isolated user media buckets with RLS.
 - **Appointment Capacity Guard (#1):** Database-level overbooking prevention.
