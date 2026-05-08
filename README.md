@@ -49,13 +49,16 @@ Create a centralized management system that reduces uncertainty by providing rea
 
 ---
 
-## 📈 Latest Updates (v0.6.0) — May 5, 2026
-- **Visual Overhaul (GCBG):** Integrated Gordon College building background (`GCBG.jpg`) across all dashboards and login pages with premium frosted-glass (glassmorphism) effects.
-- **History Persistence (Soft Delete):** Implemented a role-based soft-delete system. Students can clear their view of history without deleting the record for Faculty, ensuring record integrity for institutional reporting.
-- **Intelligent Name Parsing:** Refined profile name handling to support multi-word first names (e.g., "June Vic") and middle initials while maintaining standard institutional naming conventions.
-- **Unified Theme System:** Synchronized dark/light mode variables across both student and faculty dashboards for a seamless transition.
-- **Input UX Polish:** Standardized input field aesthetics, fixed muddy colors in light mode, and added browser autofill overrides to maintain visual consistency.
-- **Scroll Cleanliness:** Globally hidden browser scrollbars across the entire application for a more immersive, app-like experience.
+## 📈 Latest Updates (v4.0.0) — May 8, 2026
+- **Booking Guards & Logic:** Implemented a mandatory limit of 2 active requests per student and added per-slot duplicate booking prevention to ensure data integrity.
+- **Enhanced Communication:** Added mandatory faculty decline reasons, "Seen by Faculty" indicators (live timestamps), and structured consultation type tags.
+- **Booking Receipts:** Replaced basic confirmation with a detailed receipt modal featuring unique reference numbers (`REQ-XXXXXXXX`) and appointment summaries.
+- **Offline Resilience:** Integrated a global network status banner and logic that prevents form closure on submission failure, allowing users to retry once reconnected.
+- **Real-Time Hardening:** Added automatic WebSocket reconnection logic that triggers when the browser tab regains focus (critical for mobile reliability).
+- **Architectural Cleanup:** Centralized all date/time formatting into a single utility layer and moved all system constants (Philippine prefixes/suffixes, room options) to a shared module.
+
+### Previous: v0.6.0
+- Visual Overhaul (GCBG), History Persistence (Soft Delete), Intelligent Name Parsing, Unified Theme System.
 
 ### Previous: v0.5.0
 - Mobile UI Overhaul, History Management, Availability Guardrails, Pulsing Live Indicators, Tab Persistence.
@@ -69,6 +72,16 @@ Create a centralized management system that reduces uncertainty by providing rea
 ---
 
 ## 📅 Development Activity Log
+
+### **May 8, 2026** — Logic, Guards & Communication (v4)
+- **Booking Integrity:** Added `getActiveRequestCount` and `checkActiveRequestForSlot` to the API. Enforced a max-limit of 2 active requests per student via both DB triggers and UI guards.
+- **Faculty-Student Loop:** Implemented mandatory decline reasons (collected via textarea) and "Seen" status timestamps. Faculty can now see precisely when a student last updated a request.
+- **Digital Receipts:** Created a screenshot-friendly receipt modal. Includes Reference No, Faculty name, Day/Time (12h format), Room No, and Topic.
+- **Offline Mode:** Built `useNetworkStatus` hook. Added a global `WifiOff` banner that appears when the connection is lost. Submission logic now preserves form data during network drops.
+- **Realtime Reconnect:** Created `createRealtimeReconnect` helper. Automatically purges stale Supabase channels and re-subscribes when the user returns to the app from the background.
+- **Data Standardization:** Added `src/utils/dateUtils.js` (12h AM/PM conversion, Philippine date formats) and `src/utils/constants.js` (Room range 300–500, PH Prefix/Suffix dropdown lists).
+- **Avatar Fallbacks:** Updated faculty and student cards to show initial-based circles if an avatar image fails to load or is missing.
+- **Database Expansion:** Applied migrations for `notifications` table, `status_log` JSONB trail, and `accessibility_prefs` support.
 
 ### **May 4, 2026** — Mobile UX & History Cleanup
 - **Appointments Mobile Overhaul:** Replaced table-based layout with a modern card system on mobile. Improved information hierarchy, added better spacing, and optimized for high-density viewing.
@@ -188,7 +201,9 @@ src/
 │   ├── realtime.js      # Real-time subscription helpers
 │   └── ux.js            # UX utilities (toasts, skeletons, optimistic, latency)
 ├── utils/
-│   └── authUtils.js     # Role detection + name formatting
+│   ├── authUtils.js     # Role detection + name formatting
+│   ├── dateUtils.js     # 📅 Centralized AM/PM & date formatting
+│   └── constants.js     # ⚙️ App-wide options (Rooms, Prefixes, Types)
 ├── cloud.py             # ☁️ Cloudflare tunnel automation
 ├── SUPABASE_SETUP.md    # 🗄️ Database setup guide
 └── PROJECT_GUIDE.md     # 📖 Project maintenance guide
