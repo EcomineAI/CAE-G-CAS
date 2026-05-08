@@ -400,18 +400,26 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
         </div>
 
         <div className="status-selector">
-          <div className="status-pill" onClick={() => setIsStatusOpen(!isStatusOpen)}>
+          <button 
+            className="status-pill" 
+            onClick={() => setIsStatusOpen(!isStatusOpen)}
+            aria-label={`Current status: ${status}. Click to change.`}
+            aria-expanded={isStatusOpen}
+            aria-haspopup="listbox"
+          >
             <div className={`status-dot ${status.toLowerCase()}`}></div>
             <span className="status-text">{status}</span>
-            <ChevronDown size={18} />
-          </div>
+            <ChevronDown size={18} aria-hidden="true" />
+          </button>
           
           {isStatusOpen && (
-            <div className="status-dropdown">
+            <div className="status-dropdown" role="listbox" aria-label="Select your status">
               {statusOptions.map(opt => (
                 <div 
                   key={opt.label} 
                   className="status-option"
+                  role="option"
+                  aria-selected={status === opt.label}
                   onClick={() => handleStatusChange(opt.label)}
                 >
                   <div className={`status-dot ${opt.color}`}></div>
@@ -425,35 +433,55 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
 
       {loading ? <MetricCardSkeleton count={4} /> : (
         <div className="metric-row">
-          <div className="faculty-metric-card" onClick={() => onTabChange('Requests', 'All')}>
+          <button 
+            className="faculty-metric-card" 
+            onClick={() => onTabChange('Requests', 'All')}
+            aria-label={`View all requests. Total: ${totalRequests}`}
+          >
             <p className="metric-title">Total Requests</p>
             <div className="metric-num">{totalRequests}</div>
             <p className="metric-sub">All received</p>
-          </div>
+          </button>
           
-          <div className="faculty-metric-card" onClick={() => onTabChange('Requests', 'Approved')}>
+          <button 
+            className="faculty-metric-card" 
+            onClick={() => onTabChange('Requests', 'Approved')}
+            aria-label={`View approved appointments. Total: ${approvedRequests}`}
+          >
             <p className="metric-title">Approved</p>
             <div className="metric-num">{approvedRequests}</div>
             <p className="metric-sub">Confirmed Appointments</p>
-          </div>
+          </button>
 
-          <div className="faculty-metric-card" onClick={() => onTabChange('Requests', 'Pending')}>
+          <button 
+            className="faculty-metric-card" 
+            onClick={() => onTabChange('Requests', 'Pending')}
+            aria-label={`View pending requests. Total: ${pendingRequests}`}
+          >
             <p className="metric-title">Pending</p>
             <div className="metric-num">{pendingRequests}</div>
             <p className="metric-sub">Awaiting actions</p>
-          </div>
+          </button>
 
-          <div className="faculty-metric-card" onClick={() => onTabChange('Requests', 'History')}>
+          <button 
+            className="faculty-metric-card" 
+            onClick={() => onTabChange('Requests', 'History')}
+            aria-label={`View request history. Total: ${historyRequests}`}
+          >
             <p className="metric-title">History</p>
             <div className="metric-num">{historyRequests}</div>
             <p className="metric-sub">Past records</p>
-          </div>
+          </button>
 
-          <div className="faculty-metric-card" onClick={() => onTabChange('Schedule')}>
+          <button 
+            className="faculty-metric-card" 
+            onClick={() => onTabChange('Schedule')}
+            aria-label={`Manage your schedule. Active slots: ${activeSchedules}`}
+          >
             <p className="metric-title">Schedule</p>
             <div className="metric-num">{activeSchedules}</div>
             <p className="metric-sub">Active slots</p>
-          </div>
+          </button>
         </div>
       )}
 
@@ -495,8 +523,29 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
             </div>
           ))
         ) : (
-          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-            No pending requests.
+          <div 
+            style={{ 
+              textAlign: 'center', 
+              padding: '2.5rem 1rem', 
+              color: 'var(--text-muted)', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              gap: '1rem',
+              background: 'var(--bg-primary)',
+              borderRadius: '16px',
+              border: '1px solid var(--border-color)'
+            }}
+          >
+            <img 
+              src={`/brain/0eff5f06-37ce-4438-be91-04d9615e8274/empty_requests_illustration_1778260871821.png`} 
+              alt="Empty inbox" 
+              style={{ width: '140px', height: '140px', opacity: 0.8 }} 
+            />
+            <div>
+              <p style={{ margin: 0, fontWeight: 600, color: 'var(--text-primary)' }}>No pending tasks</p>
+              <p style={{ margin: 0, fontSize: '0.85rem' }}>You're all caught up for now!</p>
+            </div>
           </div>
         )}
       </div>

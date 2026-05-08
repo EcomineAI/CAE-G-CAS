@@ -741,7 +741,37 @@ const FacultyContent = () => {
             {loading ? (
               <FacultyCardSkeleton count={3} />
             ) : facultyList.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)' }}>No faculty found.</p>
+              <div 
+                className="empty-state-card"
+                style={{ 
+                  gridColumn: '1 / -1',
+                  textAlign: 'center', 
+                  padding: '5rem 2rem', 
+                  color: 'var(--text-muted)', 
+                  background: 'var(--bg-secondary)', 
+                  borderRadius: '24px', 
+                  border: '1px solid var(--border-color)', 
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '1.5rem',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
+                }}
+              >
+                <div style={{ width: '220px', height: '220px', opacity: 0.9 }}>
+                  <img 
+                    src={`/brain/0eff5f06-37ce-4438-be91-04d9615e8274/empty_faculty_illustration_1778260894401.png`} 
+                    alt="No faculty found" 
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                  />
+                </div>
+                <div>
+                  <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1.4rem' }}>No Faculty Found</h3>
+                  <p style={{ margin: 0, fontSize: '1rem', maxWidth: '400px' }}>
+                    We couldn't find any faculty members matching your search. Please try a different department or name.
+                  </p>
+                </div>
+              </div>
             ) : facultyList.map((faculty, idx) => (
               <div className="faculty-card" key={idx}>
                 <div className="faculty-card-top">
@@ -774,6 +804,7 @@ const FacultyContent = () => {
                     className="request-btn"
                     onClick={() => handleRequestAppointment(faculty)}
                     disabled={faculty.status === 'Unavailable'}
+                    aria-label={faculty.status === 'Unavailable' ? `${faculty.name} is currently unavailable` : `Request appointment with ${faculty.name}`}
                     style={faculty.status === 'Unavailable' ? { background: 'var(--card-border)', cursor: 'not-allowed', color: 'var(--text-muted)' } : {}}
                   >
                     {faculty.status === 'Unavailable' ? 'Currently Unavailable' : 'View Schedules & Request'}

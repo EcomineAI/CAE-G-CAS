@@ -51,43 +51,63 @@ const DashboardContent = ({ onTabChange, realName }) => {
       </div>
 
       <div className="action-cards">
-        <div className="action-card" onClick={() => onTabChange('Faculty')}>
+        <button 
+          className="action-card" 
+          onClick={() => onTabChange('Faculty')}
+          aria-label="Book a new appointment by finding a faculty member"
+        >
           <div className="action-icon">
-            <CalendarPlus size={24} />
+            <CalendarPlus size={24} aria-hidden="true" />
           </div>
           <div className="action-content">
             <h3>Book New Appointment</h3>
             <p>Find a slot and schedule consultation</p>
           </div>
-        </div>
-        <div className="action-card" onClick={() => onTabChange('Appointments')}>
+        </button>
+        <button 
+          className="action-card" 
+          onClick={() => onTabChange('Appointments')}
+          aria-label="View all your appointments"
+        >
           <div className="action-icon">
-            <ClipboardList size={24} />
+            <ClipboardList size={24} aria-hidden="true" />
           </div>
           <div className="action-content">
             <h3>My Appointments</h3>
             <p>View all scheduled consultations</p>
           </div>
-        </div>
+        </button>
       </div>
 
       {loading ? <MetricCardSkeleton count={4} /> : (
         <div className="metric-cards" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-          <div className="metric-card" onClick={() => onTabChange('Appointments', 'Approved')}>
+          <button 
+            className="metric-card" 
+            onClick={() => onTabChange('Appointments', 'Approved')}
+            aria-label={`View ${counts.Approved} approved appointments`}
+          >
             <h4>Approved</h4>
             <div className="metric-value">{counts.Approved}</div>
             <p>Confirmed appointments</p>
-          </div>
-          <div className="metric-card" onClick={() => onTabChange('Appointments', 'Pending')}>
+          </button>
+          <button 
+            className="metric-card" 
+            onClick={() => onTabChange('Appointments', 'Pending')}
+            aria-label={`View ${counts.Pending} pending appointments`}
+          >
             <h4>Pending</h4>
             <div className="metric-value">{counts.Pending}</div>
             <p>Awaiting confirmation</p>
-          </div>
-          <div className="metric-card" onClick={() => onTabChange('Appointments', 'History')}>
+          </button>
+          <button 
+            className="metric-card" 
+            onClick={() => onTabChange('Appointments', 'History')}
+            aria-label={`View ${counts.History} past appointments`}
+          >
             <h4>History</h4>
             <div className="metric-value">{counts.History}</div>
             <p>Past records</p>
-          </div>
+          </button>
         </div>
       )}
 
@@ -102,7 +122,35 @@ const DashboardContent = ({ onTabChange, realName }) => {
         {loading ? (
           <DashboardAppointmentSkeleton count={3} />
         ) : recentAppointments.length === 0 ? (
-          <p style={{ color: 'var(--text-muted)', padding: '1rem' }}>No recent appointments found.</p>
+          <div 
+            className="empty-state-card"
+            style={{ 
+              textAlign: 'center', 
+              padding: '2.5rem 1.5rem', 
+              color: 'var(--text-muted)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '1rem'
+            }}
+          >
+            <img 
+              src={`/brain/0eff5f06-37ce-4438-be91-04d9615e8274/empty_requests_illustration_1778260871821.png`} 
+              alt="No appointments" 
+              style={{ width: '150px', height: '150px', opacity: 0.8 }} 
+            />
+            <div>
+              <p style={{ margin: 0, fontWeight: 600, color: 'var(--text-primary)', fontSize: '1rem' }}>No Appointments Yet</p>
+              <p style={{ margin: 0, fontSize: '0.85rem' }}>Your consultation schedule is clear. Ready to book one?</p>
+              <button 
+                className="view-all" 
+                style={{ background: 'none', border: 'none', color: 'var(--accent-orange)', fontWeight: 600, cursor: 'pointer', marginTop: '0.5rem', fontSize: '0.85rem' }}
+                onClick={() => onTabChange('Faculty')}
+              >
+                Find Faculty &rarr;
+              </button>
+            </div>
+          </div>
         ) : recentAppointments.map((app) => (
           <div className="appointment-card" key={app.id}>
             <div className="appointment-info">

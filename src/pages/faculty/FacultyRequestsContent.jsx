@@ -364,15 +364,18 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
         <p>Review and manage student consultation requests</p>
       </div>
 
-      <div className="filter-row">
+      <div className="filter-row" role="tablist" aria-label="Filter requests by status">
         {['All', 'Pending', 'Approved', 'History'].map(f => (
-          <div 
+          <button 
             key={f} 
+            role="tab"
+            aria-selected={filter === f}
+            aria-label={`${f} requests, ${getCount(f)} items`}
             className={`filter-chip ${filter === f ? 'active' : ''}`}
             onClick={() => setFilter(f)}
           >
             {f === 'All' ? 'All' : `${f} (${getCount(f)})`}
-          </div>
+          </button>
         ))}
       </div>
 
@@ -435,10 +438,18 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
 
             {req.status === 'Pending' && (
               <div className="action-buttons">
-                <button className="action-btn btn-approve" onClick={() => handleAction(req.id, 'Approved')}>
+                <button 
+                  className="action-btn btn-approve" 
+                  onClick={() => handleAction(req.id, 'Approved')}
+                  aria-label={`Approve request from ${req.name}`}
+                >
                   <Check size={16} /> Approve
                 </button>
-                <button className="action-btn btn-decline" onClick={() => handleAction(req.id, 'Declined')}>
+                <button 
+                  className="action-btn btn-decline" 
+                  onClick={() => handleAction(req.id, 'Declined')}
+                  aria-label={`Decline request from ${req.name}`}
+                >
                   <X size={16} /> Decline
                 </button>
               </div>
@@ -471,8 +482,36 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
         ))}
 
         {filteredRequests.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-muted)', background: 'var(--bg-secondary)', borderRadius: '16px', border: '1px dashed var(--border-color)', marginTop: '1rem' }}>
-            No {filter === 'All' ? '' : filter.toLowerCase()} requests found.
+          <div 
+            className="empty-state-card"
+            style={{ 
+              textAlign: 'center', 
+              padding: '4rem 2rem', 
+              color: 'var(--text-muted)', 
+              background: 'var(--bg-secondary)', 
+              borderRadius: '24px', 
+              border: '1px solid var(--border-color)', 
+              marginTop: '1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '1.5rem',
+              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
+            }}
+          >
+            <div style={{ width: '220px', height: '220px', opacity: 0.9 }}>
+              <img 
+                src={`/brain/0eff5f06-37ce-4438-be91-04d9615e8274/empty_requests_illustration_1778260871821.png`} 
+                alt="No requests" 
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+              />
+            </div>
+            <div>
+              <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1.2rem' }}>All Caught Up!</h3>
+              <p style={{ margin: 0, fontSize: '0.9rem', maxWidth: '300px' }}>
+                No {filter === 'All' ? '' : filter.toLowerCase()} requests found at the moment.
+              </p>
+            </div>
           </div>
         )}
       </div>

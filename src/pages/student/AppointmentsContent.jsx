@@ -399,15 +399,18 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.3rem' }}>Track and manage your consultation requests</p>
       </div>
 
-      <div className="filter-tabs">
+      <div className="filter-tabs" role="tablist" aria-label="Filter appointments by status">
         {filters.map((filter) => (
-          <div 
+          <button 
             key={filter.value}
+            role="tab"
+            aria-selected={activeFilter === filter.value}
+            aria-label={`${filter.label} appointments`}
             className={`filter-tab ${activeFilter === filter.value ? 'active' : ''}`}
             onClick={() => handleFilterClick(filter.value)}
           >
             {filter.label}
-          </div>
+          </button>
         ))}
       </div>
 
@@ -428,9 +431,18 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
             ) : filteredData.length === 0 ? (
               <tr>
                 <td colSpan="5" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-                  <div style={{ color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>No appointments found</span>
-                    <span style={{ fontSize: '0.85rem' }}>Your {activeFilter === 'All' ? '' : activeFilter.toLowerCase()} records will appear here.</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+                    <div style={{ width: '180px', height: '180px', opacity: 0.8 }}>
+                      <img 
+                        src={`/brain/0eff5f06-37ce-4438-be91-04d9615e8274/empty_requests_illustration_1778260871821.png`} 
+                        alt="No records" 
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                      />
+                    </div>
+                    <div style={{ color: 'var(--text-muted)' }}>
+                      <p style={{ margin: '0 0 0.3rem 0', fontWeight: 600, color: 'var(--text-primary)', fontSize: '1.2rem' }}>No Appointments Found</p>
+                      <p style={{ margin: 0, fontSize: '0.9rem' }}>Your {activeFilter === 'All' ? '' : activeFilter.toLowerCase()} records will appear here.</p>
+                    </div>
                   </div>
                 </td>
               </tr>

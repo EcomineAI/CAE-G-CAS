@@ -49,11 +49,12 @@ Create a centralized management system that reduces uncertainty by providing rea
 
 ---
 
-## 📈 Latest Updates (v0.7.9) — May 9, 2026
-- **Bug Fix (Hotfix):** Resolved a critical `ReferenceError` in `FacultyDashboard.jsx` where `profilePrefix` and `profileSuffix` were accessed before being defined in the component state.
-- **Data Mapping Optimization:** Refined the `getFacultyRequests` and `getStudentRequests` API calls to correctly propagate professional titles through the request lifecycle.
+## 📈 Latest Updates (v0.8.0) — May 9, 2026
+- **Premium Empty States (#11):** Integrated beautiful 3D illustrations for empty dashboard states, search results, and appointment lists. Replaced basic text placeholders with high-quality visual feedback.
+- **Accessibility Overhaul (#34):** Comprehensive screen reader support (TalkBack/VoiceOver) across the platform. Added ARIA labels, roles, and improved keyboard navigation to all interactive elements.
+- **Inclusive UX:** Verified and refined Accessibility Settings (Font size, Reduced Motion, Dyslexic Font) to ensure a seamless experience for users with visual or cognitive impairments.
 
-### Previous: v0.7.8
+### Previous: v0.7.9
 - **Profile Name Redesign (#18):** Decoupled professional prefixes and suffixes from the `full_name` database field.
 - **Refined Faculty Titles:** Standardized professional titles to strictly "Academic" and "Administrative" categories.
 - **Real Profile Picture Upload (#16):** Supabase Storage integration for custom photos.
