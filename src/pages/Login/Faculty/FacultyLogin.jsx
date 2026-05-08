@@ -43,7 +43,7 @@ const FacultyLogin = () => {
     setLoading(true);
     setError('');
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });

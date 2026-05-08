@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, X, User, Search, Filter, Trash2, Eye, Clock } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { getFacultyRequests, updateRequestStatus, deleteRequest, markRequestSeen } from '../../supabase/api';
+import { getFacultyRequests, updateRequestStatus, deleteRequest } from '../../supabase/api';
 import { subscribeToRequests } from '../../supabase/realtime';
 import { RequestCardSkeleton, optimistic, withMinDelay } from '../../supabase/ux';
-import { calculateStudentSlot, formatTimeRange } from '../../utils/dateUtils';
+import { calculateStudentSlot } from '../../utils/dateUtils';
 import { STATUS_LABELS } from '../../utils/constants';
 
 const requestStyles = `

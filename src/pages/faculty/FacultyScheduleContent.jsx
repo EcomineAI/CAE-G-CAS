@@ -3,8 +3,8 @@ import { Plus, Edit2, Trash2, Clock, X, Calendar } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { getFacultySchedules, createSchedule, updateSchedule, deleteSchedule } from '../../supabase/api';
 import { subscribeToSchedules } from '../../supabase/realtime';
-import { toast, optimistic, ScheduleCardSkeleton, withMinDelay } from '../../supabase/ux';
-import { formatTime, formatTimeRange } from '../../utils/dateUtils';
+import { optimistic, ScheduleCardSkeleton, withMinDelay } from '../../supabase/ux';
+import { formatTimeRange } from '../../utils/dateUtils';
 import { ROOM_NUMBERS, SCHEDULE_DAYS } from '../../utils/constants';
 
 const scheduleStyles = `

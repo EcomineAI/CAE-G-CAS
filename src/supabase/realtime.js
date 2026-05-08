@@ -60,7 +60,7 @@ export const subscribeToRequests = (userId, role, callback, fetchFn) => {
         table: 'requests',
         filter: `${filterColumn}=eq.${userId}`
       },
-      async (payload) => {
+      async () => {
         const data = await fetchFn();
         callback(data);
       }

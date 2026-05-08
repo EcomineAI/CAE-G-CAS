@@ -935,6 +935,8 @@ const dashStyles = `
 }
 `;
 
+const allAvatars = Array.from({ length: 20 }, (_, i) => `https://api.dicebear.com/7.x/lorelei/svg?seed=Student${i + 1}&backgroundColor=e5e7eb,f3f4f6`);
+
 const StudentDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -977,7 +979,7 @@ const StudentDashboard = () => {
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
 
-  const allAvatars = Array.from({ length: 20 }, (_, i) => `https://api.dicebear.com/7.x/lorelei/svg?seed=Student${i + 1}&backgroundColor=e5e7eb,f3f4f6`);
+  // Profile State initialization below
 
   // Ensure profile exists for pre-trigger users and check name
   useEffect(() => {

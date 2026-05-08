@@ -318,11 +318,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
     return () => unsub();
   }, [user]);
 
-  useEffect(() => {
-    if (initialFilter) {
-      setActiveFilter(initialFilter);
-    }
-  }, [initialFilter]);
+  // Initial filter effect removed - handled by useState initialization
 
   const handleFilterClick = (filter) => {
     setActiveFilter(filter);

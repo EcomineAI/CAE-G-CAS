@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, ensureProfile } from '../../supabase/supabase';
 import { getProfile, updateProfile, uploadAvatar } from '../../supabase/api';
-import { subscribeToMyProfile } from '../../supabase/realtime';
+// realtime subscriptions imported below
 import { Layout, Calendar, Clock, Bell, User, Moon, Sun, ChevronDown, CheckCircle, AlertCircle, XCircle, Settings, Menu, X as CloseIcon, Camera } from 'lucide-react';
 import FacultyDashboardContent from './FacultyDashboardContent';
 import FacultyScheduleContent from './FacultyScheduleContent';
@@ -622,7 +622,7 @@ const FacultyDashboard = () => {
   const navigate = useNavigate();
 
   // 20 clean, modern avatars using Lorelei style (no specific gender labels or cultural identifiers)
-  const allAvatars = Array.from({ length: 20 }, (_, i) => `https://api.dicebear.com/7.x/lorelei/svg?seed=Prof${i + 1}&backgroundColor=e5e7eb,f3f4f6`);
+  // Faculty profile state
 
   useEffect(() => {
     if (!user) return;
