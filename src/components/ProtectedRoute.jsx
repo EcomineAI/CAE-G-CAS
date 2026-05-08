@@ -3,7 +3,9 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const ProtectedRoute = ({ children, allowedRole }) => {
+  console.log('[ProtectedRoute] Checking access...');
   const { user, loading } = useAuth();
+  console.log('[ProtectedRoute] User:', user, 'Loading:', loading);
 
   if (loading) {
     return (
