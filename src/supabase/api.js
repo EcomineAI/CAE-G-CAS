@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { logError } from './ux';
 
 // ==========================================
 // PROFILE API
@@ -15,7 +16,7 @@ export const getProfile = async (userId) => {
     .single();
 
   if (error) {
-    console.error('Error fetching profile:', error);
+    logError('Error fetching profile:', error);
     return null;
   }
   return data;
@@ -33,7 +34,7 @@ export const updateProfile = async (userId, updates) => {
     .single();
 
   if (error) {
-    console.error('Error updating profile:', error);
+    logError('Error updating profile:', error);
     return null;
   }
   return data;
@@ -63,7 +64,7 @@ export const getFacultySchedules = async (facultyId) => {
     .order('created_at', { ascending: true });
 
   if (error) {
-    console.error('Error fetching schedules:', error);
+    logError('Error fetching schedules:', error);
     return [];
   }
 
@@ -78,7 +79,7 @@ export const getFacultySchedules = async (facultyId) => {
     .in('status', ['Approved', 'Pending']);
 
   if (countError) {
-    console.error('Error counting requests:', countError);
+    logError('Error counting requests:', countError);
     // Return schedules without filled count
     return schedules.map(s => ({ ...s, filled: 0 }));
   }
@@ -103,7 +104,7 @@ export const createSchedule = async (scheduleData) => {
     .single();
 
   if (error) {
-    console.error('Error creating schedule:', error);
+    logError('Error creating schedule:', error);
     return null;
   }
   return data;
@@ -118,7 +119,7 @@ export const updateSchedule = async (scheduleId, updates) => {
     .single();
 
   if (error) {
-    console.error('Error updating schedule:', error);
+    logError('Error updating schedule:', error);
     return null;
   }
   return data;
@@ -131,7 +132,7 @@ export const deleteSchedule = async (scheduleId) => {
     .eq('id', scheduleId);
 
   if (error) {
-    console.error('Error deleting schedule:', error);
+    logError('Error deleting schedule:', error);
     return false;
   }
   return true;
@@ -158,7 +159,7 @@ export const getFacultyRequests = async (facultyId) => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching requests:', error);
+    logError('Error fetching requests:', error);
     return [];
   }
 
@@ -214,7 +215,7 @@ export const updateRequestStatus = async (requestId, newStatus, cancelReason = n
     .eq('id', requestId);
 
   if (error) {
-    console.error('Error updating request status:', error);
+    logError('Error updating request status:', error);
     return false;
   }
   return true;
@@ -234,7 +235,7 @@ export const updateRequestDetails = async (requestId, subject, details) => {
     .eq('id', requestId);
 
   if (error) {
-    console.error('Error updating request details:', error);
+    logError('Error updating request details:', error);
     return false;
   }
   return true;
@@ -256,7 +257,7 @@ export const getStudentRequests = async (studentId) => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching student requests:', error);
+    logError('Error fetching student requests:', error);
     return [];
   }
 
@@ -303,7 +304,7 @@ export const checkActiveRequest = async (studentId, facultyId) => {
     .in('status', ['Pending', 'Approved']);
 
   if (error) {
-    console.error('Error checking active request:', error);
+    logError('Error checking active request:', error);
     return false;
   }
   return data && data.length > 0;
@@ -321,7 +322,7 @@ export const checkActiveRequestForSlot = async (studentId, scheduleId) => {
     .in('status', ['Pending', 'Approved']);
 
   if (error) {
-    console.error('Error checking slot request:', error);
+    logError('Error checking slot request:', error);
     return false;
   }
   return data && data.length > 0;
@@ -352,7 +353,7 @@ export const markRequestSeen = async (requestId) => {
     .eq('id', requestId)
     .is('faculty_seen_at', null); // only set once
 
-  if (error) console.error('Error marking request seen:', error);
+  if (error) logError('Error marking request seen:', error);
 };
 
 // ==========================================
@@ -371,7 +372,7 @@ export const getAllFaculty = async () => {
     .order('full_name', { ascending: true });
 
   if (error) {
-    console.error('Error fetching faculty:', error);
+    logError('Error fetching faculty:', error);
     return [];
   }
 
@@ -404,7 +405,7 @@ export const submitRequest = async (requestData) => {
     .single();
 
   if (error) {
-    console.error('Error submitting request:', error);
+    logError('Error submitting request:', error);
     return null;
   }
   return data;
@@ -422,7 +423,7 @@ export const deleteRequest = async (id, role = 'student') => {
     .eq('id', id);
   
   if (error) {
-    console.error('Error soft deleting request:', error);
+    logError('Error soft deleting request:', error);
     return false;
   }
   return true;
@@ -442,7 +443,7 @@ export const uploadAvatar = async (userId, file) => {
     .upload(filePath, file);
 
   if (uploadError) {
-    console.error('Error uploading avatar:', uploadError);
+    logError('Error uploading avatar:', uploadError);
     return null;
   }
 

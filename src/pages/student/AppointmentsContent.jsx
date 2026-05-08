@@ -1,4 +1,11 @@
+import React, { useState, useEffect } from 'react';
 import { User, Trash2, Search, ClipboardList, Clock } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { getStudentRequests, updateRequestDetails, updateRequestStatus, deleteRequest } from '../../supabase/api';
+import { subscribeToRequests } from '../../supabase/realtime';
+import { AppointmentRowSkeleton, withMinDelay, optimistic, toast } from '../../supabase/ux';
+import { calculateStudentSlot, formatTimeRange } from '../../utils/dateUtils';
+import { STATUS_LABELS } from '../../utils/constants';
 
 const appointmentsStyles = `
 .appointments-page {

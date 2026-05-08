@@ -117,10 +117,18 @@ export const toast = {
 };
 
 
-// =============================================
-// 2. OPTIMISTIC UI HELPER
-// Instant UI update with rollback on failure
-// =============================================
+/**
+ * Centralized error logger for GCAS.
+ * Provides detailed, grouped output in the browser console for easier debugging.
+ */
+export const logError = (context, error) => {
+  console.group(`🔴 GCAS Error: ${context}`);
+  console.error('Message:', error?.message || error);
+  if (error?.details) console.error('Details:', error.details);
+  if (error?.hint) console.warn('Hint:', error.hint);
+  if (error?.code) console.info('Code:', error.code);
+  console.groupEnd();
+};
 
 /**
  * Optimistically updates state, performs server call, rolls back on failure.
@@ -138,14 +146,14 @@ export const optimistic = async (setState, currentState, optimisticState, server
   try {
     const result = await serverCall();
     if (result === null || result === false) {
-      throw new Error('Server returned failure');
+      throw new Error('Server returned failure (null/false)');
     }
     if (messages.success) toast.success(messages.success);
     return true;
   } catch (err) {
     setState(snapshot);
     toast.error(messages.error || 'Something went wrong. Reverted.');
-    console.error('Optimistic update failed:', err);
+    logError(`Optimistic update failed (${messages.error || 'Unknown context'})`, err);
     return false;
   }
 };
