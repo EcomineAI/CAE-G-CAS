@@ -241,6 +241,7 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, reqId: null, newStatus: null, actionText: '' });
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, reqId: null });
   const [declineModal, setDeclineModal] = useState({ isOpen: false, reqId: null, reason: '' });
+  const [approveModal, setApproveModal] = useState({ isOpen: false, reqId: null, note: '' });
 
   useEffect(() => {
     setFilter(initialFilter);
@@ -264,11 +265,27 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
       setDeclineModal({ isOpen: true, reqId: id, reason: '' });
       return;
     }
+    if (newStatus === 'Approved') {
+      setApproveModal({ isOpen: true, reqId: id, note: '' });
+      return;
+    }
     if (newStatus === 'Completed') {
       setConfirmModal({ isOpen: true, reqId: id, newStatus, actionText: 'mark this appointment as completed' });
       return;
     }
     await executeAction(id, newStatus);
+  };
+
+  const executeApprove = async () => {
+    const { reqId, note } = approveModal;
+    if (!reqId) return;
+    setApproveModal({ isOpen: false, reqId: null, note: '' });
+    await optimistic(
+      setRequests, requests,
+      requests.map(req => req.id === reqId ? { ...req, status: 'Approved', faculty_note: note } : req),
+      () => updateRequestStatus(reqId, 'Approved', null, null, note),
+      { success: 'Request approved!', error: 'Failed to approve request' }
+    );
   };
 
   const executeDecline = async () => {
@@ -299,7 +316,7 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
     setDeleteModal({ isOpen: true, reqId: id });
   };
 
-  const executeDelete = async () => {
+  const executeArchive = async () => {
     const { reqId } = deleteModal;
     if (!reqId) return;
     
@@ -310,7 +327,7 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
       requests,
       requests.filter(req => req.id !== reqId),
       () => deleteRequest(reqId, 'faculty'),
-      { success: 'Record deleted from history', error: 'Failed to delete record' }
+      { success: 'Request moved to archive', error: 'Failed to archive request' }
     );
   };
 
@@ -443,10 +460,10 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
               <div className="action-buttons">
                 <button 
                   className="action-btn" 
-                  style={{ background: 'transparent', border: '1px solid #ef4444', color: '#ef4444' }}
+                  style={{ background: 'transparent', border: '1px solid var(--accent-orange)', color: 'var(--accent-orange)' }}
                   onClick={() => confirmDelete(req.id)}
                 >
-                  <Trash2 size={16} /> <span>Delete History</span>
+                  <Trash2 size={16} /> <span>Archive Request</span>
                 </button>
               </div>
             )}
@@ -528,19 +545,60 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
           </div>
         </div>
       )}
+      {/* #21: Approve with Note Modal */}
+      {approveModal.isOpen && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+          <div className="modal-card" style={{ background: 'var(--bg-secondary)', padding: '2.5rem', borderRadius: '16px', maxWidth: '420px', width: '90%', textAlign: 'left', border: '1px solid var(--border-color)', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: 'var(--accent-orange)', marginBottom: '1rem' }}>
+              <Check size={22} />
+              <h2 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.3rem' }}>Approve Request</h2>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.2rem' }}>
+              Add a note for the student? (e.g., "Please bring your student ID.")
+            </p>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                Note for Student (Optional)
+              </label>
+              <textarea
+                value={approveModal.note}
+                onChange={e => setApproveModal({ ...approveModal, note: e.target.value })}
+                placeholder="No special instructions needed."
+                rows={3}
+                style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <button
+                onClick={() => setApproveModal({ isOpen: false, reqId: null, note: '' })}
+                style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeApprove}
+                style={{ padding: '0.8rem', borderRadius: '8px', border: 'none', background: 'var(--accent-orange)', color: 'white', cursor: 'pointer', fontWeight: 600 }}
+              >
+                Approve Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {deleteModal.isOpen && (
         <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
           <div className="modal-card" style={{ background: 'var(--bg-secondary)', padding: '2.5rem', borderRadius: '16px', maxWidth: '400px', width: '90%', textAlign: 'left', border: '1px solid var(--border-color)', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: '#ef4444', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: 'var(--accent-orange)', marginBottom: '1rem' }}>
               <Trash2 size={24} />
-              <h2 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.4rem' }}>Delete History?</h2>
+              <h2 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.4rem' }}>Archive Request?</h2>
             </div>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-              Are you sure you want to permanently delete this record from your history?
+              Moving this to archive will hide it from your main list but keep it for your permanent records.
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <button onClick={() => setDeleteModal({ isOpen: false, reqId: null })} style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
-              <button onClick={executeDelete} style={{ padding: '0.8rem', borderRadius: '8px', border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Yes, Delete</button>
+              <button onClick={executeArchive} style={{ padding: '0.8rem', borderRadius: '8px', border: 'none', background: 'var(--accent-orange)', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Yes, Archive</button>
             </div>
           </div>
         </div>

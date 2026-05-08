@@ -455,6 +455,13 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
                         <div style={{ color: 'var(--text-muted)', lineHeight: '1.3' }}>{app.details}</div>
                       </div>
 
+                      {/* #21: Faculty Note Display */}
+                      {app.faculty_note && (
+                        <div style={{ marginTop: '0.5rem', padding: '0.6rem', background: 'var(--accent-light)', borderRadius: '8px', borderLeft: '3px solid var(--accent-orange)', fontSize: '0.75rem', color: 'var(--text-primary)' }}>
+                          <strong>📝 Faculty Note:</strong> "{app.faculty_note}"
+                        </div>
+                      )}
+
                       {/* #31: Decline Reason */}
                       {app.status === 'Declined' && app.declineReason && (
                         <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#fee2e2', borderRadius: '6px', borderLeft: '3px solid #ef4444', fontSize: '0.75rem', color: '#b91c1c' }}>

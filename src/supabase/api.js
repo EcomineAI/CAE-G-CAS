@@ -151,7 +151,7 @@ export const getFacultyRequests = async (facultyId) => {
     .select(`
       *,
       student:profiles!requests_student_id_fkey(full_name, avatar_url, email),
-      schedule:schedules(day, start_time, end_time)
+      schedule:schedules(day, start_time, end_time, max_slots)
     `)
     .eq('faculty_id', facultyId)
     .eq('is_faculty_deleted', false)
@@ -192,24 +192,19 @@ export const getFacultyRequests = async (facultyId) => {
       statusLog: req.status_log || [],
       messages: req.messages || [],
       facultyNote: req.faculty_note || null,
+      max_slots: req.schedule?.max_slots || 1
     };
   });
 };
 
 /**
- * Update request status (Approved, Declined, Completed, Cancelled).
+ * Update request status. Accepts optional cancelReason, declineReason, or facultyNote.
  */
-/**
- * Update request status. Accepts optional cancelReason (student) or declineReason (faculty).
- */
-export const updateRequestStatus = async (requestId, newStatus, cancelReason = null, declineReason = null) => {
+export const updateRequestStatus = async (requestId, newStatus, cancelReason = null, declineReason = null, facultyNote = null) => {
   const updates = { status: newStatus, updated_at: new Date().toISOString() };
   if (cancelReason !== null) updates.cancel_reason = cancelReason;
   if (declineReason !== null) updates.decline_reason = declineReason;
-
-  // Append to status_log if column exists
-  const logEntry = JSON.stringify({ status: newStatus, at: new Date().toISOString() });
-  // We use a raw rpc or just append client-side; the trigger handles it server-side
+  if (facultyNote !== null) updates.faculty_note = facultyNote;
 
   const { error } = await supabase
     .from('requests')
@@ -252,7 +247,7 @@ export const getStudentRequests = async (studentId) => {
     .select(`
       *,
       faculty:profiles!requests_faculty_id_fkey(full_name, avatar_url),
-      schedule:schedules(day, start_time, end_time)
+      schedule:schedules(day, start_time, end_time, max_slots)
     `)
     .eq('student_id', studentId)
     .eq('is_student_deleted', false)
@@ -284,7 +279,10 @@ export const getStudentRequests = async (studentId) => {
     facultySeen: req.faculty_seen_at || null,
     statusLog: req.status_log || [],
     messages: req.messages || [],
-    facultyDeleted: req.is_faculty_deleted ?? false
+    facultyNote: req.faculty_note || null,
+    facultyDeleted: req.is_faculty_deleted ?? false,
+    schedule_id: req.schedule_id,
+    max_slots: req.schedule?.max_slots || 1
   }));
 };
 
