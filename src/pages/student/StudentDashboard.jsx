@@ -970,6 +970,7 @@ const StudentDashboard = () => {
   const [realAvatar, setRealAvatar] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [profilePrefix, setProfilePrefix] = useState('');
   const [profileSuffix, setProfileSuffix] = useState('');
@@ -1442,6 +1443,16 @@ const StudentDashboard = () => {
                 <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>Student</p>
               </div>
             </div>
+            
+            <button className="drawer-link" onClick={() => { setIsNotifOpen(true); setIsMobileMenuOpen(false); }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative' }}>
+                <Bell size={24} />
+                <span>Notifications</span>
+                {unreadCount > 0 && (
+                  <span style={{ background: '#ef4444', color: 'white', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '50%', fontWeight: 700 }}>{unreadCount}</span>
+                )}
+              </div>
+            </button>
             
             <button className="drawer-link" onClick={() => { setIsDarkMode(!isDarkMode); }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>

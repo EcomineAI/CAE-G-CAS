@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, CheckCircle, WifiOff } from 'lucide-react';
+import { User, CheckCircle, WifiOff, Search, Users } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount } from '../../supabase/api';
 import { subscribeToFacultyStatus } from '../../supabase/realtime';
@@ -26,12 +26,45 @@ const facultyStyles = `
 .status-legend {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1.5rem;
   padding: 0.8rem 1.5rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.search-box-faculty {
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+}
+
+.search-icon-faculty {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-box-faculty input {
+  width: 100%;
+  padding: 0.6rem 1rem 0.6rem 2.5rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.search-box-faculty input:focus {
+  border-color: var(--accent-orange);
 }
 
 .status-legend span {
@@ -570,6 +603,7 @@ const facultyStyles = `
 const FacultyContent = () => {
   const { user } = useAuth();
   const [facultyList, setFacultyList] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [facultyView, setFacultyView] = useState('list');
   const [selectedFaculty, setSelectedFaculty] = useState(null);
@@ -611,6 +645,11 @@ const FacultyContent = () => {
     });
     return () => unsub();
   }, []);
+
+  const filteredFaculty = facultyList.filter(f => 
+    (f.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
+    (f.dept?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+  );
 
   const handleRequestAppointment = async (faculty) => {
     if (faculty.status === 'Unavailable') {
@@ -731,16 +770,29 @@ const FacultyContent = () => {
       {facultyView === 'list' && (
         <>
           <div className="status-legend">
-            <span className="status-legend-label">Status:</span>
-            <span><span className="status-dot green"></span>Available</span>
-            <span><span className="status-dot yellow"></span>Busy</span>
-            <span><span className="status-dot red"></span>Unavailable</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <span className="status-legend-label">Status:</span>
+              <span><span className="status-dot green"></span>Available</span>
+              <span><span className="status-dot yellow"></span>Busy</span>
+              <span><span className="status-dot red"></span>Unavailable</span>
+            </div>
+
+            <div className="search-box-faculty">
+              <Search size={16} className="search-icon-faculty" />
+              <input 
+                type="text" 
+                placeholder="Search faculty or department..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                aria-label="Search faculty"
+              />
+            </div>
           </div>
 
           <div className="faculty-grid">
             {loading ? (
               <FacultyCardSkeleton count={3} />
-            ) : facultyList.length === 0 ? (
+            ) : filteredFaculty.length === 0 ? (
               <div 
                 className="empty-state-card"
                 style={{ 
@@ -754,25 +806,30 @@ const FacultyContent = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '1.5rem',
-                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
+                  gap: '1rem'
                 }}
               >
-                <div style={{ width: '220px', height: '220px', opacity: 0.9 }}>
-                  <img 
-                    src={`/brain/0eff5f06-37ce-4438-be91-04d9615e8274/empty_faculty_illustration_1778260894401.png`} 
-                    alt="No faculty found" 
-                    style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
-                  />
+                <div style={{ padding: '1.5rem', background: 'var(--bg-primary)', borderRadius: '50%', color: 'var(--accent-orange)', marginBottom: '0.5rem' }}>
+                  <Users size={48} strokeWidth={1.5} />
                 </div>
                 <div>
-                  <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1.4rem' }}>No Faculty Found</h3>
-                  <p style={{ margin: 0, fontSize: '1rem', maxWidth: '400px' }}>
-                    We couldn't find any faculty members matching your search. Please try a different department or name.
+                  <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1.2rem' }}>
+                    {searchTerm ? 'No matches found' : 'No Faculty Found'}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.9rem', maxWidth: '400px' }}>
+                    {searchTerm ? `We couldn't find anyone matching "${searchTerm}"` : 'No faculty members are available at the moment.'}
                   </p>
+                  {searchTerm && (
+                    <button 
+                      onClick={() => setSearchTerm('')}
+                      style={{ background: 'none', border: 'none', color: 'var(--accent-orange)', fontWeight: 600, marginTop: '1rem', cursor: 'pointer' }}
+                    >
+                      Clear search
+                    </button>
+                  )}
                 </div>
               </div>
-            ) : facultyList.map((faculty, idx) => (
+            ) : filteredFaculty.map((faculty, idx) => (
               <div className="faculty-card" key={idx}>
                 <div className="faculty-card-top">
                   <div className="faculty-card-header">

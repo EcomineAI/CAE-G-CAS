@@ -231,11 +231,73 @@ const requestStyles = `
     padding: 0.8rem;
   }
 }
+
+.filter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.status-filters {
+  display: flex;
+  gap: 0.8rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+
+.status-filters::-webkit-scrollbar { display: none; }
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 280px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.7rem 1rem 0.7rem 2.8rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.search-box input:focus {
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+@media (max-width: 768px) {
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .search-box {
+    min-width: 100%;
+  }
+}
 `;
 
 const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
   const { user } = useAuth();
   const [filter, setFilter] = useState(initialFilter);
+  const [searchTerm, setSearchTerm] = useState('');
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, reqId: null, newStatus: null, actionText: '' });
@@ -345,9 +407,17 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
   };
 
   const filteredRequests = requests.filter(req => {
-    if (filter === 'All') return true;
-    if (filter === 'History') return ['Completed', 'Cancelled', 'Declined'].includes(req.status);
-    return req.status === filter;
+    const matchesFilter = filter === 'All' 
+      ? true 
+      : filter === 'History' 
+        ? ['Completed', 'Cancelled', 'Declined'].includes(req.status)
+        : req.status === filter;
+        
+    const matchesSearch = (req.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
+                         (req.subject?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (req.details?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+                         
+    return matchesFilter && matchesSearch;
   });
 
   const getCount = (status) => {
@@ -365,18 +435,31 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
       </div>
 
       <div className="filter-row" role="tablist" aria-label="Filter requests by status">
-        {['All', 'Pending', 'Approved', 'History'].map(f => (
-          <button 
-            key={f} 
-            role="tab"
-            aria-selected={filter === f}
-            aria-label={`${f} requests, ${getCount(f)} items`}
-            className={`filter-chip ${filter === f ? 'active' : ''}`}
-            onClick={() => setFilter(f)}
-          >
-            {f === 'All' ? 'All' : `${f} (${getCount(f)})`}
-          </button>
-        ))}
+        <div className="status-filters">
+          {['All', 'Pending', 'Approved', 'History'].map(f => (
+            <button 
+              key={f} 
+              role="tab"
+              aria-selected={filter === f}
+              aria-label={`${f} requests, ${getCount(f)} items`}
+              className={`filter-chip ${filter === f ? 'active' : ''}`}
+              onClick={() => setFilter(f)}
+            >
+              {f === 'All' ? 'All' : `${f} (${getCount(f)})`}
+            </button>
+          ))}
+        </div>
+
+        <div className="search-box">
+          <Search size={18} className="search-icon" />
+          <input 
+            type="text" 
+            placeholder="Search student or subject..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            aria-label="Search requests"
+          />
+        </div>
       </div>
 
       <div className="requests-list">
@@ -499,18 +582,24 @@ const FacultyRequestsContent = ({ initialFilter = 'Pending' }) => {
               boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
             }}
           >
-            <div style={{ width: '220px', height: '220px', opacity: 0.9 }}>
-              <img 
-                src={`/brain/0eff5f06-37ce-4438-be91-04d9615e8274/empty_requests_illustration_1778260871821.png`} 
-                alt="No requests" 
-                style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
-              />
+            <div style={{ padding: '1.5rem', background: 'var(--bg-primary)', borderRadius: '50%', color: 'var(--accent-orange)', marginBottom: '0.5rem' }}>
+              <Inbox size={48} strokeWidth={1.5} />
             </div>
             <div>
-              <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1.2rem' }}>All Caught Up!</h3>
+              <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1.2rem' }}>
+                {searchTerm ? 'No matches found' : 'All Caught Up!'}
+              </h3>
               <p style={{ margin: 0, fontSize: '0.9rem', maxWidth: '300px' }}>
-                No {filter === 'All' ? '' : filter.toLowerCase()} requests found at the moment.
+                {searchTerm ? `We couldn't find anything matching "${searchTerm}"` : `No ${filter === 'All' ? '' : filter.toLowerCase()} requests found at the moment.`}
               </p>
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm('')}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent-orange)', fontWeight: 600, marginTop: '1rem', cursor: 'pointer' }}
+                >
+                  Clear search
+                </button>
+              )}
             </div>
           </div>
         )}

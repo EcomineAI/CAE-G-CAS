@@ -134,11 +134,9 @@ const DashboardContent = ({ onTabChange, realName }) => {
               gap: '1rem'
             }}
           >
-            <img 
-              src={`/brain/0eff5f06-37ce-4438-be91-04d9615e8274/empty_requests_illustration_1778260871821.png`} 
-              alt="No appointments" 
-              style={{ width: '150px', height: '150px', opacity: 0.8 }} 
-            />
+            <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '50%', color: 'var(--accent-orange)' }}>
+              <ClipboardList size={32} strokeWidth={1.5} />
+            </div>
             <div>
               <p style={{ margin: 0, fontWeight: 600, color: 'var(--text-primary)', fontSize: '1rem' }}>No Appointments Yet</p>
               <p style={{ margin: 0, fontSize: '0.85rem' }}>Your consultation schedule is clear. Ready to book one?</p>

@@ -1,12 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { User, Trash2 } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
-import { getStudentRequests, updateRequestDetails, updateRequestStatus, deleteRequest } from '../../supabase/api';
-import { subscribeToRequests } from '../../supabase/realtime';
-import { AppointmentRowSkeleton, withMinDelay, optimistic, toast } from '../../supabase/ux';
-import { calculateStudentSlot, formatTimeRange } from '../../utils/dateUtils';
-import { STATUS_LABELS } from '../../utils/constants';
-import { Clock } from 'lucide-react';
+import { User, Trash2, Search, ClipboardList, Clock } from 'lucide-react';
 
 const appointmentsStyles = `
 .appointments-page {
@@ -20,14 +12,56 @@ const appointmentsStyles = `
   margin-bottom: 2rem;
 }
 
+.filter-row-appointments {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
 .filter-tabs {
   display: flex;
   gap: 0.8rem;
-  margin-bottom: 1.5rem;
   overflow-x: auto;
-  padding-bottom: 0.5rem;
   scrollbar-width: none;
+  padding-bottom: 4px;
 }
+
+.filter-tabs::-webkit-scrollbar { display: none; }
+
+.search-box-appointments {
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+}
+
+.search-icon-appointments {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-box-appointments input {
+  width: 100%;
+  padding: 0.6rem 1rem 0.6rem 2.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.search-box-appointments input:focus {
+  border-color: var(--accent-orange);
+}
+
 
 .filter-tab {
   padding: 0.45rem 1.25rem;
@@ -256,6 +290,7 @@ const appointmentsStyles = `
 const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
   const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState(initialFilter);
+  const [searchTerm, setSearchTerm] = useState('');
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancelModal, setCancelModal] = useState({ isOpen: false, reqId: null, reason: '' });
@@ -369,11 +404,19 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
     return calculateStudentSlot(start, end, app.max_slots || 5, index);
   };
 
-  const filteredData = activeFilter === 'All' 
-    ? requests 
-    : activeFilter === 'History'
-      ? requests.filter(app => ['Completed', 'Cancelled', 'Declined'].includes(app.status))
-      : requests.filter(app => app.status === activeFilter);
+  const filteredData = requests.filter(app => {
+    const matchesFilter = activeFilter === 'All' 
+      ? true 
+      : activeFilter === 'History'
+        ? ['Completed', 'Cancelled', 'Declined'].includes(app.status)
+        : app.status === activeFilter;
+
+    const matchesSearch = (app.facultyName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (app.subject?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (app.reason?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+
+    return matchesFilter && matchesSearch;
+  });
 
   const getHistoryCount = () => requests.filter(r => ['Completed', 'Cancelled', 'Declined'].includes(r.status)).length;
 
@@ -399,19 +442,32 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.3rem' }}>Track and manage your consultation requests</p>
       </div>
 
-      <div className="filter-tabs" role="tablist" aria-label="Filter appointments by status">
-        {filters.map((filter) => (
-          <button 
-            key={filter.value}
-            role="tab"
-            aria-selected={activeFilter === filter.value}
-            aria-label={`${filter.label} appointments`}
-            className={`filter-tab ${activeFilter === filter.value ? 'active' : ''}`}
-            onClick={() => handleFilterClick(filter.value)}
-          >
-            {filter.label}
-          </button>
-        ))}
+      <div className="filter-row-appointments">
+        <div className="filter-tabs" role="tablist" aria-label="Filter appointments by status">
+          {filters.map((filter) => (
+            <button 
+              key={filter.value}
+              role="tab"
+              aria-selected={activeFilter === filter.value}
+              aria-label={`${filter.label} appointments`}
+              className={`filter-tab ${activeFilter === filter.value ? 'active' : ''}`}
+              onClick={() => handleFilterClick(filter.value)}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="search-box-appointments">
+          <Search size={16} className="search-icon-appointments" />
+          <input 
+            type="text" 
+            placeholder="Search faculty or subject..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            aria-label="Search appointments"
+          />
+        </div>
       </div>
 
       <div className="appointments-table-container">
@@ -431,17 +487,25 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
             ) : filteredData.length === 0 ? (
               <tr>
                 <td colSpan="5" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
-                    <div style={{ width: '180px', height: '180px', opacity: 0.8 }}>
-                      <img 
-                        src={`/brain/0eff5f06-37ce-4438-be91-04d9615e8274/empty_requests_illustration_1778260871821.png`} 
-                        alt="No records" 
-                        style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
-                      />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ padding: '1.5rem', background: 'var(--bg-primary)', borderRadius: '50%', color: 'var(--accent-orange)', marginBottom: '0.5rem' }}>
+                      <ClipboardList size={48} strokeWidth={1.5} />
                     </div>
                     <div style={{ color: 'var(--text-muted)' }}>
-                      <p style={{ margin: '0 0 0.3rem 0', fontWeight: 600, color: 'var(--text-primary)', fontSize: '1.2rem' }}>No Appointments Found</p>
-                      <p style={{ margin: 0, fontSize: '0.9rem' }}>Your {activeFilter === 'All' ? '' : activeFilter.toLowerCase()} records will appear here.</p>
+                      <p style={{ margin: '0 0 0.3rem 0', fontWeight: 600, color: 'var(--text-primary)', fontSize: '1.2rem' }}>
+                        {searchTerm ? 'No matches found' : 'No Appointments Found'}
+                      </p>
+                      <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                        {searchTerm ? `We couldn't find anything matching "${searchTerm}"` : `Your ${activeFilter === 'All' ? '' : activeFilter.toLowerCase()} records will appear here.`}
+                      </p>
+                      {searchTerm && (
+                        <button 
+                          onClick={() => setSearchTerm('')}
+                          style={{ background: 'none', border: 'none', color: 'var(--accent-orange)', fontWeight: 600, marginTop: '1rem', cursor: 'pointer' }}
+                        >
+                          Clear search
+                        </button>
+                      )}
                     </div>
                   </div>
                 </td>

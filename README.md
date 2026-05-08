@@ -49,12 +49,12 @@ Create a centralized management system that reduces uncertainty by providing rea
 
 ---
 
-## 📈 Latest Updates (v0.8.0) — May 9, 2026
-- **Premium Empty States (#11):** Integrated beautiful 3D illustrations for empty dashboard states, search results, and appointment lists. Replaced basic text placeholders with high-quality visual feedback.
-- **Accessibility Overhaul (#34):** Comprehensive screen reader support (TalkBack/VoiceOver) across the platform. Added ARIA labels, roles, and improved keyboard navigation to all interactive elements.
-- **Inclusive UX:** Verified and refined Accessibility Settings (Font size, Reduced Motion, Dyslexic Font) to ensure a seamless experience for users with visual or cognitive impairments.
+## 📈 Latest Updates (v0.8.1) — May 9, 2026
+- **Search-Optimized UI (#11):** Transformed all request and faculty lists into a high-performance, search-optimized interface. Added real-time filtering to handle 50+ records efficiently.
+- **Hotfix: ReferenceError (#bug):** Resolved a critical crash in `StudentDashboard.jsx` where the notification state was accessed before declaration.
+- **Lightweight Experience:** Replaced 3D assets with SVG icons for faster load times and professional visual clarity across all empty states.
 
-### Previous: v0.7.9
+### Previous: v0.8.0
 - **Profile Name Redesign (#18):** Decoupled professional prefixes and suffixes from the `full_name` database field.
 - **Refined Faculty Titles:** Standardized professional titles to strictly "Academic" and "Administrative" categories.
 - **Real Profile Picture Upload (#16):** Supabase Storage integration for custom photos.

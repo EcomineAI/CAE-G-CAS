@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Calendar, Clock, User, ArrowRight, Bell } from 'lucide-react';
+import { ChevronDown, Calendar, Clock, User, ArrowRight, Bell, Inbox } from 'lucide-react';
 import CalendarView from '../../components/CalendarView';
 import { useAuth } from '../../hooks/useAuth';
 import { getFacultyRequests, getFacultySchedules, getProfile, updateFacultyStatus } from '../../supabase/api';
@@ -537,11 +537,9 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
               border: '1px solid var(--border-color)'
             }}
           >
-            <img 
-              src={`/brain/0eff5f06-37ce-4438-be91-04d9615e8274/empty_requests_illustration_1778260871821.png`} 
-              alt="Empty inbox" 
-              style={{ width: '140px', height: '140px', opacity: 0.8 }} 
-            />
+            <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '50%', color: 'var(--accent-orange)' }}>
+              <Inbox size={32} strokeWidth={1.5} />
+            </div>
             <div>
               <p style={{ margin: 0, fontWeight: 600, color: 'var(--text-primary)' }}>No pending tasks</p>
               <p style={{ margin: 0, fontSize: '0.85rem' }}>You're all caught up for now!</p>
