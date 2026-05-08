@@ -970,8 +970,9 @@ const StudentDashboard = () => {
   const [realAvatar, setRealAvatar] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [profilePrefix, setProfilePrefix] = useState('');
+  const [profileSuffix, setProfileSuffix] = useState('');
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
 
@@ -990,6 +991,8 @@ const StudentDashboard = () => {
         setRealAvatar(p.avatar_url || user.avatarUrl || allAvatars[0]);
         setSelectedPrefix(p.name_prefix || '');
         setSelectedSuffix(p.name_suffix || '');
+        setProfilePrefix(p.name_prefix || '');
+        setProfileSuffix(p.name_suffix || '');
         
         // #51: Load accessibility prefs
         if (p.accessibility_prefs) {
@@ -1068,7 +1071,7 @@ const StudentDashboard = () => {
       }
     }
 
-    const formattedName = `${selectedPrefix} ${firstName.trim()} ${middleName.trim()} ${lastName.trim()} ${selectedSuffix}`.replace(/\s+/g, ' ').trim();
+    const formattedName = `${firstName.trim()} ${middleName.trim()} ${lastName.trim()}`.replace(/\s+/g, ' ').trim();
     
     const updated = await updateProfile(user.id, {
       full_name: formattedName,
@@ -1079,6 +1082,8 @@ const StudentDashboard = () => {
 
     if (updated) {
       setRealName(formattedName);
+      setProfilePrefix(selectedPrefix);
+      setProfileSuffix(selectedSuffix);
       setRealAvatar(finalAvatarUrl);
       setAvatarFile(null);
       setAvatarPreview(null);
@@ -1193,7 +1198,9 @@ const StudentDashboard = () => {
           </button>
 
           <div className="user-info desktop-only">
-            <p className="user-name">{realName || 'Student'}</p>
+            <p className="user-name">
+              {profilePrefix ? `${profilePrefix} ` : ''}{realName || 'Student'}{profileSuffix ? `, ${profileSuffix}` : ''}
+            </p>
             <p className="user-role">Gordon College Student</p>
           </div>
           
@@ -1296,38 +1303,19 @@ const StudentDashboard = () => {
               Please provide your real name. <span style={{ color: 'var(--accent-orange)', fontWeight: 600 }}>Note: Faculty members will see your student number with this name.</span>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.2rem' }}>
-              <div>
-                <label className="modal-label">Prefix (Optional)</label>
-                <select 
-                  className="profile-input" 
-                  style={{ marginBottom: 0 }}
-                  value={selectedPrefix}
-                  onChange={(e) => setSelectedPrefix(e.target.value)}
-                >
-                  <option value="">None</option>
-                  {Object.entries(PH_PREFIXES).map(([group, list]) => (
-                    <optgroup key={group} label={group}>
-                      {list.map(p => <option key={p} value={p}>{p}</option>)}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="modal-label">Suffix (Optional)</label>
-                <select 
-                  className="profile-input" 
-                  style={{ marginBottom: 0 }}
-                  value={selectedSuffix}
-                  onChange={(e) => setSelectedSuffix(e.target.value)}
-                >
-                  <option value="">None</option>
-                  {Object.entries(PH_SUFFIXES).map(([group, list]) => (
-                    <optgroup key={group} label={group}>
-                      {list.map(s => <option key={s} value={s}>{s}</option>)}
-                    </optgroup>
-                  ))}
-                </select>
+            <div style={{ marginBottom: '1.2rem' }}>
+              <label className="modal-label">Prefix (Optional)</label>
+              <div className="prefix-suffix-toggle-group" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.3rem' }}>
+                {['None', 'Mr.', 'Ms.', 'Mrs.'].map(p => (
+                  <button 
+                    key={p} 
+                    className={`toggle-chip ${ (p === 'None' && !selectedPrefix) || selectedPrefix === p ? 'active' : '' }`}
+                    onClick={() => setSelectedPrefix(p === 'None' ? '' : p)}
+                    style={{ padding: '0.35rem 0.8rem', borderRadius: '20px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    {p}
+                  </button>
+                ))}
               </div>
             </div>
             
@@ -1364,6 +1352,22 @@ const StudentDashboard = () => {
               onChange={(e) => setLastName(e.target.value)}
               placeholder="e.g. Dela Cruz"
             />
+
+            <div style={{ marginBottom: '1.2rem', marginTop: '1rem' }}>
+              <label className="modal-label">Suffix (Optional)</label>
+              <div className="prefix-suffix-toggle-group" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.3rem' }}>
+                {['None', 'Jr.', 'Sr.', 'III'].map(s => (
+                  <button 
+                    key={s} 
+                    className={`toggle-chip ${ (s === 'None' && !selectedSuffix) || selectedSuffix === s ? 'active' : '' }`}
+                    onClick={() => setSelectedSuffix(s === 'None' ? '' : s)}
+                    style={{ padding: '0.35rem 0.8rem', borderRadius: '20px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <label className="modal-label">Profile Picture</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem', background: 'var(--bg-primary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>

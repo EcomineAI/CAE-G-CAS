@@ -49,12 +49,14 @@ Create a centralized management system that reduces uncertainty by providing rea
 
 ---
 
-## 📈 Latest Updates (v0.7.7) — May 9, 2026
-- **Real Profile Picture Upload (#16):** Replaced static avatar presets with a device-native file upload system. Users can now upload custom professional photos directly to Supabase Storage. Includes client-side compression (Max 2MB) and secure user-isolated storage buckets.
-- **Supabase Storage Integration:** Configured the `profiles` storage bucket with RLS policies to ensure users can only manage their own media while allowing public read access for profile visibility.
-- **Enhanced Profile UI:** Added image previewing and a standardized "Change Photo" workflow across both student and faculty dashboards.
+## 📈 Latest Updates (v0.7.8) — May 9, 2026
+- **Profile Name Redesign (#18):** Decoupled professional prefixes and suffixes from the `full_name` database field. Names are now stored cleanly, while titles are managed via independent "toggle" chips above the name input.
+- **Refined Faculty Titles:** Standardized professional titles to strictly "Academic" and "Administrative" categories to maintain institutional focus.
+- **Dynamic Name Rendering:** Implemented intelligent UI components that dynamically combine prefixes, base names, and suffixes for consistent professional display across the dashboard and headers.
 
-### Previous: v0.7.6
+### Previous: v0.7.7
+- **Real Profile Picture Upload (#16):** Supabase Storage integration for custom photos.
+- **Storage Security:** Isolated user media buckets with RLS.
 - **Appointment Capacity Guard (#1):** Database-level overbooking prevention.
 - **Faculty Feedback Notes (#21):** Approval instructions for students.
 - **Date-Specific Scheduling (#38):** Added support for one-time consultation slots.

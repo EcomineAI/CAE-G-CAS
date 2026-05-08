@@ -45,10 +45,8 @@ export const SCHEDULE_DAYS = ['Monday', 'Tuesday', 'Wednesday',  "Thursday",
 ];
 
 export const FACULTY_TITLES = {
-  "Academic": ["Instructor", "Assistant Professor", "Associate Professor", "Professor", "Visiting Professor"],
-  "Professional": ["Doctor", "Engineer", "Architect", "Attorney", "CPA", "RN", "RPh", "RMT", "LPT"],
-  "Administrative": ["Dean", "Department Head", "Program Coordinator", "Director", "Chief", "Officer"],
-  "General": ["Mr.", "Ms.", "Mrs.", "Miss"]
+  'Academic': ['Instructor', 'Assistant Professor', 'Associate Professor', 'Professor', 'Lecturer'],
+  'Administrative': ['Department Head', 'Dean', 'Registrar', 'Director', 'Chairperson']
 };
 
 export const ROOM_NUMBERS = [

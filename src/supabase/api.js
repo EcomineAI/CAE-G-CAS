@@ -173,6 +173,8 @@ export const getFacultyRequests = async (facultyId) => {
     return {
       id: req.id,
       name: studentName,
+      namePrefix: req.student?.name_prefix || '',
+      nameSuffix: req.student?.name_suffix || '',
       avatar: req.student?.avatar_url || null,
       avatarSeed: req.student_id,
       day: req.schedule?.day || 'TBD',
@@ -246,7 +248,7 @@ export const getStudentRequests = async (studentId) => {
     .from('requests')
     .select(`
       *,
-      faculty:profiles!requests_faculty_id_fkey(full_name, avatar_url),
+      faculty:profiles!requests_faculty_id_fkey(full_name, avatar_url, name_prefix, name_suffix),
       schedule:schedules(day, start_time, end_time, max_slots)
     `)
     .eq('student_id', studentId)
@@ -261,6 +263,8 @@ export const getStudentRequests = async (studentId) => {
   return (data || []).map(req => ({
     id: req.id,
     name: req.faculty?.full_name || 'Faculty Member',
+    namePrefix: req.faculty?.name_prefix || '',
+    nameSuffix: req.faculty?.name_suffix || '',
     avatar: req.faculty?.avatar_url || null,
     avatarSeed: req.faculty_id,
     day: req.schedule?.day || 'TBD',

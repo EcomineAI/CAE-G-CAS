@@ -45,6 +45,47 @@ const facultyDashStyles = `
   --overlay-color: rgba(255, 255, 255, 0.72);
 }
 
+.prefix-suffix-toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.toggle-chip {
+  padding: 0.35rem 0.8rem;
+  border-radius: 20px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-chip:hover {
+  border-color: var(--accent-orange);
+}
+
+.toggle-chip.active {
+  background: var(--accent-light);
+  color: var(--accent-orange);
+  border-color: var(--accent-orange);
+}
+
+.toggle-chip-more {
+  padding: 0.35rem 0.5rem;
+  border-radius: 20px;
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  outline: none;
+}
+
+
 .faculty-dashboard-wrapper.high-contrast {
   --bg-primary: #000000;
   --bg-secondary: #111111;
@@ -591,9 +632,11 @@ const FacultyDashboard = () => {
     getProfile(user.id).then(p => {
       if (p) {
         setProfileName(p.full_name || user.displayName || 'Faculty Member');
-        setProfileAvatar(p.avatar_url || user.avatarUrl);
-        setProfileDept(p.department || 'CCS');
-        setProfileStatus(p.status || 'Available');
+        setProfileDept(p.department || 'General');
+        setProfileAvatar(p.avatar_url || null);
+        setProfileStatus(p.status || 'Active');
+        setProfilePrefix(p.name_prefix || '');
+        setProfileSuffix(p.name_suffix || '');
         setEditPrefix(p.name_prefix || '');
         setEditSuffix(p.name_suffix || '');
         setEditTitle(p.title || '');
@@ -654,9 +697,9 @@ const FacultyDashboard = () => {
       }
     }
 
-    const fullName = `${editPrefix} ${editName.trim()} ${editSuffix}`.replace(/\s+/g, ' ').trim();
+    const cleanedName = editName.trim();
     const updated = await updateProfile(user.id, {
-      full_name: fullName,
+      full_name: cleanedName,
       name_prefix: editPrefix,
       name_suffix: editSuffix,
       avatar_url: finalAvatarUrl,
@@ -665,7 +708,9 @@ const FacultyDashboard = () => {
     });
 
     if (updated) {
-      setProfileName(editName);
+      setProfileName(cleanedName);
+      setProfilePrefix(editPrefix);
+      setProfileSuffix(editSuffix);
       setProfileAvatar(finalAvatarUrl);
       setProfileDept(editDept);
       setAvatarFile(null);
@@ -781,7 +826,9 @@ const FacultyDashboard = () => {
             }
           }}>
             <div className="prof-info">
-              <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem' }}>{profileName || user?.displayName || 'Faculty Member'}</p>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem' }}>
+                {profilePrefix ? `${profilePrefix} ` : ''}{profileName || user?.displayName || 'Faculty Member'}{profileSuffix ? `, ${profileSuffix}` : ''}
+              </p>
               <p className="prof-role">{profileDept}</p>
             </div>
             <div className={`prof-avatar ${profileStatus?.toLowerCase()}`} onClick={(e) => {
@@ -859,49 +906,74 @@ const FacultyDashboard = () => {
           <div className="modal-card" style={{ background: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '16px', width: '95%', maxWidth: '450px', maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--card-border)', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
             <h2 style={{ marginTop: 0, marginBottom: '1rem', textAlign: 'left', color: 'var(--text-primary)', fontSize: '1.4rem' }}>Edit Profile</h2>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.2rem' }}>
-              <div>
-                <label className="modal-label">Prefix (Optional)</label>
+            <div style={{ marginBottom: '1.2rem' }}>
+              <label className="modal-label">Professional Prefix</label>
+              <div className="prefix-suffix-toggle-group">
+                {['None', 'Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Engr.'].map(p => (
+                  <button 
+                    key={p} 
+                    className={`toggle-chip ${ (p === 'None' && !editPrefix) || editPrefix === p ? 'active' : '' }`}
+                    onClick={() => setEditPrefix(p === 'None' ? '' : p)}
+                  >
+                    {p}
+                  </button>
+                ))}
+                {!['None', 'Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Engr.'].includes(editPrefix) && editPrefix && (
+                  <button className="toggle-chip active">{editPrefix}</button>
+                )}
                 <select 
-                  className="profile-input" 
-                  style={{ marginBottom: 0 }}
-                  value={editPrefix}
+                  className="toggle-chip-more"
+                  value={['None', 'Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Engr.'].includes(editPrefix) || !editPrefix ? '' : editPrefix}
                   onChange={(e) => setEditPrefix(e.target.value)}
                 >
-                  <option value="">None</option>
+                  <option value="">More...</option>
                   {Object.entries(PH_PREFIXES).map(([group, list]) => (
                     <optgroup key={group} label={group}>
-                      {list.map(p => <option key={p} value={p}>{p}</option>)}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="modal-label">Suffix (Optional)</label>
-                <select 
-                  className="profile-input" 
-                  style={{ marginBottom: 0 }}
-                  value={editSuffix}
-                  onChange={(e) => setEditSuffix(e.target.value)}
-                >
-                  <option value="">None</option>
-                  {Object.entries(PH_SUFFIXES).map(([group, list]) => (
-                    <optgroup key={group} label={group}>
-                      {list.map(s => <option key={s} value={s}>{s}</option>)}
+                      {list.map(prefix => <option key={prefix} value={prefix}>{prefix}</option>)}
                     </optgroup>
                   ))}
                 </select>
               </div>
             </div>
 
-            <label className="modal-label">Full Name</label>
+            <label className="modal-label">Full Name (First, Middle, Last)</label>
             <input 
               type="text" 
               className="profile-input" 
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              placeholder="e.g. John Doe"
+              placeholder="e.g. Juan Dela Cruz"
             />
+
+            <div style={{ marginBottom: '1.2rem', marginTop: '0.5rem' }}>
+              <label className="modal-label">Professional Suffix</label>
+              <div className="prefix-suffix-toggle-group">
+                {['None', 'PhD', 'MA', 'MS', 'LPT', 'CPA'].map(s => (
+                  <button 
+                    key={s} 
+                    className={`toggle-chip ${ (s === 'None' && !editSuffix) || editSuffix === s ? 'active' : '' }`}
+                    onClick={() => setEditSuffix(s === 'None' ? '' : s)}
+                  >
+                    {s}
+                  </button>
+                ))}
+                {!['None', 'PhD', 'MA', 'MS', 'LPT', 'CPA'].includes(editSuffix) && editSuffix && (
+                  <button className="toggle-chip active">{editSuffix}</button>
+                )}
+                <select 
+                  className="toggle-chip-more"
+                  value={['None', 'PhD', 'MA', 'MS', 'LPT', 'CPA'].includes(editSuffix) || !editSuffix ? '' : editSuffix}
+                  onChange={(e) => setEditSuffix(e.target.value)}
+                >
+                  <option value="">More...</option>
+                  {Object.entries(PH_SUFFIXES).map(([group, list]) => (
+                    <optgroup key={group} label={group}>
+                      {list.map(suffix => <option key={suffix} value={suffix}>{suffix}</option>)}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+            </div>
 
             <label className="modal-label">Profile Picture</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem', background: 'var(--bg-primary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
@@ -998,7 +1070,9 @@ const FacultyDashboard = () => {
                 {profileAvatar ? <img src={profileAvatar} alt="avatar" style={{ width: '100%' }} /> : <User size={30} />}
               </div>
               <div style={{ textAlign: 'left' }}>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: '1.2rem', color: 'var(--text-primary)' }}>{profileName}</p>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '1.2rem', color: 'var(--text-primary)' }}>
+                  {profilePrefix ? `${profilePrefix} ` : ''}{profileName}{profileSuffix ? `, ${profileSuffix}` : ''}
+                </p>
                 <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>{profileDept}</p>
               </div>
             </div>
