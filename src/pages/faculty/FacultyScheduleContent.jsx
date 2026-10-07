@@ -1,0 +1,643 @@
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit2, Trash2, Clock, X, Calendar } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { getFacultySchedules, createSchedule, updateSchedule, deleteSchedule } from '../../supabase/api';
+import { subscribeToSchedules } from '../../supabase/realtime';
+import { optimistic, ScheduleCardSkeleton, withMinDelay } from '../../supabase/ux';
+import { formatTimeRange, buildGcalUrl, nextDateForDay } from '../../utils/dateUtils';
+import { ROOM_NUMBERS, SCHEDULE_DAYS } from '../../utils/constants';
+
+const scheduleStyles = `
+.schedule-container {
+  animation: fadeIn 0.4s ease;
+}
+
+.schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.5rem 1.8rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.header-title h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.header-title p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0.2rem 0 0 0;
+}
+
+.add-schedule-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--accent, #2e4a87);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-schedule-btn:hover {
+  background: #4338ca;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+}
+
+.schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.schedule-card {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.schedule-card:hover {
+  border-color: var(--accent, #2e4a87);
+  box-shadow: var(--shadow);
+}
+
+.card-actions {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.8rem;
+}
+
+.action-icon-btn {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-icon-btn:hover {
+  background: var(--accent-light);
+  color: var(--accent, #2e4a87);
+}
+
+.card-day {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.1rem;
+}
+
+.card-time {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.6rem;
+}
+
+.room-badge {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  background: var(--bg-primary, #f0f2f8);
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+
+.card-notes {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: var(--bg-primary, #f0f2f8);
+  padding: 0.6rem;
+  border-radius: 8px;
+  border-left: 3px solid var(--accent, #2e4a87);
+  margin-bottom: 1.5rem;
+  font-style: italic;
+}
+
+.slots-info {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.slots-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  width: 40px;
+}
+
+.progress-container {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-primary, #f0f2f8);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--accent, #2e4a87);
+  transition: width 0.4s ease;
+}
+
+.slots-ratio {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  width: 40px;
+  text-align: right;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+  background: var(--card-bg, #fff);
+  width: 100%;
+  max-width: 450px;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: var(--shadow);
+  animation: slideUp 0.3s ease;
+}
+
+.modal-content h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem 0;
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.modal-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.form-input, .form-select, .profile-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--bg-primary, #f0f2f8);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.modal-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.modal-btn {
+  padding: 0.8rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+  border: none;
+}
+
+.btn-cancel {
+  background: var(--bg-primary, #f0f2f8);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.btn-submit {
+  background: var(--accent, #2e4a87);
+  color: white;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (max-width: 800px) {
+  .schedule-grid { grid-template-columns: 1fr; }
+}
+`;
+
+const FacultyScheduleContent = () => {
+  const { user } = useAuth();
+  const [schedules, setSchedules] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
+  const [gcalPrompt, setGcalPrompt] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
+  const [formData, setFormData] = useState({
+    day: 'Monday',
+    startTime: '08:00',
+    endTime: '09:00',
+    total: 5,
+    room: 'TBA',
+    notes: '',
+    schedule_type: 'recurring',
+    specific_date: ''
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const data = await withMinDelay(getFacultySchedules(user.id), 300);
+      setSchedules(data);
+      setLoading(false);
+    };
+    load();
+
+    const unsub = subscribeToSchedules(user.id, setSchedules, () => getFacultySchedules(user.id));
+    return () => unsub();
+  }, [user]);
+
+  const getMaxAllowed = (start, end) => {
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    const mins = (eh * 60 + em) - (sh * 60 + sm);
+    return Math.max(1, Math.floor(mins / 60));
+  };
+
+  const handleAdd = () => {
+    setEditingItem(null);
+    setFormData({ day: 'Monday', startTime: '08:00', endTime: '09:00', total: 5, room: 'TBA', notes: '', schedule_type: 'recurring', specific_date: '' });
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    setFormData({
+      day: item.day || 'Monday',
+      startTime: String(item.start_time).slice(0, 5),
+      endTime: String(item.end_time).slice(0, 5),
+      total: item.max_slots,
+      room: item.room || 'TBA',
+      notes: item.notes || '',
+      schedule_type: item.schedule_type || 'recurring',
+      specific_date: item.specific_date || ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const confirmDelete = (id) => {
+    setDeleteModal({ isOpen: true, id });
+  };
+
+  const executeDelete = async () => {
+    const id = deleteModal.id;
+    if (!id) return;
+    setDeleteModal({ isOpen: false, id: null });
+
+    await optimistic(
+      setSchedules,
+      schedules,
+      schedules.filter(s => s.id !== id),
+      () => deleteSchedule(id),
+      { success: 'Schedule removed', error: 'Failed to delete schedule' }
+    );
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const start_time = formData.startTime.length === 5 ? `${formData.startTime}:00` : formData.startTime;
+    const end_time = formData.endTime.length === 5 ? `${formData.endTime}:00` : formData.endTime;
+
+    const updates = {
+      faculty_id: user.id,
+      day: formData.schedule_type === 'recurring' ? formData.day : null,
+      specific_date: formData.schedule_type === 'one-time' ? formData.specific_date : null,
+      schedule_type: formData.schedule_type,
+      start_time,
+      end_time,
+      room: formData.room,
+      max_slots: parseInt(formData.total),
+      notes: formData.notes
+    };
+
+    setIsModalOpen(false);
+    if (editingItem) {
+      await optimistic(
+        setSchedules,
+        schedules,
+        schedules.map(s => s.id === editingItem.id ? { ...s, ...updates } : s),
+        () => updateSchedule(editingItem.id, updates),
+        { success: 'Schedule updated', error: 'Failed to update' }
+      );
+    } else {
+      await optimistic(
+        setSchedules,
+        schedules,
+        [...schedules, { ...updates, id: 'temp' }],
+        async () => await createSchedule(updates),
+        { success: 'Schedule added', error: 'Failed to add' }
+      );
+      // Prompt to add the new slot to Google Calendar
+      const date = formData.schedule_type === 'one-time'
+        ? formData.specific_date
+        : nextDateForDay(formData.day);
+      const label = formData.schedule_type === 'one-time'
+        ? formData.specific_date
+        : formData.day;
+      setGcalPrompt({
+        url: buildGcalUrl({
+          title: `Consultation Slot – ${label} ${formData.startTime}–${formData.endTime}`,
+          date,
+          startTime: formData.startTime,
+          endTime: formData.endTime,
+          details: formData.notes ? `Notes: ${formData.notes}` : '',
+          location: formData.room !== 'TBA' ? formData.room : '',
+        }),
+      });
+    }
+  };
+
+  return (
+    <div className="schedule-container">
+      <style>{scheduleStyles}</style>
+
+      {gcalPrompt && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', background: 'var(--accent-light)', border: '1px solid var(--accent, #2e4a87)', borderRadius: '12px', padding: '1rem 1.2rem', marginBottom: '1.2rem', flexWrap: 'wrap' }}>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem' }}>
+            Schedule saved! Want to add it to Google Calendar?
+          </span>
+          <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
+            <a
+              href={gcalPrompt.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setGcalPrompt(null)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: 'var(--accent, #2e4a87)', color: 'white', borderRadius: '8px', fontWeight: 600, fontSize: '0.85rem', textDecoration: 'none' }}
+            >
+              <Calendar size={15} /> Add to Google Calendar
+            </a>
+            <button onClick={() => setGcalPrompt(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="schedule-header">
+        <div className="header-title">
+          <h2>My Consultation Schedule</h2>
+          <p>Manage your consultation slots</p>
+        </div>
+        <button className="add-schedule-btn" onClick={handleAdd}>
+          <Plus size={20} /> Add Schedule
+        </button>
+      </div>
+
+      <div className="schedule-grid">
+        {loading ? <ScheduleCardSkeleton count={4} /> : schedules.map((item) => (
+          <div className="schedule-card" key={item.id}>
+            <div className="card-actions">
+              <button className="action-icon-btn" onClick={() => handleEdit(item)}><Edit2 size={16} /></button>
+              <button className="action-icon-btn" onClick={() => confirmDelete(item.id)}><Trash2 size={16} /></button>
+            </div>
+            <div className="card-day">
+              {item.schedule_type === 'one-time' ? (
+                <span style={{ color: 'var(--accent, #2e4a87)' }}>
+                   {new Date(item.specific_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              ) : item.day}
+            </div>
+            <div className="card-time">{formatTimeRange(item.start_time, item.end_time)}</div>
+            <div className="room-badge">{item.room === 'Online' ? '🌐 Online' : `🚪 Room ${item.room}`}</div>
+            {item.notes && <div className="card-notes">"{item.notes}"</div>}
+            {(() => {
+              const pct = ((item.filled || 0) / item.max_slots) * 100;
+              const barColor = pct >= 100 ? '#ef4444' : pct >= 80 ? '#f97316' : 'var(--accent, #2e4a87)';
+              return (
+                <div className="slots-info">
+                  <span className="slots-label">Slots</span>
+                  <div className="progress-container">
+                    <div className="progress-bar" style={{ width: `${pct}%`, background: barColor }}></div>
+                  </div>
+                  <span className="slots-ratio" style={{ color: pct >= 100 ? '#ef4444' : pct >= 80 ? '#f97316' : undefined }}>
+                    {item.filled || 0}/{item.max_slots}
+                  </span>
+                </div>
+              );
+            })()}
+          </div>
+        ))}
+      </div>
+
+      {isModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>{editingItem ? 'Edit Schedule' : 'Add Schedule'}</h3>
+            <form onSubmit={handleSubmit}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.2rem' }}>
+                <div>
+                  <label className="modal-label">Schedule Type</label>
+                  <select 
+                    className="profile-input" 
+                    value={formData.schedule_type}
+                    onChange={(e) => setFormData({ ...formData, schedule_type: e.target.value })}
+                    style={{ marginBottom: 0 }}
+                  >
+                    <option value="recurring">Recurring (Weekly)</option>
+                    <option value="one-time">One-time (Specific Date)</option>
+                  </select>
+                </div>
+                <div>
+                  {formData.schedule_type === 'recurring' ? (
+                    <>
+                      <label className="modal-label">Day of Week</label>
+                      <select 
+                        className="profile-input" 
+                        value={formData.day}
+                        onChange={(e) => setFormData({ ...formData, day: e.target.value })}
+                        style={{ marginBottom: 0 }}
+                      >
+                        {SCHEDULE_DAYS.map(day => <option key={day} value={day}>{day}</option>)}
+                      </select>
+                    </>
+                  ) : (
+                    <>
+                      <label className="modal-label">Select Date</label>
+                      <input 
+                        type="date" 
+                        className="profile-input" 
+                        value={formData.specific_date}
+                        onChange={(e) => setFormData({ ...formData, specific_date: e.target.value })}
+                        style={{ marginBottom: 0 }}
+                        min={new Date().toISOString().split('T')[0]}
+                        required
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.2rem' }}>
+                <div>
+                  <label className="modal-label">Start Time</label>
+                  <input
+                    type="time"
+                    className="profile-input"
+                    value={formData.startTime}
+                    onChange={(e) => {
+                      const newStart = e.target.value;
+                      const max = getMaxAllowed(newStart, formData.endTime);
+                      setFormData(f => ({ ...f, startTime: newStart, total: Math.min(f.total, max) }));
+                    }}
+                    style={{ marginBottom: 0 }}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="modal-label">End Time</label>
+                  <input
+                    type="time"
+                    className="profile-input"
+                    value={formData.endTime}
+                    onChange={(e) => {
+                      const newEnd = e.target.value;
+                      const max = getMaxAllowed(formData.startTime, newEnd);
+                      setFormData(f => ({ ...f, endTime: newEnd, total: Math.min(f.total, max) }));
+                    }}
+                    style={{ marginBottom: 0 }}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.2rem' }}>
+                <div>
+                  <label className="modal-label">Location / Room</label>
+                  <select 
+                    className="profile-input" 
+                    value={formData.room}
+                    onChange={(e) => setFormData({ ...formData, room: e.target.value })}
+                    style={{ marginBottom: 0 }}
+                  >
+                    {ROOM_NUMBERS.map(room => <option key={room} value={room}>{room}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="modal-label">Max Slots</label>
+                  <input
+                    type="number"
+                    className="profile-input"
+                    value={formData.total}
+                    onChange={(e) => {
+                      const max = getMaxAllowed(formData.startTime, formData.endTime);
+                      setFormData(f => ({ ...f, total: Math.min(parseInt(e.target.value) || 1, max) }));
+                    }}
+                    min="1"
+                    max={getMaxAllowed(formData.startTime, formData.endTime)}
+                    style={{ marginBottom: '0.3rem' }}
+                    required
+                  />
+                  {(() => {
+                    const max = getMaxAllowed(formData.startTime, formData.endTime);
+                    return (
+                      <small style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+                        Max {max} slot{max !== 1 ? 's' : ''} for this window (1 slot/hr)
+                      </small>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="modal-label">Notes for Students (Optional)</label>
+                <textarea 
+                  className="profile-input"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                  placeholder="e.g. Please bring your draft proposal."
+                  style={{ minHeight: '60px', resize: 'vertical', fontFamily: 'inherit' }}
+                />
+              </div>
+
+              <div className="modal-footer">
+                <button type="button" className="modal-btn btn-cancel" onClick={() => setIsModalOpen(false)}>Cancel</button>
+                <button type="submit" className="modal-btn btn-submit">{editingItem ? 'Update' : 'Add'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {deleteModal.isOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ textAlign: 'center' }}>
+            <h3 style={{ marginBottom: '1rem' }}>Delete Schedule?</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
+              Are you sure you want to remove this consultation slot? Students will no longer be able to book it.
+            </p>
+            <div className="modal-footer">
+              <button 
+                className="modal-btn btn-cancel"
+                onClick={() => setDeleteModal({ isOpen: false, id: null })}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-btn"
+                style={{ background: '#ef4444', color: 'white' }}
+                onClick={executeDelete}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default FacultyScheduleContent;

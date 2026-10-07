@@ -1,0 +1,43 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+const navbarStyles = `
+.main-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 1rem 2rem;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1000;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.nav-brand a {
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: var(--text-main);
+  text-decoration: none;
+  letter-spacing: -0.5px;
+}
+`;
+
+const Navbar = () => {
+  return (
+    <>
+      <style>{navbarStyles}</style>
+      <nav className="main-navbar" aria-label="Site navigation">
+        <div className="nav-brand">
+          <Link to="/">FACS</Link>
+        </div>
+        <div className="nav-links" />
+      </nav>
+    </>
+  );
+};
+
+export default Navbar;

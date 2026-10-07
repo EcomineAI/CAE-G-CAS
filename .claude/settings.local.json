@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\ecomi\\\\Desktop\\\\CAE-G-CAS-main\" -Force)",
+      "Bash(Select-Object -First 50)",
+      "Bash(npm run *)"
+    ]
+  }
+}

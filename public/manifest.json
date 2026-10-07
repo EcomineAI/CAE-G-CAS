@@ -1,0 +1,22 @@
+{
+  "name": "Faculty Appointment & Consultation System",
+  "short_name": "FACS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ea580c",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "description": "Streamlined faculty consultation booking for students and faculty."
+}
