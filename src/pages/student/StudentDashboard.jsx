@@ -20,6 +20,7 @@ import SettingsModal from '../../components/SettingsModal';
 import NotificationCenter from '../../components/NotificationCenter';
 import ProfileEditModal from '../../components/ProfileEditModal';
 import TermsModal from '../../components/TermsModal';
+import LogoutConfirm from '../../components/LogoutConfirm';
 
 /* ─────────────────────────────────────────────
    Design tokens + shell styles
@@ -427,6 +428,8 @@ const StudentDashboard = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showTerms, setShowTerms] = useState(false);
   const [termsReadOnly, setTermsReadOnly] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // Profile
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -501,7 +504,10 @@ const StudentDashboard = () => {
     localStorage.setItem('gcas_student_tab', tab);
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => setShowLogoutConfirm(true);
+
+  const confirmLogout = async () => {
+    setLoggingOut(true);
     localStorage.removeItem('gcas_student_tab');
     sessionStorage.removeItem('admin_bypass');
     await supabase.auth.signOut();
@@ -769,6 +775,13 @@ const StudentDashboard = () => {
         />
         {showTerms && user?.id && (
           <TermsModal userId={user.id} readOnly={termsReadOnly} onAccepted={() => setShowTerms(false)} />
+        )}
+        {showLogoutConfirm && (
+          <LogoutConfirm
+            onConfirm={confirmLogout}
+            onCancel={() => !loggingOut && setShowLogoutConfirm(false)}
+            loading={loggingOut}
+          />
         )}
       </div>
     </>

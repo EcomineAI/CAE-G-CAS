@@ -16,6 +16,7 @@ import logo from '../logo.png';
 import SharedSettingsContent from '../../components/SharedSettingsContent';
 import NotificationCenter from '../../components/NotificationCenter';
 import ProfileEditModal from '../../components/ProfileEditModal';
+import LogoutConfirm from '../../components/LogoutConfirm';
 
 const facultyDashStyles = `
 /* ── Faculty dashboard token bridge ── */
@@ -829,6 +830,8 @@ const FacultyDashboard = () => {
   const [profileData, setProfileData] = useState(null);
   const [showTerms, setShowTerms] = useState(false);
   const [termsReadOnly, setTermsReadOnly] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // Persistence Effects
   useEffect(() => {
@@ -925,7 +928,10 @@ const FacultyDashboard = () => {
     });
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => setShowLogoutConfirm(true);
+
+  const confirmLogout = async () => {
+    setLoggingOut(true);
     localStorage.removeItem('gcas_faculty_tab');
     sessionStorage.removeItem('admin_bypass');
     await supabase.auth.signOut();
@@ -1193,6 +1199,14 @@ const FacultyDashboard = () => {
 
       {showTerms && user?.id && user.id !== 'admin-bypass' && (
         <TermsModal userId={user.id} readOnly={termsReadOnly} onAccepted={() => setShowTerms(false)} />
+      )}
+
+      {showLogoutConfirm && (
+        <LogoutConfirm
+          onConfirm={confirmLogout}
+          onCancel={() => !loggingOut && setShowLogoutConfirm(false)}
+          loading={loggingOut}
+        />
       )}
 
       {isMobileMenuOpen && (
