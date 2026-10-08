@@ -247,10 +247,14 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
   }, [user]);
 
   const handleApprove = async (req) => {
+    const notifCtx = {
+      studentId: req.avatarSeed,
+      facultyName: user?.displayName || user?.user_metadata?.full_name || 'Faculty',
+    };
     await optimistic(
       setRequests, requests,
       requests.map(r => r.id === req.id ? { ...r, status: 'Approved' } : r),
-      () => updateRequestStatus(req.id, 'Approved', null, null, null, {}),
+      () => updateRequestStatus(req.id, 'Approved', null, null, null, notifCtx),
       { success: 'Request approved', error: 'Failed to approve' }
     );
   };
@@ -271,10 +275,14 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
     if (!declineTarget || !declineReason) return;
     setDeclining(true);
     const reason = declineNote ? `${declineReason}. ${declineNote}` : declineReason;
+    const notifCtx = {
+      studentId: declineTarget.avatarSeed,
+      facultyName: user?.displayName || user?.user_metadata?.full_name || 'Faculty',
+    };
     await optimistic(
       setRequests, requests,
       requests.map(r => r.id === declineTarget.id ? { ...r, status: 'Declined' } : r),
-      () => updateRequestStatus(declineTarget.id, 'Declined', reason, null, null, {}),
+      () => updateRequestStatus(declineTarget.id, 'Declined', null, reason, null, notifCtx),
       { success: 'Request declined', error: 'Failed to decline' }
     );
     setDeclining(false);
@@ -282,10 +290,14 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
   };
 
   const handleCancelUpcoming = async (req) => {
+    const notifCtx = {
+      studentId: req.avatarSeed,
+      facultyName: user?.displayName || user?.user_metadata?.full_name || 'Faculty',
+    };
     await optimistic(
       setRequests, requests,
       requests.map(r => r.id === req.id ? { ...r, status: 'Cancelled' } : r),
-      () => updateRequestStatus(req.id, 'Cancelled', 'Cancelled by faculty', null, null, {}),
+      () => updateRequestStatus(req.id, 'Cancelled', 'Cancelled by faculty', null, null, notifCtx),
       { success: 'Appointment cancelled', error: 'Failed to cancel' }
     );
   };

@@ -2,7 +2,8 @@ import { supabase } from './supabase';
 import { logError } from './ux';
 
 const insertNotification = async (userId, type, message, senderId = null) => {
-  await supabase.from('notifications').insert({ user_id: userId, type, message, sender_id: senderId });
+  const { error } = await supabase.from('notifications').insert({ user_id: userId, type, message, sender_id: senderId });
+  if (error) logError('[notif] insert failed:', error);
 };
 
 // ==========================================
@@ -234,8 +235,15 @@ export const updateRequestStatus = async (requestId, newStatus, cancelReason = n
       await insertNotification(studentId, 'declined', `Your request with ${facultyName} was declined.${reason}`, facultyId);
     } else if (newStatus === 'Completed' && studentId) {
       await insertNotification(studentId, 'completed', `Your consultation with ${facultyName} has been marked complete.`, facultyId);
-    } else if (newStatus === 'Cancelled' && facultyId) {
-      await insertNotification(facultyId, 'cancelled', `${studentName} cancelled their appointment on ${day} at ${time}.`, studentId);
+    } else if (newStatus === 'Cancelled') {
+      // Faculty-initiated cancel → notify student
+      if (studentId && facultyName) {
+        await insertNotification(studentId, 'cancelled', `${facultyName} cancelled your appointment${cancelReason ? ` (${cancelReason})` : ''}.`, facultyId || null);
+      }
+      // Student-initiated cancel → notify faculty
+      if (facultyId && studentName) {
+        await insertNotification(facultyId, 'cancelled', `${studentName} cancelled their appointment on ${day} at ${time}.`, studentId || null);
+      }
     }
   }
 
