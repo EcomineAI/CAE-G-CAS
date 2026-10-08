@@ -169,7 +169,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
       setRequests, requests,
       requests.map(r => r.id === app.id ? { ...r, status: 'Cancelled' } : r),
       () => updateRequestStatus(app.id, 'Cancelled', cancelReason, null, null,
-        { facultyId: app.avatarSeed, studentName: user?.user_metadata?.full_name || 'A student', day: app.day, time: app.time }),
+        { facultyId: app.avatarSeed, studentName: user?.displayName || user?.user_metadata?.full_name || 'A student', day: app.day, time: app.time }),
       { success: 'Appointment cancelled', error: 'Failed to cancel' }
     );
   };
@@ -200,7 +200,8 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
     if (!slot) { toast.error('Please select a time slot.'); return; }
     const { app } = reschedModal;
     setReschedModal(null);
-    await updateRequestStatus(app.id, 'Cancelled', 'Rescheduled by student');
+    await updateRequestStatus(app.id, 'Cancelled', 'Rescheduled by student', null, null,
+      { facultyId: app.avatarSeed, studentName: user?.displayName || user?.user_metadata?.full_name || 'A student', day: app.day, time: app.time });
     const result = await submitRequest({
       student_id: user.id, faculty_id: app.faculty_id || app.avatarSeed,
       schedule_id: slot.id, subject: app.subject, details: app.details,

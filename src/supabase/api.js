@@ -231,24 +231,24 @@ export const updateRequestStatus = async (requestId, newStatus, cancelReason = n
     return false;
   }
 
-  // Fire notifications based on new status
+  // Fire notifications based on new status (4th arg = request_id for deep-link)
   if (notifContext) {
     const { studentId, facultyId, studentName, facultyName, day, time } = notifContext;
     if (newStatus === 'Approved' && studentId) {
-      await insertNotification(studentId, 'approved', `Your consultation request with ${facultyName} has been approved!`, facultyId);
+      await insertNotification(studentId, 'approved', `Your consultation request with ${facultyName} has been approved!`, requestId);
     } else if (newStatus === 'Declined' && studentId) {
       const reason = declineReason ? ` Reason: ${declineReason}` : '';
-      await insertNotification(studentId, 'declined', `Your request with ${facultyName} was declined.${reason}`, facultyId);
+      await insertNotification(studentId, 'declined', `Your request with ${facultyName} was declined.${reason}`, requestId);
     } else if (newStatus === 'Completed' && studentId) {
-      await insertNotification(studentId, 'completed', `Your consultation with ${facultyName} has been marked complete.`, facultyId);
+      await insertNotification(studentId, 'completed', `Your consultation with ${facultyName} has been marked complete.`, requestId);
     } else if (newStatus === 'Cancelled') {
       // Faculty-initiated cancel → notify student
       if (studentId && facultyName) {
-        await insertNotification(studentId, 'cancelled', `${facultyName} cancelled your appointment${cancelReason ? ` (${cancelReason})` : ''}.`, facultyId || null);
+        await insertNotification(studentId, 'cancelled', `${facultyName} cancelled your appointment${cancelReason ? ` (${cancelReason})` : ''}.`, requestId);
       }
       // Student-initiated cancel → notify faculty
       if (facultyId && studentName) {
-        await insertNotification(facultyId, 'cancelled', `${studentName} cancelled their appointment on ${day} at ${time}.`, studentId || null);
+        await insertNotification(facultyId, 'cancelled', `${studentName} cancelled their appointment on ${day} at ${time}.`, requestId);
       }
     }
   }
@@ -555,9 +555,9 @@ export const submitRequest = async (requestData, notifContext = null) => {
     return null;
   }
 
-  if (notifContext?.facultyId && notifContext?.studentName) {
-    const { facultyId, studentName, day, time, studentId } = notifContext;
-    await insertNotification(facultyId, 'new_request', `${studentName} requested a consultation on ${day} at ${time}.`, studentId);
+  if (notifContext?.facultyId && notifContext?.studentName && data?.id) {
+    const { facultyId, studentName, day, time } = notifContext;
+    await insertNotification(facultyId, 'new_request', `${studentName} requested a consultation on ${day} at ${time}.`, data.id);
   }
 
   return data;

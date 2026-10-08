@@ -1107,7 +1107,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
     const notifContext = {
       facultyId: selectedFaculty.id,
       studentId: user.id,
-      studentName: user?.user_metadata?.full_name || 'A student',
+      studentName: user?.displayName || user?.user_metadata?.full_name || 'A student',
       day: slot.day,
       time: slot.start_time && slot.end_time
         ? `${String(slot.start_time).slice(0, 5)} - ${String(slot.end_time).slice(0, 5)}`
