@@ -293,15 +293,19 @@ const DashboardContent = ({ onTabChange, realName }) => {
         .dc-day-hd {
           text-align: left;
           padding: 0.45rem 0.6rem 0.35rem 0.6rem;
-          border-bottom: 1px solid var(--card-border);
+          border-bottom: 1.5px solid #94a3b8;
           background: var(--card-bg);
-          transition: background 0.18s ease;
+          transition: background 0.18s ease, border-color 0.18s ease;
         }
-        .dc-day-lbl { font-size: 0.6rem; font-weight: 700; color: var(--text-muted); display: block; letter-spacing: 0.04em; }
+        .dc-day-col:hover .dc-day-hd { border-bottom-color: #5bc8c8; }
+        .dc-day-lbl { font-size: 0.6rem; font-weight: 700; color: #64748b; display: block; letter-spacing: 0.04em; }
         .dc-day-num {
-          font-size: 0.95rem; font-weight: 800; color: var(--text-primary);
+          font-size: 0.95rem; font-weight: 800; color: #475569;
           display: inline-block; margin-top: 1px;
         }
+        .sd-root.dark .dc-day-hd { border-bottom-color: rgba(148,163,184,0.4); }
+        .sd-root.dark .dc-day-lbl { color: #94a3b8; }
+        .sd-root.dark .dc-day-num { color: #cbd5e1; }
         .dc-day-num.today {
           background: #1a2d5a; color: #fff;
           border-radius: 5px; padding: 1px 6px;
