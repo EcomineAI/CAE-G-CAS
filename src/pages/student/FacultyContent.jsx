@@ -1076,7 +1076,9 @@ const FacultyContent = ({ initialFacultyId = null }) => {
       chosenDate ||
       (slot.schedule_type === 'one-time' && slot.specific_date) ||
       new Date().toISOString().split('T')[0];
+    console.log('[booking] checking block for date:', targetDate, 'faculty:', selectedFaculty.id);
     const block = await isDateBlocked(selectedFaculty.id, targetDate);
+    console.log('[booking] block result:', block);
     if (block) {
       toast.error(
         block.reason
