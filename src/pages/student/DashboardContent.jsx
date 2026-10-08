@@ -263,13 +263,13 @@ const DashboardContent = ({ onTabChange, realName }) => {
         }
         .dc-day-col {
           display: flex; flex-direction: column;
-          border: 2px solid #1a2d5a !important;
+          border: 1.5px solid #94a3b8 !important;
           border-radius: 8px;
           overflow: hidden;
           min-height: 90px;
           cursor: pointer;
           background: var(--card-bg);
-          box-shadow: 0 1px 3px rgba(26,45,90,0.08);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
           transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
         }
         .dc-day-col:hover {
