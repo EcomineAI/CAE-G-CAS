@@ -120,19 +120,6 @@ const facultyDashStyles = `
 }
 
 
-.faculty-dashboard-wrapper.high-contrast {
-  --bg-primary: #000000;
-  --bg-secondary: #111111;
-  --text-primary: #ffffff;
-  --text-secondary: #ffffff;
-  --text-muted: #ffff00;
-  --border-color: #ffffff;
-  --card-border: #ffffff;
-  --accent-orange: #ff8c00;
-  --accent-light: #333333;
-  --shadow: 0 0 0 2px #ffffff;
-}
-
 .faculty-dashboard-wrapper.text-small { font-size: 0.85rem !important; }
 .faculty-dashboard-wrapper.text-medium { font-size: 1rem !important; }
 .faculty-dashboard-wrapper.text-large { font-size: 1.15rem !important; }
@@ -809,7 +796,6 @@ const FacultyDashboard = () => {
   };
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('gcas_faculty_theme') === 'dark');
   const [textSize, setTextSize] = useState(() => localStorage.getItem('gcas_faculty_text_size') || 'medium');
-  const [isHighContrast, setIsHighContrast] = useState(() => localStorage.getItem('gcas_faculty_high_contrast') === 'true');
   const [accessibilityPrefs, setAccessibilityPrefs] = useState({ reducedMotion: false, dyslexicFont: false });
   const [requestFilter, setRequestFilter] = useState('Pending');
   const [profileName, setProfileName] = useState('');
@@ -843,8 +829,8 @@ const FacultyDashboard = () => {
   }, [textSize]);
 
   useEffect(() => {
-    localStorage.setItem('gcas_faculty_high_contrast', isHighContrast);
-  }, [isHighContrast]);
+    localStorage.removeItem('gcas_faculty_high_contrast');
+  }, []);
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -964,7 +950,6 @@ const FacultyDashboard = () => {
             userEmail={user?.email}
             isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode}
             textSize={textSize} setTextSize={setTextSize}
-            isHighContrast={isHighContrast} setIsHighContrast={setIsHighContrast}
             accessibilityPrefs={accessibilityPrefs} updateAccessibilityPref={updateAccessibilityPref}
             onProfileSaved={handleProfileSaved}
           />
@@ -989,7 +974,7 @@ const FacultyDashboard = () => {
   ];
 
   return (
-    <div className={`faculty-dashboard-wrapper ${isDarkMode ? 'dark' : ''} ${isHighContrast ? 'high-contrast' : ''} text-${textSize} ${accessibilityPrefs.reducedMotion ? 'reduced-motion' : ''} ${accessibilityPrefs.dyslexicFont ? 'dyslexic-font' : ''}`}>
+    <div className={`faculty-dashboard-wrapper ${isDarkMode ? 'dark' : ''} text-${textSize} ${accessibilityPrefs.reducedMotion ? 'reduced-motion' : ''} ${accessibilityPrefs.dyslexicFont ? 'dyslexic-font' : ''}`}>
       <style>{facultyDashStyles}</style>
 
       {/* ── Sidebar ── */}

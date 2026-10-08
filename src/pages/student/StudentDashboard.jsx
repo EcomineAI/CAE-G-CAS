@@ -92,13 +92,6 @@ const dashStyles = `
 }
 
 /* Accessibility */
-.sd-root.high-contrast {
-  --main-bg: #000 !important; --card-bg: #111 !important;
-  --text-primary: #fff !important; --text-secondary: #fff !important;
-  --text-muted: #ff0 !important; --border-color: #fff !important;
-  --card-border: #fff !important; --accent: #f00 !important;
-  --accent-light: #222 !important; --sidebar-bg: #000 !important;
-}
 .sd-root.text-small  { font-size: 0.85rem !important; }
 .sd-root.text-medium { font-size: 1rem !important; }
 .sd-root.text-large  { font-size: 1.15rem !important; }
@@ -419,7 +412,6 @@ const StudentDashboard = () => {
   const [initialFacultyId, setInitialFacultyId] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('gcas_student_theme') === 'dark');
   const [textSize, setTextSize] = useState(() => localStorage.getItem('gcas_student_text_size') || 'medium');
-  const [isHighContrast, setIsHighContrast] = useState(() => localStorage.getItem('gcas_student_high_contrast') === 'true');
   const [accessibilityPrefs, setAccessibilityPrefs] = useState({ reducedMotion: false, dyslexicFont: false });
   const [initialFilter, setInitialFilter] = useState('All');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -441,7 +433,7 @@ const StudentDashboard = () => {
 
   useEffect(() => { localStorage.setItem('gcas_student_theme', isDarkMode ? 'dark' : 'light'); }, [isDarkMode]);
   useEffect(() => { localStorage.setItem('gcas_student_text_size', textSize); }, [textSize]);
-  useEffect(() => { localStorage.setItem('gcas_student_high_contrast', isHighContrast); }, [isHighContrast]);
+  useEffect(() => { localStorage.removeItem('gcas_student_high_contrast'); }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -549,7 +541,6 @@ const StudentDashboard = () => {
   const rootClass = [
     'sd-root',
     isDarkMode ? 'dark' : '',
-    isHighContrast ? 'high-contrast' : '',
     `text-${textSize}`,
     accessibilityPrefs.reducedMotion ? 'reduced-motion' : '',
     accessibilityPrefs.dyslexicFont ? 'dyslexic-font' : '',
@@ -688,7 +679,6 @@ const StudentDashboard = () => {
                 userEmail={user?.email}
                 isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode}
                 textSize={textSize} setTextSize={setTextSize}
-                isHighContrast={isHighContrast} setIsHighContrast={setIsHighContrast}
                 accessibilityPrefs={accessibilityPrefs} updateAccessibilityPref={updateAccessibilityPref}
                 onProfileSaved={handleProfileSaved}
               />

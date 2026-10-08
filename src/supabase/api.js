@@ -405,6 +405,56 @@ export const updateUserRole = async (userId, role) => {
   return true;
 };
 
+
+// ==========================================
+// BLOCKED DATES API
+// ==========================================
+
+/** Get all blocked date ranges for a faculty member. */
+export const getBlockedDates = async (facultyId) => {
+  const { data, error } = await supabase
+    .from('blocked_dates')
+    .select('*')
+    .eq('faculty_id', facultyId)
+    .order('from_date', { ascending: true });
+  if (error) { logError('Error fetching blocked dates:', error); return []; }
+  return data || [];
+};
+
+/** Create a new blocked date range for a faculty member. */
+export const createBlockedDate = async ({ faculty_id, from_date, to_date, reason = '' }) => {
+  const { data, error } = await supabase
+    .from('blocked_dates')
+    .insert([{ faculty_id, from_date, to_date, reason }])
+    .select()
+    .single();
+  if (error) { logError('Error creating blocked date:', error); return null; }
+  return data;
+};
+
+/** Delete a blocked date range by id. */
+export const deleteBlockedDate = async (id) => {
+  const { error } = await supabase
+    .from('blocked_dates')
+    .delete()
+    .eq('id', id);
+  if (error) { logError('Error deleting blocked date:', error); return false; }
+  return true;
+};
+
+/** Check if a specific date (YYYY-MM-DD) is blocked for a faculty member. */
+export const isDateBlocked = async (facultyId, dateStr) => {
+  const { data, error } = await supabase
+    .from('blocked_dates')
+    .select('id, reason')
+    .eq('faculty_id', facultyId)
+    .lte('from_date', dateStr)
+    .gte('to_date', dateStr)
+    .limit(1);
+  if (error) { logError('Error checking blocked date:', error); return null; }
+  return (data && data.length > 0) ? data[0] : null;
+};
+
 export const getAllRequests = async () => {
   const { data, error } = await supabase
     .from('requests')

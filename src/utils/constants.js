@@ -9,24 +9,19 @@ export const APP_SHORT = 'FACS';
 // Room number range for schedule room selection (300–500)
 export const ROOM_OPTIONS = ['TBA', ...Array.from({ length: 201 }, (_, i) => String(300 + i))];
 
-// Philippine name prefixes (grouped)
+// Philippine name prefixes (grouped) — General/Civil + Academic only
 export const PH_PREFIXES = {
   'General / Civil': ['Mr.', 'Ms.', 'Mrs.', 'Miss', 'Mx.'],
   'Academic': ['Dr.', 'Prof.', 'Asst. Prof.', 'Assoc. Prof.'],
-  'Professional': ['Engr.', 'Arch.', 'Atty.', 'CPA', 'RN', 'RPh', 'RMT', 'PT', 'OD', 'BSMT', 'PME'],
-  'Military / Government': ['Gen.', 'Col.', 'Lt. Col.', 'Maj.', 'Capt.', 'Lt.', 'Sgt.', 'Cpl.', 'PFC', 'Hon.', 'Gov.', 'Mayor', 'Cong.'],
-  'Religious': ['Fr.', 'Sr.', 'Bro.', 'Rev.', 'Rev. Fr.', 'Rev. Sr.', 'Deacon', 'Bishop', 'Archbishop', 'Cardinal'],
-  'Traditional': ['Datu', 'Lakan', 'Bai', 'Sultan'],
 };
 
-// Philippine name suffixes (grouped)
+// Philippine name suffixes (grouped) — Military/Government removed
 export const PH_SUFFIXES = {
   'Generational': ['Jr.', 'Sr.', 'II', 'III', 'IV', 'V'],
   'Doctoral': ['Ph.D.', 'Ed.D.', 'D.B.A.', 'D.M.', 'D.Sc.', 'D.Eng.', 'M.D.', 'J.D.', 'LL.D.'],
   'Masters': ['M.A.', 'M.S.', 'M.B.A.', 'M.Ed.', 'M.Eng.', 'M.P.A.', 'LL.M.', 'M.P.H.'],
   "Bachelor's": ['LL.B.', 'A.B.', 'B.S.', 'B.A.', 'B.Ed.'],
   'Professional Licenses': ['CPA', 'RN', 'RPh', 'RMT', 'PT', 'OD', 'Engr.', 'Arch.', 'Atty.', 'LPT', 'PME', 'BSMT'],
-  'Military / Government': ['Ret.', 'AFP', 'PNP'],
 };
 
 // Consultation type options

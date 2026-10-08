@@ -249,7 +249,6 @@ const SharedSettingsContent = ({
   userEmail,
   isDarkMode, setIsDarkMode,
   textSize, setTextSize,
-  isHighContrast, setIsHighContrast,
   accessibilityPrefs = {}, updateAccessibilityPref = () => {},
   onProfileSaved,
 }) => {
@@ -429,12 +428,6 @@ const SharedSettingsContent = ({
             sub={isDarkMode ? 'Currently using dark theme' : 'Switch to a darker color scheme'}
             checked={isDarkMode}
             onChange={() => setIsDarkMode(!isDarkMode)}
-          />
-          <SRow
-            label="High Contrast"
-            sub="Increase border and text contrast for better readability"
-            checked={isHighContrast}
-            onChange={() => setIsHighContrast(!isHighContrast)}
           />
         </div>
 

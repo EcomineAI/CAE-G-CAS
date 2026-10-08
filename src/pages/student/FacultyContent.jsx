@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, WifiOff, Search, Users, Clock, XCircle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount } from '../../supabase/api';
+import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount, isDateBlocked } from '../../supabase/api';
 import { subscribeToFacultyStatus } from '../../supabase/realtime';
 import { FacultyCardSkeleton, toast, withMinDelay } from '../../supabase/ux';
 import { formatTimeRange } from '../../utils/dateUtils';
@@ -1070,6 +1070,20 @@ const FacultyContent = ({ initialFacultyId = null }) => {
       return;
     }
 
+    // Blocked-date guard: use the slot's specific_date if one-time, else today for recurring
+    const targetDate = slot.schedule_type === 'one-time' && slot.specific_date
+      ? slot.specific_date
+      : new Date().toISOString().split('T')[0];
+    const block = await isDateBlocked(selectedFaculty.id, targetDate);
+    if (block) {
+      toast.error(
+        block.reason
+          ? `This date is blocked by the faculty (${block.reason}).`
+          : 'This date is blocked by the faculty.'
+      );
+      return;
+    }
+
     const requestData = {
       student_id: user.id,
       faculty_id: selectedFaculty.id,
@@ -1077,7 +1091,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
       subject: subject,
       details: reason,
       status: 'Pending',
-      request_date: new Date().toISOString().split('T')[0]
+      request_date: targetDate
     };
 
     const notifContext = {

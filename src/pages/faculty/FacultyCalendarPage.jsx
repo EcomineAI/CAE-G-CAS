@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CalendarDays, Clock, MapPin, Plus, Ban, Activity, ChevronLeft, ChevronRight, Trash2, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { getFacultyRequests, getFacultySchedules, createSchedule, deleteSchedule } from '../../supabase/api';
+import { getFacultyRequests, getFacultySchedules, createSchedule, deleteSchedule, getBlockedDates, createBlockedDate, deleteBlockedDate } from '../../supabase/api';
 import { subscribeToRequests, subscribeToSchedules } from '../../supabase/realtime';
-import { withMinDelay } from '../../supabase/ux';
+import { withMinDelay, toast } from '../../supabase/ux';
 import { STATUS_STYLES, WEEKDAYS, MONTH_NAMES, fmt12 } from '../../components/SharedCalendarGrid';
 
 /* ── Extra styles for the redesigned faculty calendar ── */
@@ -179,7 +179,37 @@ const facultyCalStyles = `
   white-space: nowrap;
 }
 .fcp-slot-badge.has-pending { background: #fef3c7; color: #7c5200; border-color: rgba(217,119,6,0.3); }
-.fcp-slot-badge.blocked { background: #f3f4f6; color: #374151; border-color: rgba(156,163,175,0.4); }
+.fcp-slot-badge.blocked { background: #fee2e2; color: #991b1b; border-color: rgba(220,38,38,0.3); font-weight: 800; }
+
+.fcp-day-blocked {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(239,68,68,0.06) 0, rgba(239,68,68,0.06) 6px,
+    rgba(239,68,68,0.12) 6px, rgba(239,68,68,0.12) 12px
+  );
+  border-color: rgba(239,68,68,0.3) !important;
+}
+.fcp-day-blocked:hover { background: rgba(239,68,68,0.1); }
+
+.fcp-block-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.75rem;
+  background: #fee2e2; color: #991b1b;
+  border-bottom: 1px solid rgba(220,38,38,0.25);
+  padding: 0.65rem 0.9rem; font-size: 0.82rem;
+}
+.fcp-block-banner-sub {
+  font-size: 0.72rem; color: #b91c1c; opacity: 0.85; margin-top: 2px;
+}
+.fcp-block-banner-btn {
+  background: #fff; color: #991b1b;
+  border: 1px solid rgba(220,38,38,0.4); border-radius: 7px;
+  font-size: 0.74rem; font-weight: 700;
+  padding: 4px 10px; cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.fcp-block-banner-btn:hover { background: #fecaca; }
 
 /* More label */
 .fcp-more { font-size: 0.57rem; color: var(--text-muted); font-weight: 600; padding: 1px 2px; }
@@ -594,6 +624,19 @@ const facultyCalStyles = `
 }
 `;
 
+// ─── Blocked dates (normalise Supabase rows → UI shape) ──────────────
+// Supabase columns: from_date / to_date / reason / id
+// UI shape:         from      / to      / reason / id
+const normBlock = (row) => ({
+  id: row.id,
+  from: row.from_date,
+  to:   row.to_date,
+  reason: row.reason || '',
+});
+// Returns the block entry (or null) if dateStr falls within any blocked range
+const findBlock = (list, dateStr) =>
+  list.find(b => dateStr >= b.from && dateStr <= b.to) || null;
+
 const FacultyCalendarPage = ({ onTabChange }) => {
   const { user } = useAuth();
   const [requests, setRequests] = useState([]);
@@ -602,6 +645,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [statusFilter, setStatusFilter] = useState('All');
+  const [blockedDates, setBlockedDates] = useState([]);
   const [popover, setPopover] = useState(null);
   const [modal, setModal] = useState(null); // 'weekly' | 'block' | 'activity'
   const detailsRef = useRef(null);
@@ -625,12 +669,17 @@ const FacultyCalendarPage = ({ onTabChange }) => {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const [reqs, scheds] = await withMinDelay(
-        Promise.all([getFacultyRequests(user.id), getFacultySchedules(user.id)]),
+      const [reqs, scheds, blocks] = await withMinDelay(
+        Promise.all([
+          getFacultyRequests(user.id),
+          getFacultySchedules(user.id),
+          getBlockedDates(user.id),
+        ]),
         300
       );
       setRequests(reqs);
       setSchedules(scheds);
+      setBlockedDates(blocks.map(normBlock));
       setLoading(false);
     };
     fetchData();
@@ -745,6 +794,9 @@ const FacultyCalendarPage = ({ onTabChange }) => {
       setSchedules(prev => [...prev, { ...data, filled: 0 }]);
       setShowAddForm(false);
       setWhForm({ day: 'Monday', start_time: '08:00', end_time: '09:00', max_slots: 3, duration: 30, room: '' });
+      toast?.success?.(`${whForm.day} hours added`);
+    } else {
+      toast?.error?.('Could not save hours. Check your database connection.');
     }
     setWhSaving(false);
   };
@@ -797,6 +849,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
     const isToday    = dateStr === todayStr;
     const isSelected = dateStr === selectedDate;
     const { daySchedules, dayRequests } = getEventsForDate(dateStr);
+    const block = findBlock(blockedDates, dateStr);
 
     // Slot badge logic
     const totalSlots = daySchedules.reduce((sum, s) => sum + (s.max_slots || 0), 0);
@@ -807,14 +860,17 @@ const FacultyCalendarPage = ({ onTabChange }) => {
     cells.push(
       <div
         key={d}
-        className={`fcp-day${isToday ? ' fcp-day-today' : ''}${isSelected ? ' fcp-day-selected' : ''}`}
+        className={`fcp-day${isToday ? ' fcp-day-today' : ''}${isSelected ? ' fcp-day-selected' : ''}${block ? ' fcp-day-blocked' : ''}`}
         onClick={() => handleDayClick(dateStr)}
         role="button" tabIndex={0}
         onKeyDown={e => e.key === 'Enter' && handleDayClick(dateStr)}
-        aria-label={`${MONTH_NAMES[month]} ${d}`}
+        aria-label={`${MONTH_NAMES[month]} ${d}${block ? ' (blocked)' : ''}`}
       >
         <span className="fcp-day-num">{d}</span>
-        {hasEvents && (
+        {block && (
+          <span className="fcp-slot-badge blocked" title={block.reason || 'Blocked'}>Blocked</span>
+        )}
+        {!block && hasEvents && (
           <span className={`fcp-slot-badge${hasPending ? ' has-pending' : ''}`}>
             {totalSlots > 0
               ? `${filledSlots} of ${totalSlots}`
@@ -823,7 +879,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
                 : `${daySchedules.length} slot${daySchedules.length !== 1 ? 's' : ''}`}
           </span>
         )}
-        {hasPending && !hasEvents && (
+        {!block && hasPending && !hasEvents && (
           <span className="fcp-slot-badge has-pending">{dayRequests.filter(r => r.status === 'Pending').length} pending</span>
         )}
       </div>
@@ -942,6 +998,39 @@ const FacultyCalendarPage = ({ onTabChange }) => {
           {/* Day detail */}
           {selectedDate && detailData ? (
             <div className="fcp-detail-card">
+              {/* Blocked banner */}
+              {(() => {
+                const block = findBlock(blockedDates, selectedDate);
+                if (!block) return null;
+                return (
+                  <div className="fcp-block-banner">
+                    <div>
+                      <strong>This date is blocked.</strong>
+                      {block.reason && <> — <em>{block.reason}</em></>}
+                      <div className="fcp-block-banner-sub">
+                        {block.from === block.to
+                          ? 'Single day'
+                          : `Range: ${block.from} to ${block.to}`}
+                      </div>
+                    </div>
+                    <button
+                      className="fcp-block-banner-btn"
+                      onClick={async () => {
+                        const ok = await deleteBlockedDate(block.id);
+                        if (ok) {
+                          setBlockedDates(prev => prev.filter(b => b.id !== block.id));
+                          toast?.success?.('Date unblocked');
+                        } else {
+                          toast?.error?.('Could not unblock. Try again.');
+                        }
+                      }}
+                    >
+                      Unblock
+                    </button>
+                  </div>
+                );
+              })()}
+
               {/* Day header */}
               <div className="fcp-detail-header">
                 <p className="fcp-detail-day-label">{selectedDayLabel}</p>
@@ -1237,10 +1326,28 @@ const FacultyCalendarPage = ({ onTabChange }) => {
             <button
               className="fcp-modal-btn-primary"
               disabled={bdSaving || !bdFrom || !bdTo}
-              onClick={() => {
-                // TODO: insert into blocked_dates table once it's created
+              onClick={async () => {
+                if (!user) return;
                 setBdSaving(true);
-                setTimeout(() => { setBdSaving(false); setModal(null); }, 800);
+                const row = await createBlockedDate({
+                  faculty_id: user.id,
+                  from_date: bdFrom,
+                  to_date:   bdTo,
+                  reason:    bdReason || '',
+                });
+                setBdSaving(false);
+                if (row) {
+                  setBlockedDates(prev => [...prev, normBlock(row)]);
+                  setModal(null);
+                  setBdReason('');
+                  toast?.success?.(
+                    bdFrom === bdTo
+                      ? `${bdFrom} blocked`
+                      : `${bdFrom} to ${bdTo} blocked`
+                  );
+                } else {
+                  toast?.error?.('Could not save block. Check your database connection.');
+                }
               }}
             >
               {bdSaving ? 'Blocking…' : 'Block dates'}
