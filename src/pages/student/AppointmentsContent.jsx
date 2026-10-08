@@ -133,7 +133,8 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
     const idx = slotReqs.findIndex(r => r.id === app.id);
     if (idx === -1) return app.startTime ? formatTimeRange(app.startTime, app.endTime) : app.time;
     const timeStr = app.startTime ? formatTimeRange(app.startTime, app.endTime) : app.time;
-    const [start, end] = timeStr.split(' - ');
+    if (!timeStr) return '—';
+    const [start, end] = String(timeStr).split(' - ');
     return calculateStudentSlot(start, end, app.max_slots || 5, idx);
   };
 
@@ -287,7 +288,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
           <div style={{ padding: '4rem 2rem', textAlign: 'center', color: '#9ca3af' }}>
             <ClipboardList size={40} strokeWidth={1.5} />
             <p style={{ fontWeight: 600, color: '#374151', fontSize: '1rem', marginTop: '0.8rem', marginBottom: 0 }}>No appointments found</p>
-            <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.88rem' }}>Your {activeFilter === 'All' ? '' : activeFilter.toLowerCase()} records will appear here.</p>
+            <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.88rem' }}>Your {!activeFilter || activeFilter === 'All' ? '' : String(activeFilter).toLowerCase()} records will appear here.</p>
           </div>
         ) : filteredData.map((app, idx) => {
           const isLast = idx === filteredData.length - 1;

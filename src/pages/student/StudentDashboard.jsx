@@ -21,6 +21,7 @@ import NotificationCenter from '../../components/NotificationCenter';
 import ProfileEditModal from '../../components/ProfileEditModal';
 import TermsModal from '../../components/TermsModal';
 import LogoutConfirm from '../../components/LogoutConfirm';
+import ErrorBoundary from '../../components/ErrorBoundary';
 
 /* ─────────────────────────────────────────────
    Design tokens + shell styles
@@ -628,36 +629,38 @@ const StudentDashboard = () => {
 
           {/* Content */}
           <main className="sd-content">
-            {activeTab === 'Welcome'      && <WelcomeContent />}
-            {activeTab === 'Dashboard'    && <DashboardContent onTabChange={handleTabChange} realName={realName} />}
-            {activeTab === 'Calendar'     && (
-              <CalendarPage
-                onTabChange={handleTabChange}
-                focusAppointmentId={focusAppointmentId}
-                focusDate={focusCalendarDate}
-                onFocusHandled={() => { setFocusAppointmentId(null); setFocusCalendarDate(null); }}
-              />
-            )}
-            {activeTab === 'Faculty'      && <FacultyContent key={facultyMountKey} initialFacultyId={initialFacultyId} />}
-            {activeTab === 'Appointments' && (
-              <AppointmentsContent
-                initialFilter={initialFilter}
-                onResetFilter={() => setInitialFilter('All')}
-                focusAppointmentId={focusAppointmentId}
-                onFocusHandled={() => setFocusAppointmentId(null)}
-              />
-            )}
-            {activeTab === 'Settings' && (
-              <SharedSettingsContent
-                role="student"
-                profileData={profileData}
-                userId={user?.id}
-                userEmail={user?.email}
-                textSize={textSize} setTextSize={setTextSize}
-                accessibilityPrefs={accessibilityPrefs} updateAccessibilityPref={updateAccessibilityPref}
-                onProfileSaved={handleProfileSaved}
-              />
-            )}
+            <ErrorBoundary key={activeTab}>
+              {activeTab === 'Welcome'      && <WelcomeContent />}
+              {activeTab === 'Dashboard'    && <DashboardContent onTabChange={handleTabChange} realName={realName} />}
+              {activeTab === 'Calendar'     && (
+                <CalendarPage
+                  onTabChange={handleTabChange}
+                  focusAppointmentId={focusAppointmentId}
+                  focusDate={focusCalendarDate}
+                  onFocusHandled={() => { setFocusAppointmentId(null); setFocusCalendarDate(null); }}
+                />
+              )}
+              {activeTab === 'Faculty'      && <FacultyContent key={facultyMountKey} initialFacultyId={initialFacultyId} />}
+              {activeTab === 'Appointments' && (
+                <AppointmentsContent
+                  initialFilter={initialFilter}
+                  onResetFilter={() => setInitialFilter('All')}
+                  focusAppointmentId={focusAppointmentId}
+                  onFocusHandled={() => setFocusAppointmentId(null)}
+                />
+              )}
+              {activeTab === 'Settings' && (
+                <SharedSettingsContent
+                  role="student"
+                  profileData={profileData}
+                  userId={user?.id}
+                  userEmail={user?.email}
+                  textSize={textSize} setTextSize={setTextSize}
+                  accessibilityPrefs={accessibilityPrefs} updateAccessibilityPref={updateAccessibilityPref}
+                  onProfileSaved={handleProfileSaved}
+                />
+              )}
+            </ErrorBoundary>
           </main>
         </div>
 

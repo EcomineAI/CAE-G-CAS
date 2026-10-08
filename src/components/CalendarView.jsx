@@ -323,14 +323,14 @@ const CalendarView = ({ schedules = [], requests = [] }) => {
             );
           }
           const r = item.r;
-          const st = STATUS_STYLES[r.status.toLowerCase()] || STATUS_STYLES.completed;
+          const st = STATUS_STYLES[(r.status || '').toLowerCase()] || STATUS_STYLES.completed;
           return (
             <div
               key={`r-${idx}`}
               className="cv-pill"
               style={{ background: st.bg, color: st.color, borderColor: st.border }}
             >
-              {r.name.split(' ')[0]}
+              {(r.name || '').split(' ')[0]}
             </div>
           );
         })}
@@ -434,7 +434,7 @@ const CalendarView = ({ schedules = [], requests = [] }) => {
                 <div className="cv-detail-section">
                   <div className="cv-detail-section-label">Student Requests</div>
                   {detailRequests.map((r, i) => {
-                    const st = STATUS_STYLES[r.status.toLowerCase()] || STATUS_STYLES.completed;
+                    const st = STATUS_STYLES[(r.status || '').toLowerCase()] || STATUS_STYLES.completed;
                     return (
                       <div key={i} className="cv-detail-item">
                         <div className="cv-detail-dot" style={{ background: st.border }} />

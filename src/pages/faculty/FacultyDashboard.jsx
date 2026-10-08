@@ -17,6 +17,7 @@ import SharedSettingsContent from '../../components/SharedSettingsContent';
 import NotificationCenter from '../../components/NotificationCenter';
 import ProfileEditModal from '../../components/ProfileEditModal';
 import LogoutConfirm from '../../components/LogoutConfirm';
+import ErrorBoundary from '../../components/ErrorBoundary';
 
 const facultyDashStyles = `
 /* ── Faculty dashboard token bridge ── */
@@ -1132,7 +1133,9 @@ const FacultyDashboard = () => {
 
         {/* Scrollable content */}
         <main className={`faculty-main-content${activeTab === 'Calendar' ? ' fac-calendar-tab' : ''}`}>
-          {renderContent()}
+          <ErrorBoundary key={activeTab}>
+            {renderContent()}
+          </ErrorBoundary>
         </main>
       </div>
 
