@@ -47,7 +47,7 @@ const showOsNotification = (notif) => {
   }).catch(() => {});
 };
 
-const NotificationCenter = ({ userId, isOpen, onClose, role = 'Student' }) => {
+const NotificationCenter = ({ userId, isOpen, onClose, role = 'Student', onNotificationClick }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading]             = useState(true);
   const [filter, setFilter]               = useState('All');
@@ -272,7 +272,14 @@ const NotificationCenter = ({ userId, isOpen, onClose, role = 'Student' }) => {
                 <div
                   key={notif.id}
                   className={`nc-item${!notif.is_read ? ' unread' : ''}`}
-                  onClick={() => markAsRead(notif.id)}
+                  style={{ cursor: notif.request_id || onNotificationClick ? 'pointer' : 'default' }}
+                  onClick={() => {
+                    markAsRead(notif.id);
+                    if (onNotificationClick) {
+                      onNotificationClick(notif);
+                      if (onClose) onClose();
+                    }
+                  }}
                 >
                   {(() => {
                     const senderName = notif.senderProfile?.full_name || extractNameFromMessage(notif.message);

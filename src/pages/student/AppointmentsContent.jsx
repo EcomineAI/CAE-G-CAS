@@ -64,8 +64,9 @@ const STYLES = `
   border-radius: 10px; border: 1.5px solid #e5e8f0;
   background: #f0f2f8; cursor: pointer; font-family: inherit; transition: all 0.15s;
 }
-.rs-date-cell:hover { border-color: #5bc8c8; }
-.rs-date-cell.sel { background: #5bc8c8; border-color: #5bc8c8; color: #fff; }
+.rs-date-cell:hover { border-color: #3d5fa8; background: #eef2fb; }
+.rs-date-cell.sel { background: #1a2d5a; border-color: #1a2d5a; color: #fff; font-weight: 800; }
+.rs-date-cell.sel * { font-weight: 800 !important; }
 .rs-date-cell.nohours { opacity: 0.45; cursor: default; }
 .rs-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
 .rs-chip {
@@ -74,12 +75,13 @@ const STYLES = `
   border: 1.5px solid #e5e8f0; background: #f0f2f8;
   cursor: pointer; font-family: inherit; transition: all 0.15s;
 }
-.rs-chip:hover:not([disabled]) { border-color: #5bc8c8; }
-.rs-chip.sel { background: #e0f7f7; border-color: #5bc8c8; }
+.rs-chip:hover:not([disabled]) { border-color: #3d5fa8; background: #eef2fb; }
+.rs-chip.sel { background: #e0e8f7; border-color: #1a2d5a; }
+.rs-chip.sel * { font-weight: 800 !important; color: #1a2d5a !important; }
 .rs-chip[disabled] { opacity: 0.4; cursor: not-allowed; }
 `;
 
-const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
+const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppointmentId = null, onFocusHandled }) => {
   const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState(initialFilter);
   const [requests, setRequests] = useState([]);
@@ -107,6 +109,19 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter }) => {
     const unsub = subscribeToRequests(user.id, 'student', setRequests, () => getStudentRequests(user.id));
     return () => unsub();
   }, [user]);
+
+  // Open details modal when a notification deep-link arrives
+  useEffect(() => {
+    if (!focusAppointmentId || requests.length === 0) return;
+    const target = requests.find(r => r.id === focusAppointmentId);
+    if (target) {
+      const idx = requests.findIndex(r => r.id === focusAppointmentId);
+      const refId = `REF${String(idx + 1).padStart(4, '0')}`;
+      setActiveFilter('All'); // make sure it's visible regardless of current filter
+      setDetailModal({ app: target, refId });
+      if (onFocusHandled) onFocusHandled();
+    }
+  }, [focusAppointmentId, requests]);
 
   const handleFilterClick = (f) => { setActiveFilter(f); if (onResetFilter) onResetFilter(); };
 

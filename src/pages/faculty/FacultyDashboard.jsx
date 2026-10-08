@@ -812,6 +812,7 @@ const FacultyDashboard = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [focusRequestId, setFocusRequestId] = useState(null);
   
   const [profileData, setProfileData] = useState(null);
   const [showTerms, setShowTerms] = useState(false);
@@ -940,7 +941,11 @@ const FacultyDashboard = () => {
       case 'Schedule':
         return <FacultyScheduleContent />;
       case 'Requests':
-        return <FacultyRequestsContent initialFilter={requestFilter} />;
+        return <FacultyRequestsContent
+          initialFilter={requestFilter}
+          focusRequestId={focusRequestId}
+          onFocusHandled={() => setFocusRequestId(null)}
+        />;
       case 'About':
         return <FacultyAboutContent />;
       case 'Settings':
@@ -1172,6 +1177,12 @@ const FacultyDashboard = () => {
         isOpen={isNotifOpen}
         onClose={() => setIsNotifOpen(false)}
         role="Faculty"
+        onNotificationClick={(notif) => {
+          if (notif.request_id) {
+            setFocusRequestId(notif.request_id);
+            handleActiveTabSet('Requests');
+          }
+        }}
       />
 
       <ProfileEditModal

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, X, Search, Archive, Eye, Clock, Inbox, User } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { AppointmentDetailsModal } from '../shared';
 import { getFacultyRequests, updateRequestStatus, deleteRequest } from '../../supabase/api';
 import { subscribeToRequests } from '../../supabase/realtime';
 import { RequestCardSkeleton, optimistic, withMinDelay, toast } from '../../supabase/ux';
@@ -27,8 +28,8 @@ const requestStyles = `
   color: var(--text-secondary); font-size: 0.82rem; font-weight: 700;
   cursor: pointer; transition: all 0.15s; font-family: inherit; white-space: nowrap;
 }
-.frc-chip:hover { border-color: #1a2d5a; color: #1a2d5a; }
-.frc-chip.active { background: #1a2d5a; color: #fff; border-color: #1a2d5a; }
+.frc-chip:hover { border-color: #3d5fa8; background: #eef2fb; color: #1a2d5a; }
+.frc-chip.active { background: #1a2d5a; color: #fff; border-color: #1a2d5a; font-weight: 800; }
 
 .frc-search {
   margin-left: auto; position: relative; min-width: 240px; flex: 1; max-width: 380px;
@@ -64,6 +65,15 @@ const requestStyles = `
 }
 .frc-row:last-child { border-bottom: none; }
 .frc-row:hover { background: var(--bg-primary, #f0f2f8); }
+.frc-row-highlight {
+  background: #eef2fb !important;
+  box-shadow: inset 4px 0 0 #1a2d5a;
+  animation: frcFlash 2.4s ease-out;
+}
+@keyframes frcFlash {
+  0%, 15%  { background: #d9e2f5 !important; }
+  100%     { background: #eef2fb !important; }
+}
 
 /* Avatar */
 .frc-avatar {
@@ -223,12 +233,14 @@ const fmt12 = (t) => {
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
 };
 
-const FacultyRequestsContent = ({ initialFilter = 'All' }) => {
+const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, onFocusHandled }) => {
   const { user } = useAuth();
   const [filter, setFilter] = useState(initialFilter);
   const [searchTerm, setSearchTerm] = useState('');
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [highlightedId, setHighlightedId] = useState(null);
+  const [detailModal, setDetailModal] = useState(null);
 
   const [declineModal, setDeclineModal] = useState({ open: false, req: null, reason: '', note: '' });
   const [approveModal, setApproveModal] = useState({ open: false, reqId: null, note: '' });
@@ -237,6 +249,21 @@ const FacultyRequestsContent = ({ initialFilter = 'All' }) => {
   const [deleteModal, setDeleteModal]   = useState({ open: false, reqId: null });
 
   useEffect(() => { setFilter(initialFilter); }, [initialFilter]);
+
+  // Deep-link from a notification click → open the details modal
+  useEffect(() => {
+    if (!focusRequestId || requests.length === 0) return;
+    const target = requests.find(r => r.id === focusRequestId);
+    if (!target) return;
+    const idx = requests.findIndex(r => r.id === focusRequestId);
+    const refId = `REQ${String(idx + 1).padStart(4, '0')}`;
+    setFilter('All');
+    setDetailModal({ app: target, refId });
+    setHighlightedId(target.id);
+    if (onFocusHandled) onFocusHandled();
+    const t = setTimeout(() => setHighlightedId(null), 3000);
+    return () => clearTimeout(t);
+  }, [focusRequestId, requests]);
 
   useEffect(() => {
     if (!user) return;
@@ -416,7 +443,11 @@ const FacultyRequestsContent = ({ initialFilter = 'All' }) => {
             const metaParts = [req.subject, timeLabel, slotLabel].filter(Boolean);
 
             return (
-              <div key={req.id} className="frc-row">
+              <div
+                key={req.id}
+                id={`frc-row-${req.id}`}
+                className={`frc-row${highlightedId === req.id ? ' frc-row-highlight' : ''}`}
+              >
                 {/* Avatar */}
                 <div className="frc-avatar">
                   {req.avatar
@@ -646,6 +677,16 @@ const FacultyRequestsContent = ({ initialFilter = 'All' }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {detailModal && (
+        <AppointmentDetailsModal
+          app={detailModal.app}
+          refId={detailModal.refId}
+          role="faculty"
+          timeStr={detailModal.app?.time}
+          onClose={() => setDetailModal(null)}
+        />
       )}
     </div>
   );

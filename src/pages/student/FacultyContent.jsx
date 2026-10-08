@@ -87,7 +87,7 @@ const facultyStyles = `
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
-  background: #5bc8c8;
+  background: #2e4a87;
 }
 
 .faculty-avatar img {
@@ -238,12 +238,16 @@ const facultyStyles = `
   font-family: inherit;
   transition: all 0.15s;
 }
-.bk-date-cell:hover { border-color: #5bc8c8; }
+.bk-date-cell:hover { border-color: #3d5fa8; background: #eef2fb; }
 .bk-date-cell.selected {
-  background: #5bc8c8;
-  border-color: #5bc8c8;
+  background: #1a2d5a;
+  border-color: #1a2d5a;
   color: #fff;
+  font-weight: 800;
 }
+.bk-date-cell.selected .bk-date-cell-day,
+.bk-date-cell.selected .bk-date-cell-num,
+.bk-date-cell.selected .bk-date-cell-sub { font-weight: 800 !important; }
 .bk-date-cell.no-hours { opacity: 0.55; }
 
 .bk-date-cell-day {
@@ -378,11 +382,13 @@ const facultyStyles = `
   transition: all 0.15s;
   text-align: center;
 }
-.bk-time-chip:hover:not(:disabled) { border-color: #5bc8c8; }
+.bk-time-chip:hover:not(:disabled) { border-color: #3d5fa8; background: #eef2fb; }
 .bk-time-chip.selected {
-  background: #e0f7f7;
-  border-color: #5bc8c8;
+  background: #e0e8f7;
+  border-color: #1a2d5a;
 }
+.bk-time-chip.selected .bk-chip-time,
+.bk-time-chip.selected .bk-chip-room { font-weight: 800 !important; color: #1a2d5a !important; }
 .bk-time-chip.full { opacity: 0.45; cursor: not-allowed; }
 .bk-chip-time { font-size: 0.8rem; font-weight: 700; color: var(--text-primary); }
 .bk-chip-room { font-size: 0.68rem; color: var(--text-muted); }
@@ -1293,7 +1299,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
           <div className="modal-overlay" onClick={() => setFacultyView('list')}>
             <div className="bk-modal" onClick={e => e.stopPropagation()}>
               <div className="bk-modal-header">
-                REQUEST APPOINTMENT WITH <span style={{ color: '#5bc8c8' }}>{selectedFaculty.name?.toUpperCase()}</span>
+                REQUEST APPOINTMENT WITH <span style={{ color: '#7fb3ff' }}>{selectedFaculty.name?.toUpperCase()}</span>
               </div>
               <button className="bk-close-btn" onClick={() => setFacultyView('list')}>✕</button>
 

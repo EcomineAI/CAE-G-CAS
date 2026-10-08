@@ -418,6 +418,7 @@ const StudentDashboard = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [focusAppointmentId, setFocusAppointmentId] = useState(null);
   const [showTerms, setShowTerms] = useState(false);
   const [termsReadOnly, setTermsReadOnly] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -671,6 +672,8 @@ const StudentDashboard = () => {
               <AppointmentsContent
                 initialFilter={initialFilter}
                 onResetFilter={() => setInitialFilter('All')}
+                focusAppointmentId={focusAppointmentId}
+                onFocusHandled={() => setFocusAppointmentId(null)}
               />
             )}
             {activeTab === 'Settings' && (
@@ -758,7 +761,17 @@ const StudentDashboard = () => {
         )}
 
         {/* Modals */}
-        <NotificationCenter userId={user?.id} isOpen={isNotifOpen} onClose={() => setIsNotifOpen(false)} />
+        <NotificationCenter
+          userId={user?.id}
+          isOpen={isNotifOpen}
+          onClose={() => setIsNotifOpen(false)}
+          onNotificationClick={(notif) => {
+            if (notif.request_id) {
+              setFocusAppointmentId(notif.request_id);
+              setTab('Appointments');
+            }
+          }}
+        />
         <ProfileEditModal
           isOpen={showProfileModal} onClose={() => setShowProfileModal(false)}
           onSaved={handleProfileSaved} role="student"

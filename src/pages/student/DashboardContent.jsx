@@ -274,14 +274,14 @@ const DashboardContent = ({ onTabChange, realName }) => {
         }
         .dc-day-col:hover {
           transform: translateY(-3px);
-          border-color: #5bc8c8 !important;
-          background: #e8f7f7;
-          box-shadow: 0 8px 22px rgba(91,200,200,0.3);
+          border-color: #3d5fa8 !important;
+          background: #eef2fb;
+          box-shadow: 0 8px 22px rgba(46,74,135,0.25);
         }
-        .dc-day-col:hover .dc-day-hd { background: #d0f0f0; }
+        .dc-day-col:hover .dc-day-hd { background: #dfe6f5; }
         .dc-day-col:hover .dc-day-body { background: transparent; }
-        .dc-day-col:hover .dc-day-lbl { color: #0d7a7a; }
-        .dc-day-col:hover .dc-day-num { color: #0d7a7a; }
+        .dc-day-col:hover .dc-day-lbl { color: #1a2d5a; font-weight: 800; }
+        .dc-day-col:hover .dc-day-num { color: #1a2d5a; font-weight: 900; }
         .dc-day-col:active { transform: translateY(-1px); }
         .sd-root.dark .dc-day-col { border-color: rgba(123,164,224,0.5); }
         .sd-root.dark .dc-day-col:hover {
@@ -297,7 +297,7 @@ const DashboardContent = ({ onTabChange, realName }) => {
           background: var(--card-bg);
           transition: background 0.18s ease, border-color 0.18s ease;
         }
-        .dc-day-col:hover .dc-day-hd { border-bottom-color: #5bc8c8; }
+        .dc-day-col:hover .dc-day-hd { border-bottom-color: #3d5fa8; }
         .dc-day-lbl { font-size: 0.6rem; font-weight: 700; color: #64748b; display: block; letter-spacing: 0.04em; }
         .dc-day-num {
           font-size: 0.95rem; font-weight: 800; color: #475569;
@@ -364,7 +364,7 @@ const DashboardContent = ({ onTabChange, realName }) => {
         }
         .dc-avail-avatar {
           width: 40px; height: 40px; border-radius: 50%;
-          background: #5bc8c8;
+          background: #3d5fa8;
           display: flex; align-items: center; justify-content: center;
           flex-shrink: 0;
           color: #fff; font-weight: 700; font-size: 1rem;
