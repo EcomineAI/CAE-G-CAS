@@ -11,15 +11,36 @@ import SharedCalendarGrid, {
   calendarSharedStyles,
 } from '../../components/SharedCalendarGrid';
 
-const CalendarPage = ({ onTabChange }) => {
+const CalendarPage = ({ onTabChange, focusAppointmentId = null, onFocusHandled }) => {
   const { user } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [statusFilter, setStatusFilter] = useState('All');
+  const [highlightedApptId, setHighlightedApptId] = useState(null);
   const [popover, setPopover] = useState(null);
   const detailsRef = useRef(null);
+
+  // Deep-link from a notification click → jump to that appointment's date
+  useEffect(() => {
+    if (!focusAppointmentId || requests.length === 0) return;
+    const target = requests.find(r => r.id === focusAppointmentId);
+    if (!target || !target.date) return;
+    const [y, m] = target.date.split('-').map(Number);
+    setCurrentDate(new Date(y, m - 1, 1));
+    setSelectedDate(target.date);
+    setStatusFilter('All');
+    setHighlightedApptId(target.id);
+    if (onFocusHandled) onFocusHandled();
+    setTimeout(() => {
+      if (detailsRef.current) detailsRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const row = document.getElementById(`cal-appt-${target.id}`);
+      if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 120);
+    const t = setTimeout(() => setHighlightedApptId(null), 3000);
+    return () => clearTimeout(t);
+  }, [focusAppointmentId, requests]);
 
   useEffect(() => {
     if (!user) return;
@@ -317,7 +338,11 @@ const CalendarPage = ({ onTabChange }) => {
                     ? `${fmt12(r.startTime)} – ${fmt12(r.endTime)}`
                     : r.time || 'TBD';
                   return (
-                    <div key={r.id || idx} className="sc-appt-card">
+                    <div
+                      key={r.id || idx}
+                      id={`cal-appt-${r.id}`}
+                      className={`sc-appt-card${highlightedApptId === r.id ? ' sc-appt-card-highlight' : ''}`}
+                    >
                       <div className="sc-appt-card-header">
                         <div className="sc-appt-avatar">
                           {r.avatar

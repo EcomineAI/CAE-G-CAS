@@ -666,7 +666,13 @@ const StudentDashboard = () => {
           <main className="sd-content">
             {activeTab === 'Welcome'      && <WelcomeContent />}
             {activeTab === 'Dashboard'    && <DashboardContent onTabChange={handleTabChange} realName={realName} />}
-            {activeTab === 'Calendar'     && <CalendarPage onTabChange={handleTabChange} />}
+            {activeTab === 'Calendar'     && (
+              <CalendarPage
+                onTabChange={handleTabChange}
+                focusAppointmentId={focusAppointmentId}
+                onFocusHandled={() => setFocusAppointmentId(null)}
+              />
+            )}
             {activeTab === 'Faculty'      && <FacultyContent key={facultyMountKey} initialFacultyId={initialFacultyId} />}
             {activeTab === 'Appointments' && (
               <AppointmentsContent
@@ -766,8 +772,13 @@ const StudentDashboard = () => {
           isOpen={isNotifOpen}
           onClose={() => setIsNotifOpen(false)}
           onNotificationClick={(notif) => {
-            if (notif.request_id) {
-              setFocusAppointmentId(notif.request_id);
+            if (!notif.request_id) return;
+            setFocusAppointmentId(notif.request_id);
+            // Approved → jump to Calendar (student can see the day it's scheduled)
+            // Everything else (declined, cancelled, etc.) → Appointments details
+            if (notif.type === 'approved') {
+              setTab('Calendar');
+            } else {
               setTab('Appointments');
             }
           }}

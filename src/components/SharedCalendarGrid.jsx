@@ -461,6 +461,16 @@ export const calendarSharedStyles = `
   animation: scSlideIn 0.2s ease;
 }
 .sc-appt-card:last-child { margin-bottom: 0; }
+.sc-appt-card-highlight {
+  background: #eef2fb !important;
+  border-color: #1a2d5a !important;
+  box-shadow: 0 0 0 2px rgba(26,45,90,0.25), 0 6px 18px rgba(26,45,90,0.18);
+  animation: scHighlightFlash 2.4s ease-out;
+}
+@keyframes scHighlightFlash {
+  0%, 10%  { background: #d9e2f5 !important; }
+  100%     { background: #eef2fb !important; }
+}
 .sc-appt-card-header {
   display: flex;
   align-items: center;
