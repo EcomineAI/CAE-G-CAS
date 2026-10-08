@@ -1,8 +1,14 @@
 import { supabase } from './supabase';
 import { logError } from './ux';
 
-const insertNotification = async (userId, type, message, senderId = null) => {
-  const { error } = await supabase.from('notifications').insert({ user_id: userId, type, message, sender_id: senderId });
+const insertNotification = async (userId, type, message, requestId = null) => {
+  const { error } = await supabase.from('notifications').insert({
+    user_id: userId,
+    type,
+    message,
+    request_id: requestId,
+    is_read: false,
+  });
   if (error) logError('[notif] insert failed:', error);
 };
 
