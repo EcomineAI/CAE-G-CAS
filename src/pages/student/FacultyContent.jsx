@@ -1039,7 +1039,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
     setFacultyView('booking');
   };
 
-  const handleBookSlot = async (slot) => {
+  const handleBookSlot = async (slot, chosenDate = null) => {
     if (!user || !selectedFaculty) return;
 
     if (!isOnline) {
@@ -1070,10 +1070,12 @@ const FacultyContent = ({ initialFacultyId = null }) => {
       return;
     }
 
-    // Blocked-date guard: use the slot's specific_date if one-time, else today for recurring
-    const targetDate = slot.schedule_type === 'one-time' && slot.specific_date
-      ? slot.specific_date
-      : new Date().toISOString().split('T')[0];
+    // Target date: prefer the date the student picked in the booking modal,
+    // then the slot's specific_date for one-time slots, else today as a last resort.
+    const targetDate =
+      chosenDate ||
+      (slot.schedule_type === 'one-time' && slot.specific_date) ||
+      new Date().toISOString().split('T')[0];
     const block = await isDateBlocked(selectedFaculty.id, targetDate);
     if (block) {
       toast.error(
@@ -1282,7 +1284,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
           e.preventDefault();
           if (!chosenSlot) { toast.error('Please select a time slot.'); return; }
           if (!subject) { toast.error('Please select a consultation topic.'); return; }
-          await handleBookSlot(chosenSlot);
+          await handleBookSlot(chosenSlot, selected.dateStr);
         };
 
         return (
