@@ -334,7 +334,6 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
       {/* Welcome */}
       <div className="fdc-welcome">
         <h2>Welcome, {firstName || displayName}!</h2>
-        <p>What would you like to do today?</p>
       </div>
 
       {/* Metric cards */}
