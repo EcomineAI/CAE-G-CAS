@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase, ensureProfile } from '../../supabase/supabase';
 import { getProfile, updateProfile, updateFacultyStatus } from '../../supabase/api';
 import { debouncedSave, toast } from '../../supabase/ux';
-import { Layout, Calendar, CalendarDays, Clock, Bell, User, Moon, Sun, ChevronDown, CheckCircle, AlertCircle, XCircle, Settings, Menu, X as CloseIcon, Info, LogOut, ShieldCheck, FileText } from 'lucide-react';
+import { Layout, Calendar, CalendarDays, Clock, Bell, User, ChevronDown, CheckCircle, AlertCircle, XCircle, Settings, Menu, X as CloseIcon, Info, LogOut, ShieldCheck, FileText } from 'lucide-react';
 import FacultyDashboardContent from './FacultyDashboardContent';
 import FacultyScheduleContent from './FacultyScheduleContent';
 import FacultyRequestsContent from './FacultyRequestsContent';
@@ -50,34 +50,6 @@ const facultyDashStyles = `
   --shadow:         0 1px 8px rgba(0,0,0,0.06);
 }
 
-.faculty-dashboard-wrapper.dark {
-  --sidebar-bg:     #0f1729;
-  --sidebar-hover:  rgba(255,255,255,0.06);
-  --sidebar-active: #1e3460;
-  --sidebar-text:   rgba(255,255,255,0.65);
-  --sidebar-label:  rgba(255,255,255,0.3);
-  --sidebar-border: rgba(255,255,255,0.08);
-
-  --main-bg:        #0c1022;
-  --topbar-bg:      #111827;
-  --topbar-border:  rgba(255,255,255,0.07);
-  --card-bg:        #1a2235;
-  --card-border:    rgba(255,255,255,0.07);
-  --card-shadow:    0 2px 16px rgba(0,0,0,0.3);
-
-  --text-primary:   #e2e8f5;
-  --text-secondary: #c7d3ea;
-  --text-muted:     #7a8fb0;
-  --accent:         #5b80c4;
-  --accent-light:   rgba(91,128,196,0.15);
-  --accent-main:    #5b80c4;
-  --accent-orange:  #5b80c4;
-
-  --border-color:   rgba(255,255,255,0.07);
-  --bg-primary:     #0c1022;
-  --bg-secondary:   #1a2235;
-  --shadow:         0 2px 16px rgba(0,0,0,0.3);
-}
 
 .prefix-suffix-toggle-group {
   display: flex;
@@ -505,8 +477,10 @@ const facultyDashStyles = `
 }
 
 .prof-avatar.available { border-color: #00c853; animation: pulse-available 2s infinite; }
-.prof-avatar.busy { border-color: #ffab00; animation: pulse-busy 2s infinite; }
-.prof-avatar.unavailable { border-color: #ff1744; }
+.prof-avatar.busy { border-color: #ff1744; animation: pulse-busy 2s infinite; }
+.prof-avatar.in-a-meeting { border-color: #ff9800; animation: pulse-meeting 2s infinite; }
+.prof-avatar.out-of-office { border-color: #616161; }
+.prof-avatar.unavailable { border-color: #616161; }
 
 @keyframes pulse-available {
   0% { box-shadow: 0 0 0 0 rgba(0, 200, 83, 0.4); }
@@ -515,9 +489,15 @@ const facultyDashStyles = `
 }
 
 @keyframes pulse-busy {
-  0% { box-shadow: 0 0 0 0 rgba(255, 171, 0, 0.4); }
-  70% { box-shadow: 0 0 0 6px rgba(255, 171, 0, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(255, 171, 0, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(255, 23, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0); }
+}
+
+@keyframes pulse-meeting {
+  0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(255, 152, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
 }
 
 .faculty-main-content.fac-calendar-tab {
@@ -748,10 +728,13 @@ const facultyDashStyles = `
   overflow: hidden; flex-shrink: 0;
 }
 .prof-avatar.available { border-color: #00c853; animation: pulse-available 2s infinite; }
-.prof-avatar.busy { border-color: #ffab00; animation: pulse-busy 2s infinite; }
-.prof-avatar.unavailable { border-color: #ff1744; }
+.prof-avatar.busy { border-color: #ff1744; animation: pulse-busy 2s infinite; }
+.prof-avatar.in-a-meeting { border-color: #ff9800; animation: pulse-meeting 2s infinite; }
+.prof-avatar.out-of-office { border-color: #616161; }
+.prof-avatar.unavailable { border-color: #616161; }
 @keyframes pulse-available { 0% { box-shadow: 0 0 0 0 rgba(0,200,83,0.4); } 70% { box-shadow: 0 0 0 6px rgba(0,200,83,0); } 100% { box-shadow: 0 0 0 0 rgba(0,200,83,0); } }
-@keyframes pulse-busy { 0% { box-shadow: 0 0 0 0 rgba(255,171,0,0.4); } 70% { box-shadow: 0 0 0 6px rgba(255,171,0,0); } 100% { box-shadow: 0 0 0 0 rgba(255,171,0,0); } }
+@keyframes pulse-busy { 0% { box-shadow: 0 0 0 0 rgba(255,23,68,0.4); } 70% { box-shadow: 0 0 0 6px rgba(255,23,68,0); } 100% { box-shadow: 0 0 0 0 rgba(255,23,68,0); } }
+@keyframes pulse-meeting { 0% { box-shadow: 0 0 0 0 rgba(255,152,0,0.4); } 70% { box-shadow: 0 0 0 6px rgba(255,152,0,0); } 100% { box-shadow: 0 0 0 0 rgba(255,152,0,0); } }
 
 /* ── Mobile topbar + drawer ── */
 .fac-mobile-topbar {
@@ -794,7 +777,6 @@ const FacultyDashboard = () => {
     setActiveTab(tab);
     localStorage.setItem('gcas_faculty_tab', tab);
   };
-  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('gcas_faculty_theme') === 'dark');
   const [textSize, setTextSize] = useState(() => localStorage.getItem('gcas_faculty_text_size') || 'medium');
   const [accessibilityPrefs, setAccessibilityPrefs] = useState({ reducedMotion: false, dyslexicFont: false });
   const [requestFilter, setRequestFilter] = useState('Pending');
@@ -822,8 +804,8 @@ const FacultyDashboard = () => {
 
   // Persistence Effects
   useEffect(() => {
-    localStorage.setItem('gcas_faculty_theme', isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
+    localStorage.removeItem('gcas_faculty_theme');
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('gcas_faculty_text_size', textSize);
@@ -955,7 +937,6 @@ const FacultyDashboard = () => {
             profileData={profileData}
             userId={user?.id}
             userEmail={user?.email}
-            isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode}
             textSize={textSize} setTextSize={setTextSize}
             accessibilityPrefs={accessibilityPrefs} updateAccessibilityPref={updateAccessibilityPref}
             onProfileSaved={handleProfileSaved}
@@ -981,7 +962,7 @@ const FacultyDashboard = () => {
   ];
 
   return (
-    <div className={`faculty-dashboard-wrapper ${isDarkMode ? 'dark' : ''} text-${textSize} ${accessibilityPrefs.reducedMotion ? 'reduced-motion' : ''} ${accessibilityPrefs.dyslexicFont ? 'dyslexic-font' : ''}`}>
+    <div className={`faculty-dashboard-wrapper text-${textSize} ${accessibilityPrefs.reducedMotion ? 'reduced-motion' : ''} ${accessibilityPrefs.dyslexicFont ? 'dyslexic-font' : ''}`}>
       <style>{facultyDashStyles}</style>
 
       {/* ── Sidebar ── */}
@@ -1040,17 +1021,13 @@ const FacultyDashboard = () => {
                 <span style={{ position: 'absolute', top: 2, right: 2, background: '#ef4444', color: 'white', fontSize: '0.55rem', padding: '1px 4px', borderRadius: '50%', fontWeight: 700 }}>{unreadCount}</span>
               )}
             </button>
-            <button className="fac-topbar-icon-btn" onClick={() => setIsDarkMode(!isDarkMode)} title="Toggle theme">
-              {isDarkMode ? <Sun size={24} /> : <Moon size={24} />}
-            </button>
-
             {/* Status pill in topbar */}
             <div style={{ position: 'relative' }}>
               <button
                 onClick={() => setIsStatusOpen(v => !v)}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.55rem 1.1rem', borderRadius: 20, border: '1.5px solid var(--topbar-border, #e5e8f0)', background: 'var(--card-bg, #fff)', fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.15s' }}
               >
-                <span style={{ width: 11, height: 11, borderRadius: '50%', flexShrink: 0, display: 'inline-block', background: profileStatus === 'Available' ? '#00c853' : profileStatus === 'Busy' ? '#ffab00' : profileStatus === 'In a meeting' ? '#ff9800' : '#616161' }} />
+                <span style={{ width: 11, height: 11, borderRadius: '50%', flexShrink: 0, display: 'inline-block', background: profileStatus === 'Available' ? '#00c853' : profileStatus === 'Busy' ? '#ff1744' : profileStatus === 'In a meeting' ? '#ff9800' : '#616161' }} />
                 {profileStatus}
                 <ChevronDown size={16} />
               </button>
@@ -1069,7 +1046,7 @@ const FacultyDashboard = () => {
                     {/* Students see */}
                     <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>Students currently see</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: profileStatus === 'Available' ? '#00c853' : profileStatus === 'Busy' ? '#ffab00' : profileStatus === 'In a meeting' ? '#ff9800' : '#616161', flexShrink: 0 }} />
+                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: profileStatus === 'Available' ? '#00c853' : profileStatus === 'Busy' ? '#ff1744' : profileStatus === 'In a meeting' ? '#ff9800' : '#616161', flexShrink: 0 }} />
                       <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>{profileStatus}</span>
                     </div>
 
@@ -1132,7 +1109,7 @@ const FacultyDashboard = () => {
                 <p className="fac-profile-name">{profilePrefix ? `${profilePrefix} ` : ''}{profileName || 'Faculty'}{profileSuffix ? `, ${profileSuffix}` : ''}</p>
                 <p className="fac-profile-role">{profileDept}</p>
               </div>
-              <div className={`prof-avatar ${profileStatus?.toLowerCase()}`}>
+              <div className={`prof-avatar ${profileStatus?.toLowerCase().replace(/\s+/g,'-')}`}>
                 {profileAvatar ? <img src={profileAvatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={18} />}
               </div>
             </div>
@@ -1149,9 +1126,6 @@ const FacultyDashboard = () => {
             <button className="fac-topbar-icon-btn" onClick={() => setIsNotifOpen(!isNotifOpen)} style={{ position: 'relative' }}>
               <Bell size={24} />
               {unreadCount > 0 && <span style={{ position: 'absolute', top: 2, right: 2, background: '#ef4444', color: 'white', fontSize: '0.55rem', padding: '1px 4px', borderRadius: '50%', fontWeight: 700 }}>{unreadCount}</span>}
-            </button>
-            <button className="fac-topbar-icon-btn" onClick={() => setIsDarkMode(!isDarkMode)}>
-              {isDarkMode ? <Sun size={24} /> : <Moon size={24} />}
             </button>
           </div>
         </div>
@@ -1216,7 +1190,7 @@ const FacultyDashboard = () => {
             </button>
           </div>
           <div className="mobile-profile-section">
-            <div className={`prof-avatar ${profileStatus?.toLowerCase()}`} style={{ width: '52px', height: '52px' }}>
+            <div className={`prof-avatar ${profileStatus?.toLowerCase().replace(/\s+/g,'-')}`} style={{ width: '52px', height: '52px' }}>
               {profileAvatar ? <img src={profileAvatar} alt="avatar" style={{ width: '100%' }} /> : <User size={26} />}
             </div>
             <div>
@@ -1230,12 +1204,6 @@ const FacultyDashboard = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Icon size={22} /><span>{id}</span></div>
               </button>
             ))}
-            <button className="drawer-link" onClick={() => { setIsDarkMode(!isDarkMode); }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                {isDarkMode ? <Sun size={22} /> : <Moon size={22} />}
-                <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
-              </div>
-            </button>
             <button className="drawer-link" onClick={() => { handleActiveTabSet('Settings'); setIsMobileMenuOpen(false); }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Settings size={22} /><span>Settings</span></div>
             </button>

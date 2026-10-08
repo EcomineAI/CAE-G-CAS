@@ -237,7 +237,7 @@ const REQ_STYLES = {
 
 const STATUS_DOT_COLOR = {
   Available:   '#22c55e',
-  Busy:        '#eab308',
+  Busy:        '#ff1744',
   Unavailable: '#ef4444',
 };
 

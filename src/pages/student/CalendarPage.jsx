@@ -11,7 +11,7 @@ import SharedCalendarGrid, {
   calendarSharedStyles,
 } from '../../components/SharedCalendarGrid';
 
-const CalendarPage = ({ onTabChange, focusAppointmentId = null, onFocusHandled }) => {
+const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null, onFocusHandled }) => {
   const { user } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +21,18 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, onFocusHandled }
   const [highlightedApptId, setHighlightedApptId] = useState(null);
   const [popover, setPopover] = useState(null);
   const detailsRef = useRef(null);
+
+  // Deep-link from Dashboard week card → jump to that specific date
+  useEffect(() => {
+    if (!focusDate) return;
+    const [y, m] = focusDate.split('-').map(Number);
+    setCurrentDate(new Date(y, m - 1, 1));
+    setSelectedDate(focusDate);
+    if (onFocusHandled) onFocusHandled();
+    setTimeout(() => {
+      if (detailsRef.current) detailsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+  }, [focusDate]);
 
   // Deep-link from a notification click → jump to that appointment's date
   useEffect(() => {

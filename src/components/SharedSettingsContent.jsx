@@ -247,7 +247,6 @@ const SharedSettingsContent = ({
   profileData,
   userId,
   userEmail,
-  isDarkMode, setIsDarkMode,
   textSize, setTextSize,
   accessibilityPrefs = {}, updateAccessibilityPref = () => {},
   onProfileSaved,
@@ -417,18 +416,6 @@ const SharedSettingsContent = ({
               <SRow label="Add approved appointments to Google Calendar" checked={prefs.googleCalendar} onChange={() => toggle('googleCalendar')} />
             </>
           )}
-        </div>
-
-        {/* ── Appearance ── */}
-        <div className="ss-card">
-          <p className="ss-card-title">Appearance</p>
-          <p className="ss-card-sub ss-card-sub-none"></p>
-          <SRow
-            label="Dark Mode"
-            sub={isDarkMode ? 'Currently using dark theme' : 'Switch to a darker color scheme'}
-            checked={isDarkMode}
-            onChange={() => setIsDarkMode(!isDarkMode)}
-          />
         </div>
 
         {/* ── Text Size ── */}

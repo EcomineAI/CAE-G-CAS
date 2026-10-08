@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Home, LayoutDashboard, Users, Calendar, CalendarDays, Info,
-  User, Moon, Sun, Settings, Bell, Menu, X as CloseIcon,
+  User, Settings, Bell, Menu, X as CloseIcon,
   LogOut, FileText, ChevronRight, BookOpen
 } from 'lucide-react';
 import DashboardContent from './DashboardContent';
@@ -61,35 +61,6 @@ const dashStyles = `
   --shadow: 0 1px 8px rgba(0,0,0,0.06);
 }
 
-/* Dark mode */
-.sd-root.dark {
-  --sidebar-bg:      #0f1729;
-  --sidebar-hover:   rgba(255,255,255,0.06);
-  --sidebar-active:  #1e3460;
-  --sidebar-text:    rgba(255,255,255,0.65);
-  --sidebar-label:   rgba(255,255,255,0.3);
-  --sidebar-border:  rgba(255,255,255,0.08);
-
-  --main-bg:         #0c1022;
-  --topbar-bg:       #111827;
-  --topbar-border:   rgba(255,255,255,0.07);
-  --card-bg:         #1a2235;
-  --card-border:     rgba(255,255,255,0.07);
-  --card-shadow:     0 2px 16px rgba(0,0,0,0.3);
-
-  --text-primary:    #e2e8f5;
-  --text-secondary:  #c7d3ea;
-  --text-muted:      #7a8fb0;
-  --accent:          #5b80c4;
-  --accent-light:    rgba(91,128,196,0.15);
-  --accent-orange:   #5b80c4;
-
-  --border-color:    rgba(255,255,255,0.07);
-  --bg-primary:      #0c1022;
-  --bg-secondary:    #1a2235;
-
-  --shadow: 0 2px 16px rgba(0,0,0,0.3);
-}
 
 /* Accessibility */
 .sd-root.text-small  { font-size: 0.85rem !important; }
@@ -410,7 +381,6 @@ const StudentDashboard = () => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('gcas_student_tab') || 'Welcome');
   const [facultyMountKey, setFacultyMountKey] = useState(0);
   const [initialFacultyId, setInitialFacultyId] = useState(null);
-  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('gcas_student_theme') === 'dark');
   const [textSize, setTextSize] = useState(() => localStorage.getItem('gcas_student_text_size') || 'medium');
   const [accessibilityPrefs, setAccessibilityPrefs] = useState({ reducedMotion: false, dyslexicFont: false });
   const [initialFilter, setInitialFilter] = useState('All');
@@ -419,6 +389,7 @@ const StudentDashboard = () => {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [focusAppointmentId, setFocusAppointmentId] = useState(null);
+  const [focusCalendarDate, setFocusCalendarDate] = useState(null);
   const [showTerms, setShowTerms] = useState(false);
   const [termsReadOnly, setTermsReadOnly] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -432,8 +403,8 @@ const StudentDashboard = () => {
   const [profileSuffix, setProfileSuffix] = useState('');
   const [profileData, setProfileData] = useState(null);
 
-  useEffect(() => { localStorage.setItem('gcas_student_theme', isDarkMode ? 'dark' : 'light'); }, [isDarkMode]);
   useEffect(() => { localStorage.setItem('gcas_student_text_size', textSize); }, [textSize]);
+  useEffect(() => { localStorage.removeItem('gcas_student_theme'); }, []);
   useEffect(() => { localStorage.removeItem('gcas_student_high_contrast'); }, []);
 
   useEffect(() => {
@@ -486,8 +457,9 @@ const StudentDashboard = () => {
     await updateProfile(user.id, { accessibility_prefs: newPrefs });
   };
 
-  const handleTabChange = (tab, filter = 'All', facultyId = null) => {
-    if (tab === 'Faculty') { setFacultyMountKey(k => k + 1); setInitialFacultyId(facultyId); }
+  const handleTabChange = (tab, filter = 'All', facultyIdOrDate = null) => {
+    if (tab === 'Faculty') { setFacultyMountKey(k => k + 1); setInitialFacultyId(facultyIdOrDate); }
+    if (tab === 'Calendar' && facultyIdOrDate) setFocusCalendarDate(facultyIdOrDate);
     setInitialFilter(filter); setActiveTab(tab);
     localStorage.setItem('gcas_student_tab', tab);
   };
@@ -543,7 +515,6 @@ const StudentDashboard = () => {
 
   const rootClass = [
     'sd-root',
-    isDarkMode ? 'dark' : '',
     `text-${textSize}`,
     accessibilityPrefs.reducedMotion ? 'reduced-motion' : '',
     accessibilityPrefs.dyslexicFont ? 'dyslexic-font' : '',
@@ -635,10 +606,6 @@ const StudentDashboard = () => {
                 <Bell size={24} />
                 {unreadCount > 0 && <span className="sd-notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
               </button>
-              {/* Theme toggle */}
-              <button className="sd-icon-btn" onClick={() => setIsDarkMode(v => !v)} title="Toggle theme">
-                {isDarkMode ? <Sun size={24} /> : <Moon size={24} />}
-              </button>
             </div>
           </div>
 
@@ -656,9 +623,6 @@ const StudentDashboard = () => {
                 <Bell size={19} />
                 {unreadCount > 0 && <span className="sd-notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
               </button>
-              <button className="sd-icon-btn" onClick={() => setIsDarkMode(v => !v)}>
-                {isDarkMode ? <Sun size={19} /> : <Moon size={19} />}
-              </button>
             </div>
           </div>
 
@@ -670,7 +634,8 @@ const StudentDashboard = () => {
               <CalendarPage
                 onTabChange={handleTabChange}
                 focusAppointmentId={focusAppointmentId}
-                onFocusHandled={() => setFocusAppointmentId(null)}
+                focusDate={focusCalendarDate}
+                onFocusHandled={() => { setFocusAppointmentId(null); setFocusCalendarDate(null); }}
               />
             )}
             {activeTab === 'Faculty'      && <FacultyContent key={facultyMountKey} initialFacultyId={initialFacultyId} />}
@@ -688,7 +653,6 @@ const StudentDashboard = () => {
                 profileData={profileData}
                 userId={user?.id}
                 userEmail={user?.email}
-                isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode}
                 textSize={textSize} setTextSize={setTextSize}
                 accessibilityPrefs={accessibilityPrefs} updateAccessibilityPref={updateAccessibilityPref}
                 onProfileSaved={handleProfileSaved}

@@ -39,7 +39,6 @@ export const calendarSharedStyles = `
   display: flex;
   gap: 1.2rem;
   align-items: flex-start;
-  height: calc(100vh - 110px);
   min-height: 480px;
 }
 
@@ -47,14 +46,13 @@ export const calendarSharedStyles = `
 .sc-left {
   flex: 1 1 0;
   min-width: 0;
-  background: var(--card-bg, #fff);
-  border: 1px solid var(--card-border, #e5e8f0);
+  background: #ffffff;
+  border: 2px solid #64748b;
   border-radius: 16px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  box-shadow: var(--card-shadow, 0 1px 8px rgba(0,0,0,0.06));
+  box-shadow: 0 4px 16px rgba(26,45,90,0.12);
 }
 
 .sc-cal-header {
@@ -62,17 +60,17 @@ export const calendarSharedStyles = `
   align-items: center;
   justify-content: space-between;
   padding: 0.9rem 1.4rem;
-  border-bottom: 1px solid var(--card-border, #e5e8f0);
+  border-bottom: 2px solid #94a3b8;
   flex-shrink: 0;
-  background: var(--card-bg, #fff);
+  background: #ffffff;
   gap: 0.6rem;
   flex-wrap: wrap;
 }
 
 .sc-month-label {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 800;
-  color: var(--text-primary);
+  color: #1a2d5a;
   letter-spacing: -0.3px;
 }
 
@@ -114,84 +112,97 @@ export const calendarSharedStyles = `
 /* ── Filter bar ── */
 .sc-filter-bar {
   display: flex;
-  gap: 0.4rem;
-  padding: 0.55rem 1.4rem;
-  border-bottom: 1.5px solid rgba(199,210,254,0.6);
+  gap: 0.5rem;
+  padding: 0.7rem 1.4rem;
+  border-bottom: 2px solid #94a3b8;
   flex-shrink: 0;
-  background: var(--card-bg, #fff);
+  background: #f8f9fc;
 }
 
 .sc-filter-chip {
-  padding: 0.22rem 0.75rem;
+  padding: 0.35rem 1rem;
   border-radius: 20px;
-  border: 1.5px solid var(--border-color);
-  background: var(--bg-primary, #f0f2f8);
-  color: var(--text-secondary);
-  font-size: 0.72rem;
+  border: 1.5px solid #94a3b8;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s;
 }
-.sc-filter-chip:hover { border-color: var(--accent, #2e4a87); color: var(--accent, #2e4a87); }
-.sc-filter-chip.active { background: var(--accent, #2e4a87); color: #fff; border-color: var(--accent, #2e4a87); }
+.sc-filter-chip:hover { border-color: #1a2d5a; color: #1a2d5a; background: #eef2fb; }
+.sc-filter-chip.active {
+  background: #1a2d5a;
+  color: #fff;
+  border-color: #1a2d5a;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(26,45,90,0.25);
+}
 
 /* ── Grid ── */
 .sc-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  flex: 1;
-  overflow-y: auto;
-  scrollbar-width: none;
   align-content: start;
+  scrollbar-width: none;
+}
+.sc-grid > .sc-day:nth-child(7n),
+.sc-grid > .sc-day-empty:nth-child(7n) {
+  border-right: none;
 }
 .sc-grid::-webkit-scrollbar { display: none; }
 
 .sc-weekday {
-  background: rgba(238,240,251,0.9);
-  padding: 0.55rem 0;
+  background: #dfe6f5;
+  padding: 0.6rem 0;
   text-align: center;
-  font-size: 0.67rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  color: #6366f1;
+  color: #1a2d5a;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  border-bottom: 1.5px solid rgba(199,210,254,0.6);
+  border-bottom: 2px solid #64748b;
+  border-right: 1.5px solid #94a3b8;
   position: sticky;
   top: 0;
   z-index: 1;
 }
+.sc-weekday:last-child { border-right: none; }
 
 .sc-day {
-  min-height: 130px;
-  padding: 0.55rem 0.5rem 0.4rem;
+  aspect-ratio: 1 / 1;
+  min-height: 72px;
+  padding: 0.5rem 0.45rem 0.35rem;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   cursor: pointer;
   transition: background 0.12s;
-  border-right: 1px solid rgba(199,210,254,0.5);
-  border-bottom: 1px solid rgba(199,210,254,0.5);
+  border-right: 1.5px solid #94a3b8;
+  border-bottom: 1.5px solid #94a3b8;
   position: relative;
+  overflow: hidden;
 }
-.sc-day:hover { background: rgba(79,70,229,0.04); }
-.sc-day:focus-visible { outline: 2px solid var(--accent, #2e4a87); outline-offset: -2px; }
+.sc-day:hover { background: #eef2fb; }
+.sc-day:focus-visible { outline: 2px solid #1a2d5a; outline-offset: -2px; }
 
 .sc-day-empty {
-  min-height: 130px;
-  background: rgba(248,249,255,0.7);
+  aspect-ratio: 1 / 1;
+  min-height: 72px;
+  background: #f1f3f8;
   cursor: default;
-  border-right: 1px solid rgba(199,210,254,0.5);
-  border-bottom: 1px solid rgba(199,210,254,0.5);
+  border-right: 1.5px solid #94a3b8;
+  border-bottom: 1.5px solid #94a3b8;
 }
 
 .sc-day-num {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #1a2d5a;
   line-height: 1;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -200,14 +211,14 @@ export const calendarSharedStyles = `
   margin-bottom: 2px;
 }
 .sc-day-today .sc-day-num {
-  background: var(--accent, #2e4a87);
+  background: #1a2d5a;
   color: #fff;
   font-weight: 800;
-  box-shadow: 0 2px 8px rgba(79,70,229,0.35);
+  box-shadow: 0 2px 8px rgba(26,45,90,0.4);
 }
 .sc-day-selected {
-  background: rgba(79,70,229,0.06);
-  outline: 2px solid var(--accent, #2e4a87);
+  background: #eef2fb;
+  outline: 2px solid #1a2d5a;
   outline-offset: -2px;
 }
 
@@ -318,13 +329,11 @@ export const calendarSharedStyles = `
 
 /* ── Right panel ── */
 .sc-right {
-  width: 280px;
+  width: 320px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  height: 100%;
-  overflow-y: auto;
   scrollbar-width: none;
 }
 .sc-right::-webkit-scrollbar { display: none; }
@@ -738,17 +747,18 @@ export const calendarSharedStyles = `
 .sc-popover-action:hover { opacity: 0.9; transform: translateY(-1px); }
 
 /* ── Responsive ── */
-@media (max-width: 900px) {
+/* Stack earlier so each square cell stays readable */
+@media (max-width: 1100px) {
   .sc-layout { flex-direction: column; height: auto; }
-  .sc-left { height: auto; }
+  .sc-left { height: auto; width: 100%; }
   .sc-right { width: 100%; height: auto; overflow-y: visible; }
-  .sc-day { min-height: 70px; padding: 0.3rem 0.25rem; }
-  .sc-day-empty { min-height: 70px; }
+}
+@media (max-width: 900px) {
+  .sc-day { padding: 0.3rem 0.25rem; }
   .sc-weekday { padding: 0.35rem 0; font-size: 0.58rem; }
   .sc-pill { font-size: 0.52rem; padding: 2px 5px; }
 }
 @media (max-width: 600px) {
-  .sc-day { min-height: 54px; }
   .sc-month-label { font-size: 0.92rem; }
   .sc-filter-bar { padding: 0.5rem 0.8rem; }
   .sc-popover {

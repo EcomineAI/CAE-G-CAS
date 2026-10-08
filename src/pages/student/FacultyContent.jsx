@@ -977,7 +977,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
         }
         return {
           ...f,
-          statusColor: f.status === 'Available' ? 'green' : f.status === 'Busy' ? 'yellow' : 'red',
+          statusColor: f.status === 'Available' ? 'green' : f.status === 'Busy' ? 'red' : 'gray',
           nextSlot,
         };
       }));
@@ -1008,7 +1008,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
           return {
             ...f,
             status: updatedProfile.status,
-            statusColor: updatedProfile.status === 'Available' ? 'green' : updatedProfile.status === 'Busy' ? 'yellow' : 'red'
+            statusColor: updatedProfile.status === 'Available' ? 'green' : updatedProfile.status === 'Busy' ? 'red' : 'gray'
           };
         }
         return f;
@@ -1204,8 +1204,8 @@ const FacultyContent = ({ initialFacultyId = null }) => {
             ) : filteredFaculty.map((faculty, idx) => {
               const isUnavailable = faculty.status === 'Unavailable';
               const isBusy = faculty.status === 'Busy';
-              const statusColor = isUnavailable ? '#ff1744' : isBusy ? '#ffab00' : '#00c853';
-              const statusLabel = isUnavailable ? 'Unavailable Today' : isBusy ? 'On leave' : null;
+              const statusColor = isUnavailable ? '#616161' : isBusy ? '#ff1744' : '#00c853';
+              const statusLabel = isUnavailable ? 'Unavailable Today' : isBusy ? 'Busy' : null;
 
               return (
                 <div className="faculty-card" key={idx}>

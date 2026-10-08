@@ -30,19 +30,17 @@ function todayDateStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// Rolling 5-day window starting from today
 function getWeekDays() {
   const today = new Date();
-  const dow = today.getDay();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - dow + 1);
   return Array.from({ length: 5 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
     return {
       label: DAYS_SHORT[d.getDay()],
       num: d.getDate(),
       dateStr: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
-      isToday: d.toDateString() === today.toDateString(),
+      isToday: i === 0,
     };
   });
 }
@@ -500,7 +498,14 @@ const DashboardContent = ({ onTabChange, realName }) => {
             {weekDays.map(day => {
               const dayAppts = apptsByDay(day.dateStr);
               return (
-                <div className="dc-day-col" key={day.dateStr}>
+                <div
+                  className="dc-day-col"
+                  key={day.dateStr}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onTabChange && onTabChange('Calendar', null, day.dateStr)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') onTabChange && onTabChange('Calendar', null, day.dateStr); }}
+                >
                   <div className="dc-day-hd">
                     <span className="dc-day-lbl">{day.label} {day.num}</span>
                   </div>
@@ -547,7 +552,7 @@ const DashboardContent = ({ onTabChange, realName }) => {
               {facultyList.map((f, i) => {
                 const isUnavailable = f.status === 'Unavailable';
                 const isBusy = f.status === 'Busy';
-                const dotColor = isUnavailable ? '#ff1744' : isBusy ? '#ffab00' : '#00c853';
+                const dotColor = isUnavailable ? '#616161' : isBusy ? '#ff1744' : '#00c853';
                 const statusText = isUnavailable ? 'Unavailable' : isBusy ? 'Busy' : 'Available';
                 return (
                   <div
