@@ -282,11 +282,17 @@ export const getStudentRequests = async (studentId) => {
     return [];
   }
 
-  return (data || []).map(req => ({
+  return (data || []).map(req => {
+    const fPrefix = req.faculty?.name_prefix || '';
+    const fSuffix = req.faculty?.name_suffix || '';
+    const fBase   = req.faculty?.full_name   || 'Faculty Member';
+    const facultyDisplay = [fPrefix, fBase, fSuffix].filter(Boolean).join(' ');
+    return {
     id: req.id,
-    name: req.faculty?.full_name || 'Faculty Member',
-    namePrefix: req.faculty?.name_prefix || '',
-    nameSuffix: req.faculty?.name_suffix || '',
+    name: facultyDisplay,
+    fullName: fBase,
+    namePrefix: fPrefix,
+    nameSuffix: fSuffix,
     avatar: req.faculty?.avatar_url || null,
     avatarSeed: req.faculty_id,
     day: req.schedule?.day || 'TBD',
@@ -309,7 +315,8 @@ export const getStudentRequests = async (studentId) => {
     facultyDeleted: req.is_faculty_deleted ?? false,
     schedule_id: req.schedule_id,
     max_slots: req.schedule?.max_slots || 1
-  }));
+    };
+  });
 };
 
 
@@ -482,7 +489,7 @@ export const getAllRequests = async () => {
 export const getAllFaculty = async () => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, avatar_url, status, department')
+    .select('id, full_name, avatar_url, status, department, name_prefix, name_suffix')
     .eq('role', 'faculty')
     .neq('full_name', 'Admin')
     .order('full_name', { ascending: true });
@@ -492,13 +499,22 @@ export const getAllFaculty = async () => {
     return [];
   }
 
-  return (data || []).map(f => ({
-    id: f.id,
-    name: f.full_name || 'Faculty Member',
-    avatar: f.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${f.id}`,
-    status: f.status || 'Available',
-    dept: f.department || 'Faculty'
-  }));
+  return (data || []).map(f => {
+    const prefix = f.name_prefix || '';
+    const suffix = f.name_suffix || '';
+    const base   = f.full_name   || 'Faculty Member';
+    const displayName = [prefix, base, suffix].filter(Boolean).join(' ');
+    return {
+      id: f.id,
+      name: displayName,
+      fullName: base,
+      namePrefix: prefix,
+      nameSuffix: suffix,
+      avatar: f.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${f.id}`,
+      status: f.status || 'Available',
+      dept: f.department || 'Faculty'
+    };
+  });
 };
 
 /**
