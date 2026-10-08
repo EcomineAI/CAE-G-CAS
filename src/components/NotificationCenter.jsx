@@ -272,9 +272,9 @@ const NotificationCenter = ({ userId, isOpen, onClose, role = 'Student', onNotif
                 <div
                   key={notif.id}
                   className={`nc-item${!notif.is_read ? ' unread' : ''}`}
-                  style={{ cursor: notif.request_id || onNotificationClick ? 'pointer' : 'default' }}
+                  style={{ cursor: notif.request_id && onNotificationClick ? 'pointer' : 'default' }}
                   onClick={() => {
-                    markAsRead(notif.id);
+                    if (!notif.is_read) markAsRead(notif.id);
                     if (onNotificationClick) {
                       onNotificationClick(notif);
                       if (onClose) onClose();
