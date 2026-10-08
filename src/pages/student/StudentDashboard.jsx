@@ -501,6 +501,8 @@ const StudentDashboard = () => {
   const confirmLogout = async () => {
     setLoggingOut(true);
     localStorage.removeItem('gcas_student_tab');
+    localStorage.removeItem('gcas_faculty_tab');
+    localStorage.removeItem('facs_last_uid');
     sessionStorage.removeItem('admin_bypass');
     await supabase.auth.signOut();
     navigate('/');

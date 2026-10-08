@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CalendarDays, Clock, MapPin, Plus, Ban, Activity, ChevronLeft, ChevronRight, Trash2, X } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, Plus, Ban, Activity, ChevronLeft, ChevronRight, Trash2, X, Pencil, Check } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { getFacultyRequests, getFacultySchedules, createSchedule, deleteSchedule, getBlockedDates, createBlockedDate, deleteBlockedDate } from '../../supabase/api';
+import { getFacultyRequests, getFacultySchedules, createSchedule, updateSchedule, deleteSchedule, getBlockedDates, createBlockedDate, deleteBlockedDate } from '../../supabase/api';
 import { subscribeToRequests, subscribeToSchedules } from '../../supabase/realtime';
 import { withMinDelay, toast } from '../../supabase/ux';
 import { STATUS_STYLES, WEEKDAYS, MONTH_NAMES, fmt12 } from '../../components/SharedCalendarGrid';
@@ -257,6 +257,75 @@ const facultyCalStyles = `
   font-size: 0.72rem; color: var(--text-muted); margin: 0;
   display: flex; align-items: center; gap: 0.3rem;
 }
+
+/* Slot card actions (edit / delete icons) */
+.fcp-slot-actions {
+  display: flex; align-items: center; gap: 4px;
+  margin-left: auto;
+}
+.fcp-slot-icon-btn {
+  width: 26px; height: 26px;
+  background: transparent; border: none;
+  border-radius: 6px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+  transition: background 0.15s, color 0.15s;
+}
+.fcp-slot-icon-btn:hover { background: rgba(0,0,0,0.06); color: var(--text-primary); }
+.fcp-slot-icon-btn.danger:hover { background: #fee2e2; color: #dc2626; }
+
+/* Inline edit form inside a slot card */
+.fcp-slot-edit {
+  padding: 0.75rem 1rem 0.9rem;
+  background: rgba(26,45,90,0.04);
+  border-bottom: 1px solid var(--card-border, #e5e8f0);
+  display: flex; flex-direction: column; gap: 0.55rem;
+}
+.fcp-slot-edit-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;
+}
+.fcp-slot-edit-field { display: flex; flex-direction: column; gap: 3px; }
+.fcp-slot-edit-field label {
+  font-size: 0.68rem; font-weight: 700; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.fcp-slot-edit-field input,
+.fcp-slot-edit-field select {
+  width: 100%;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--card-border, #e5e8f0);
+  border-radius: 7px;
+  font-size: 0.82rem; color: var(--text-primary);
+  background: var(--card-bg, #fff);
+  font-family: inherit; outline: none;
+  box-sizing: border-box;
+}
+.fcp-slot-edit-field input:focus,
+.fcp-slot-edit-field select:focus {
+  border-color: #1a2d5a;
+  box-shadow: 0 0 0 2px rgba(26,45,90,0.1);
+}
+.fcp-slot-edit-footer {
+  display: flex; justify-content: flex-end; gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+.fcp-slot-edit-cancel,
+.fcp-slot-edit-save {
+  padding: 0.35rem 0.9rem; border-radius: 7px;
+  font-size: 0.76rem; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+.fcp-slot-edit-cancel {
+  background: transparent; border: 1px solid var(--card-border, #e5e8f0);
+  color: var(--text-secondary);
+}
+.fcp-slot-edit-cancel:hover { border-color: var(--text-primary); color: var(--text-primary); }
+.fcp-slot-edit-save {
+  background: #1a2d5a; color: #fff; border: none;
+}
+.fcp-slot-edit-save:hover:not(:disabled) { opacity: 0.9; }
+.fcp-slot-edit-save:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Slot row */
 .fcp-slot-row {
@@ -810,7 +879,52 @@ const FacultyCalendarPage = ({ onTabChange }) => {
 
   const handleDeleteSchedule = async (id) => {
     const ok = await deleteSchedule(id);
-    if (ok) setSchedules(prev => prev.filter(s => s.id !== id));
+    if (ok) {
+      setSchedules(prev => prev.filter(s => s.id !== id));
+      toast?.success?.('Slot deleted');
+    } else {
+      toast?.error?.('Could not delete slot.');
+    }
+  };
+
+  // ─── Inline slot editing ──────────────────────────────────
+  const [editingSlotId, setEditingSlotId] = useState(null);
+  const [editSlotForm, setEditSlotForm] = useState(null); // { start_time, end_time, max_slots, duration, room }
+  const [editSaving, setEditSaving] = useState(false);
+
+  const startEditSlot = (slot) => {
+    setEditingSlotId(slot.id);
+    setEditSlotForm({
+      start_time: slot.start_time || '08:00',
+      end_time:   slot.end_time   || '09:00',
+      max_slots:  slot.max_slots  ?? 3,
+      duration:   slot.duration   ?? 30,
+      room:       slot.room       ?? '',
+    });
+  };
+  const cancelEditSlot = () => {
+    setEditingSlotId(null);
+    setEditSlotForm(null);
+  };
+  const saveEditSlot = async (slotId) => {
+    if (!editSlotForm) return;
+    setEditSaving(true);
+    const updates = {
+      start_time: editSlotForm.start_time,
+      end_time:   editSlotForm.end_time,
+      max_slots:  Number(editSlotForm.max_slots),
+      duration:   Number(editSlotForm.duration),
+      room:       editSlotForm.room || null,
+    };
+    const updated = await updateSchedule(slotId, updates);
+    setEditSaving(false);
+    if (updated) {
+      setSchedules(prev => prev.map(s => s.id === slotId ? { ...s, ...updates } : s));
+      cancelEditSlot();
+      toast?.success?.('Slot updated');
+    } else {
+      toast?.error?.('Could not save changes.');
+    }
   };
 
   // Group recurring schedules by day for Weekly Hours modal
@@ -1103,8 +1217,88 @@ const FacultyCalendarPage = ({ onTabChange }) => {
                                   )}
                                 </div>
                               </div>
+                              <div className="fcp-slot-actions">
+                                <button
+                                  className="fcp-slot-icon-btn"
+                                  title="Edit slot"
+                                  onClick={() => startEditSlot(group.schedule)}
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                                <button
+                                  className="fcp-slot-icon-btn danger"
+                                  title="Delete slot"
+                                  onClick={() => handleDeleteSchedule(group.schedule.id)}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
                             </div>
                           </div>
+
+                          {/* Inline edit form */}
+                          {editingSlotId === group.schedule.id && editSlotForm && (
+                            <div className="fcp-slot-edit">
+                              <div className="fcp-slot-edit-row">
+                                <div className="fcp-slot-edit-field">
+                                  <label>Start time</label>
+                                  <input
+                                    type="time"
+                                    value={editSlotForm.start_time}
+                                    onChange={e => setEditSlotForm(f => ({ ...f, start_time: e.target.value }))}
+                                  />
+                                </div>
+                                <div className="fcp-slot-edit-field">
+                                  <label>End time</label>
+                                  <input
+                                    type="time"
+                                    value={editSlotForm.end_time}
+                                    onChange={e => setEditSlotForm(f => ({ ...f, end_time: e.target.value }))}
+                                  />
+                                </div>
+                              </div>
+                              <div className="fcp-slot-edit-row">
+                                <div className="fcp-slot-edit-field">
+                                  <label>Duration (min)</label>
+                                  <select
+                                    value={editSlotForm.duration}
+                                    onChange={e => setEditSlotForm(f => ({ ...f, duration: e.target.value }))}
+                                  >
+                                    {[15, 20, 30, 45, 60].map(d => <option key={d} value={d}>{d} min</option>)}
+                                  </select>
+                                </div>
+                                <div className="fcp-slot-edit-field">
+                                  <label>Slots per time</label>
+                                  <input
+                                    type="number" min={1} max={20}
+                                    value={editSlotForm.max_slots}
+                                    onChange={e => setEditSlotForm(f => ({ ...f, max_slots: e.target.value }))}
+                                  />
+                                </div>
+                              </div>
+                              <div className="fcp-slot-edit-field">
+                                <label>Room</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. Room 510 or TBA"
+                                  value={editSlotForm.room}
+                                  onChange={e => setEditSlotForm(f => ({ ...f, room: e.target.value }))}
+                                />
+                              </div>
+                              <div className="fcp-slot-edit-footer">
+                                <button className="fcp-slot-edit-cancel" onClick={cancelEditSlot} disabled={editSaving}>
+                                  Cancel
+                                </button>
+                                <button
+                                  className="fcp-slot-edit-save"
+                                  onClick={() => saveEditSlot(group.schedule.id)}
+                                  disabled={editSaving || !editSlotForm.start_time || !editSlotForm.end_time}
+                                >
+                                  <Check size={12} /> {editSaving ? 'Saving…' : 'Save'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
                           {/* Student rows nested under this slot */}
                           {group.requests.map((r, ri) => {
                             const st = STATUS_STYLES[r.status] || STATUS_STYLES.Cancelled;
@@ -1163,10 +1357,43 @@ const FacultyCalendarPage = ({ onTabChange }) => {
 
                   {/* Block / Add slot actions */}
                   <div className="fcp-detail-actions">
-                    <button className="fcp-block-btn">
+                    <button
+                      className="fcp-block-btn"
+                      onClick={() => {
+                        if (selectedDate) {
+                          setBdFrom(selectedDate);
+                          setBdTo(selectedDate);
+                        }
+                        setBdReason('');
+                        setModal('block');
+                      }}
+                    >
                       <Ban size={13} /> Block this date
                     </button>
-                    <button className="fcp-add-slot-btn">
+                    <button
+                      className="fcp-add-slot-btn"
+                      onClick={async () => {
+                        if (!user || !selectedDate) return;
+                        const dayName = weekdayFromIso(selectedDate);
+                        const row = await createSchedule({
+                          faculty_id: user.id,
+                          schedule_type: 'one-time',
+                          specific_date: selectedDate,
+                          day: dayName,
+                          start_time: '08:00',
+                          end_time: '09:00',
+                          max_slots: 3,
+                          duration: 30,
+                          room: null,
+                        });
+                        if (row) {
+                          setSchedules(prev => [...prev, { ...row, filled: 0 }]);
+                          toast?.success?.(`One-time slot added for ${selectedDate}`);
+                        } else {
+                          toast?.error?.('Could not add slot. Check your database connection.');
+                        }
+                      }}
+                    >
                       <Plus size={13} /> Add one-time slot
                     </button>
                   </div>
