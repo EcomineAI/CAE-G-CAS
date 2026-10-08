@@ -263,16 +263,39 @@ const DashboardContent = ({ onTabChange, realName }) => {
         }
         .dc-day-col {
           display: flex; flex-direction: column;
-          border: 1px solid var(--card-border);
+          border: 2px solid #1a2d5a !important;
           border-radius: 8px;
           overflow: hidden;
           min-height: 90px;
+          cursor: pointer;
+          background: var(--card-bg);
+          box-shadow: 0 1px 3px rgba(26,45,90,0.08);
+          transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
         }
+        .dc-day-col:hover {
+          transform: translateY(-3px);
+          border-color: #5bc8c8 !important;
+          background: #e8f7f7;
+          box-shadow: 0 8px 22px rgba(91,200,200,0.3);
+        }
+        .dc-day-col:hover .dc-day-hd { background: #d0f0f0; }
+        .dc-day-col:hover .dc-day-body { background: transparent; }
+        .dc-day-col:hover .dc-day-lbl { color: #0d7a7a; }
+        .dc-day-col:hover .dc-day-num { color: #0d7a7a; }
+        .dc-day-col:active { transform: translateY(-1px); }
+        .sd-root.dark .dc-day-col { border-color: rgba(123,164,224,0.5); }
+        .sd-root.dark .dc-day-col:hover {
+          background: rgba(61,90,158,0.18);
+          border-color: #7ba4e0;
+          box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+        }
+        .sd-root.dark .dc-day-col:hover .dc-day-hd { background: rgba(61,90,158,0.25); }
         .dc-day-hd {
           text-align: left;
           padding: 0.45rem 0.6rem 0.35rem 0.6rem;
           border-bottom: 1px solid var(--card-border);
           background: var(--card-bg);
+          transition: background 0.18s ease;
         }
         .dc-day-lbl { font-size: 0.6rem; font-weight: 700; color: var(--text-muted); display: block; letter-spacing: 0.04em; }
         .dc-day-num {
