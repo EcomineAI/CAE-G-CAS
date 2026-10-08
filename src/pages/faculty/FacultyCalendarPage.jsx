@@ -637,6 +637,13 @@ const normBlock = (row) => ({
 const findBlock = (list, dateStr) =>
   list.find(b => dateStr >= b.from && dateStr <= b.to) || null;
 
+// Compute weekday name ('Monday'..'Sunday') from a 'YYYY-MM-DD' string
+const weekdayFromIso = (iso) => {
+  if (!iso) return null;
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long' });
+};
+
 const FacultyCalendarPage = ({ onTabChange }) => {
   const { user } = useAuth();
   const [requests, setRequests] = useState([]);
@@ -926,10 +933,33 @@ const FacultyCalendarPage = ({ onTabChange }) => {
               <button className="fcp-nav-btn" onClick={nextMonth} aria-label="Next month"><ChevronRight size={14} /></button>
             </div>
             <div className="fcp-actions">
-              <button className={`fcp-action-btn${modal === 'weekly' ? ' active' : ''}`} onClick={() => { setModal('weekly'); setShowAddForm(false); }}>
+              <button
+                className={`fcp-action-btn${modal === 'weekly' ? ' active' : ''}`}
+                onClick={() => {
+                  // Prefill form with the weekday of the selected date (if any)
+                  const prefillDay = weekdayFromIso(selectedDate);
+                  if (prefillDay) {
+                    setWhForm(f => ({ ...f, day: prefillDay }));
+                    setShowAddForm(true);
+                  } else {
+                    setShowAddForm(false);
+                  }
+                  setModal('weekly');
+                }}
+              >
                 <Clock size={11} /> Weekly hours
               </button>
-              <button className={`fcp-action-btn${modal === 'block' ? ' active' : ''}`} onClick={() => setModal('block')}>
+              <button
+                className={`fcp-action-btn${modal === 'block' ? ' active' : ''}`}
+                onClick={() => {
+                  // Prefill From/To with the selected date, else today
+                  if (selectedDate) {
+                    setBdFrom(selectedDate);
+                    setBdTo(selectedDate);
+                  }
+                  setModal('block');
+                }}
+              >
                 <Ban size={11} /> Block dates
               </button>
               <button className={`fcp-action-btn${modal === 'activity' ? ' active' : ''}`} onClick={() => setModal('activity')}>
