@@ -51,7 +51,20 @@ const LoginPage = () => {
   };
 
   // Called by TermsModal after user accepts
-  const handleTermsAccepted = () => {
+  const handleTermsAccepted = async () => {
+    if (pendingUser) {
+      // Mark TnC as accepted — survives refreshes forever
+      localStorage.setItem(`gcas_tnc_${pendingUser.id}`, '1');
+      try {
+        await supabase
+          .from('profiles')
+          .update({ tnc_accepted: true })
+          .eq('id', pendingUser.id);
+      } catch (e) {
+        // Column may not exist yet — localStorage still protects
+        console.warn('[TnC] profile update skipped:', e);
+      }
+    }
     setShowTerms(false);
     if (pendingUser) redirectByRole(pendingUser.role);
   };
@@ -87,14 +100,28 @@ const LoginPage = () => {
 
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, tnc_accepted')
-        .eq('id', user.id)
-        .single();
+      // Fetch role (and tnc_accepted if the column exists). Fall back gracefully.
+      let profile = null;
+      try {
+        const res = await supabase
+          .from('profiles')
+          .select('role, tnc_accepted')
+          .eq('id', user.id)
+          .maybeSingle();
+        profile = res.data;
+      } catch {
+        const res = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+        profile = res.data;
+      }
 
       const role = profile?.role || 'student';
-      const alreadyAccepted = profile?.tnc_accepted || localStorage.getItem(`gcas_tnc_${user.id}`) === '1';
+      const alreadyAccepted =
+        profile?.tnc_accepted === true ||
+        localStorage.getItem(`gcas_tnc_${user.id}`) === '1';
 
       if (!alreadyAccepted) {
         // Show TnC — hold the user here until accepted
