@@ -53,6 +53,7 @@ export const calendarSharedStyles = `
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 16px rgba(26,45,90,0.12);
+  zoom: 0.75;
 }
 
 .sc-cal-header {
