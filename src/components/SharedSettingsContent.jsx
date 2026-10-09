@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabase/supabase';
-import { updateProfile } from '../supabase/api';
+import React from 'react';
 import { Type, CheckCircle2 } from 'lucide-react';
 
 const styles = `
@@ -58,49 +56,6 @@ const styles = `
 .ss-switch input:checked + .ss-slider::before { transform: translateX(20px); }
 .ss-switch input:disabled + .ss-slider { opacity: 0.5; cursor: not-allowed; }
 
-/* Sub label */
-.ss-sub-label {
-  font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em;
-  text-transform: uppercase; color: #2e4a87; margin: 0.85rem 0 0;
-}
-
-/* Select */
-.ss-select-wrap { position: relative; }
-.ss-select {
-  width: 140px; padding: 0.5rem 2rem 0.5rem 0.75rem;
-  border-radius: 8px; border: 1.5px solid var(--border-color, #d1d5db);
-  background: var(--bg-primary, #f0f2f8);
-  color: var(--text-primary); font-family: inherit; font-size: 0.88rem;
-  outline: none; cursor: pointer; appearance: none; -webkit-appearance: none;
-}
-.ss-select-chevron {
-  position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%);
-  pointer-events: none; color: var(--text-muted); font-size: 0.75rem;
-}
-.ss-topic-select {
-  width: 100%; padding: 0.65rem 0.9rem; border-radius: 8px;
-  border: 1.5px solid var(--border-color, #d1d5db);
-  background: var(--bg-primary, #f0f2f8);
-  color: var(--text-primary); font-family: inherit; font-size: 0.9rem;
-  outline: none; cursor: pointer; margin-top: 0.6rem;
-}
-
-/* Contact input */
-.ss-input {
-  width: 100%; padding: 0.6rem 0.8rem; border-radius: 8px;
-  border: 1.5px solid var(--border-color, #d1d5db);
-  background: var(--bg-primary, #f0f2f8);
-  color: var(--text-primary); font-family: inherit; font-size: 0.9rem;
-  outline: none; box-sizing: border-box; transition: border-color 0.15s;
-  margin-top: 0.4rem;
-}
-.ss-input:focus { border-color: #1a2d5a; }
-
-/* Privacy chips */
-.ss-privacy-row { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 0.3rem; }
-.ss-privacy-chip { display: flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; font-weight: 600; }
-.ss-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
 /* Text size grid */
 .ss-size-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.65rem; margin-top: 0.75rem; }
 .ss-size-card {
@@ -117,41 +72,14 @@ const styles = `
 .ss-size-check { position: absolute; top: 6px; right: 6px; opacity: 0; }
 .ss-size-card.active .ss-size-check { opacity: 1; }
 
-/* Footer */
-.ss-footer { display: flex; justify-content: flex-end; gap: 0.75rem; padding-top: 0.5rem; }
-.ss-btn-cancel {
-  padding: 0.6rem 1.4rem; border-radius: 9px;
-  border: 1.5px solid var(--border-color,#d1d5db);
-  background: transparent; color: var(--text-secondary);
-  font-weight: 600; font-size: 0.9rem; cursor: pointer; font-family: inherit;
-  transition: border-color 0.15s;
-}
-.ss-btn-cancel:hover { border-color: #1a2d5a; color: #1a2d5a; }
-.ss-btn-cancel:disabled { opacity: 0.45; cursor: not-allowed; }
-.ss-btn-save {
-  padding: 0.6rem 1.6rem; border-radius: 9px;
-  border: none; background: #1a2d5a; color: #fff;
-  font-weight: 700; font-size: 0.9rem; cursor: pointer; font-family: inherit;
-  transition: opacity 0.15s;
-}
-.ss-btn-save:hover { opacity: 0.88; }
-.ss-btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* Change bar */
-.ss-change-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0.65rem 1rem; border-radius: 10px; margin-bottom: 0.75rem;
-  font-size: 0.85rem; font-weight: 600;
-  animation: ssBarIn 0.2s ease;
-}
-@keyframes ssBarIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
-.ss-change-bar.dirty { background: #fff8e1; border: 1.5px solid #ffe082; color: #92400e; }
-.ss-change-bar.saved { background: #f0fdf4; border: 1.5px solid #bbf7d0; color: #166534; }
-
+/* Privacy chips */
+.ss-privacy-row { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 0.3rem; }
+.ss-privacy-chip { display: flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; font-weight: 600; }
+.ss-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 `;
 
-const SSwitch = ({ checked, onChange, disabled, amber }) => (
-  <label className={`ss-switch${amber ? ' ss-switch-exp' : ''}`} onClick={e => e.stopPropagation()}>
+const SSwitch = ({ checked, onChange, disabled }) => (
+  <label className="ss-switch" onClick={e => e.stopPropagation()}>
     <input type="checkbox" checked={checked} onChange={onChange} disabled={disabled} />
     <span className="ss-slider" />
   </label>
@@ -177,80 +105,20 @@ const InfoRow = ({ label, value, badge }) => (
   </div>
 );
 
-const STUDENT_TOPICS = ['Subject concern', 'Grades concern', 'Others (specify below)'];
-
-const DEFAULT_PREFS = {
-  inAppNotif: true,
-  emailApproved: true,
-  emailDeclined: true,
-  emailCancelled: true,
-  emailReminder: true,
-  defaultTopic: 'Subject concern',
-  googleCalendar: false,
-};
-
 const SharedSettingsContent = ({
-  role = 'student',          // 'student' | 'faculty'
+  role = 'student',
   profileData,
-  userId,
   userEmail,
   textSize, setTextSize,
   accessibilityPrefs = {}, updateAccessibilityPref = () => {},
-  onProfileSaved,
 }) => {
   const isFaculty = role === 'faculty';
-  const prefsTable = isFaculty ? 'faculty_prefs' : 'student_prefs';
 
-  // ── Profile / contact ──
-  const [contact, setContact] = useState(profileData?.contact || '');
-  const [savedContact, setSavedContact] = useState(profileData?.contact || '');
-  const [saving, setSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState(null);
-
-  // ── Notification prefs ──
-  const [prefs, setPrefs] = useState(DEFAULT_PREFS);
-  const [savedPrefs, setSavedPrefs] = useState(DEFAULT_PREFS);
-
-  // ── Faculty booking rules (localStorage, UI only for now) ──
-  const [minNotice, setMinNotice] = useState(() => localStorage.getItem('gcas_fac_min_notice') || '2 hours');
-  const [bookingWindow, setBookingWindow] = useState(() => localStorage.getItem('gcas_fac_booking_window') || '2 weeks');
-
-  useEffect(() => {
-    if (!userId) return;
-    supabase.from(prefsTable).select('*').eq('user_id', userId).single().then(({ data }) => {
-      if (data) { const m = { ...DEFAULT_PREFS, ...data }; setPrefs(m); setSavedPrefs(m); }
-    });
-  }, [userId]);
-
-  useEffect(() => {
-    const c = profileData?.contact || '';
-    setContact(c); setSavedContact(c);
-  }, [profileData]);
-
-  const isDirty = contact !== savedContact || JSON.stringify(prefs) !== JSON.stringify(savedPrefs);
-  const toggle = (key) => setPrefs(p => ({ ...p, [key]: !p[key] }));
-
-  const handleSave = async () => {
-    setSaving(true);
-    await Promise.all([
-      supabase.from(prefsTable).upsert({ user_id: userId, ...prefs }, { onConflict: 'user_id' }),
-      updateProfile(userId, { contact }),
-    ]);
-    setSaving(false);
-    setSavedPrefs(prefs); setSavedContact(contact);
-    setSaveStatus('saved');
-    if (onProfileSaved) onProfileSaved({ contact });
-    setTimeout(() => setSaveStatus(null), 3000);
-  };
-
-  const handleCancel = () => { setContact(savedContact); setPrefs(savedPrefs); setSaveStatus(null); };
-
-  // Profile fields
-  const name = profileData?.full_name || '—';
-  const email = userEmail || profileData?.email || '';
+  const name     = profileData?.full_name || '—';
+  const email    = userEmail || profileData?.email || '';
   const idFromEmail = email ? email.split('@')[0] : '—';
-  const program = profileData?.program || '—';
-  const section = profileData?.section || '—';
+  const program  = profileData?.program || '—';
+  const section  = profileData?.section || '—';
   const department = profileData?.department || '—';
   const programSection = [program, section].filter(Boolean).filter(v => v !== '—').join(' ') || '—';
 
@@ -260,10 +128,10 @@ const SharedSettingsContent = ({
       <div className="ss-wrap">
         <p className="ss-page-title">Settings</p>
         <p className="ss-page-sub">
-          {isFaculty ? 'Booking rules and notification preference' : 'Your profile and notification preferences'}
+          {isFaculty ? 'Your profile and display settings.' : 'Your profile and display settings.'}
         </p>
 
-        {/* ── Profile ── */}
+        {/* Profile */}
         <div className="ss-card">
           <p className="ss-card-title">Profile</p>
           <p className="ss-card-sub">
@@ -278,87 +146,9 @@ const SharedSettingsContent = ({
             ? <InfoRow label="Department" value={department} />
             : <InfoRow label="Program and section" value={programSection} />
           }
-          <div style={{ padding: '0.75rem 0' }}>
-            <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Contact number</span>
-            <p style={{ margin: '0.05rem 0 0', fontSize: '0.72rem', color: 'var(--text-muted)' }}>Optional</p>
-            <input className="ss-input" type="tel" placeholder="e.g. 0917 123 4567" value={contact} onChange={e => setContact(e.target.value)} />
-          </div>
         </div>
 
-        {/* ── Faculty: Booking rules ── */}
-        {isFaculty && (
-          <div className="ss-card">
-            <p className="ss-card-title">Booking rules</p>
-            <p className="ss-card-sub">These apply to what students can book.</p>
-            <div className="ss-row">
-              <div>
-                <p className="ss-row-label">Minimum notice</p>
-                <p className="ss-row-sub">Students can't book slots that start sooner than this.</p>
-              </div>
-              <div className="ss-select-wrap">
-                <select className="ss-select" value={minNotice} onChange={e => { setMinNotice(e.target.value); localStorage.setItem('gcas_fac_min_notice', e.target.value); }}>
-                  {['None','30 mins','1 hour','2 hours','1 day'].map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
-                <span className="ss-select-chevron">▾</span>
-              </div>
-            </div>
-            <div className="ss-row" style={{ borderBottom: 'none' }}>
-              <div>
-                <p className="ss-row-label">Booking window</p>
-                <p className="ss-row-sub">How far ahead students can book.</p>
-              </div>
-              <div className="ss-select-wrap">
-                <select className="ss-select" value={bookingWindow} onChange={e => { setBookingWindow(e.target.value); localStorage.setItem('gcas_fac_booking_window', e.target.value); }}>
-                  {['3 days','1 week','2 weeks','1 month'].map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
-                <span className="ss-select-chevron">▾</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Preferences ── */}
-        <div className="ss-card">
-          <p className="ss-card-title">Preferences</p>
-          <p className="ss-card-sub ss-card-sub-none"></p>
-
-          <p className="ss-sub-label" style={{ marginTop: 0 }}>In-App (Bell)</p>
-          <SRow
-            label="In-app notifications"
-            sub={isFaculty ? 'Show new requests and cancellations in the bell.' : 'Approvals, declines, and cancellations always appear in the bell.'}
-            checked={prefs.inAppNotif}
-            onChange={() => toggle('inAppNotif')}
-            disabled
-          />
-
-          <p className="ss-sub-label">Email</p>
-          <SRow label="Request approved"  checked={prefs.emailApproved}  onChange={() => toggle('emailApproved')} />
-          <SRow label="Request declined"  checked={prefs.emailDeclined}  onChange={() => toggle('emailDeclined')} />
-          <SRow
-            label={isFaculty ? 'Cancelled by student' : 'Cancelled by faculty'}
-            sub="Always on so you never miss a change."
-            checked={prefs.emailCancelled}
-            onChange={() => toggle('emailCancelled')}
-            disabled
-          />
-          <SRow label="Reminder 1 day before" checked={prefs.emailReminder} onChange={() => toggle('emailReminder')} />
-
-          {!isFaculty && (
-            <>
-              <p className="ss-sub-label">Booking</p>
-              <div style={{ paddingTop: '0.4rem' }}>
-                <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>Default consultation topic</p>
-                <p style={{ margin: '0.1rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Pre-selected when you book.</p>
-                <select className="ss-topic-select" value={prefs.defaultTopic} onChange={e => setPrefs(p => ({ ...p, defaultTopic: e.target.value }))}>
-                  {STUDENT_TOPICS.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <SRow label="Add approved appointments to Google Calendar" checked={prefs.googleCalendar} onChange={() => toggle('googleCalendar')} />
-            </>
-          )}
-        </div>
-
-        {/* ── Text Size ── */}
+        {/* Text Size */}
         <div className="ss-card">
           <p className="ss-card-title">Text Size</p>
           <p className="ss-card-sub" style={{ marginBottom: 0 }}>Choose a comfortable reading size.</p>
@@ -374,7 +164,7 @@ const SharedSettingsContent = ({
           </div>
         </div>
 
-        {/* ── Accessibility ── */}
+        {/* Accessibility */}
         <div className="ss-card">
           <p className="ss-card-title">Accessibility</p>
           <p className="ss-card-sub ss-card-sub-none"></p>
@@ -392,7 +182,7 @@ const SharedSettingsContent = ({
           />
         </div>
 
-        {/* ── Privacy ── */}
+        {/* Privacy */}
         <div className="ss-card">
           <p className="ss-card-title">Privacy</p>
           <p className="ss-card-sub" style={{ marginBottom: '0.5rem' }}>
@@ -414,19 +204,6 @@ const SharedSettingsContent = ({
           )}
         </div>
 
-        {/* ── Change bar ── */}
-        {(isDirty || saveStatus === 'saved') && (
-          <div className={`ss-change-bar ${saveStatus === 'saved' ? 'saved' : 'dirty'}`}>
-            <span>{saveStatus === 'saved' ? '✓ Changes saved successfully.' : '● You have unsaved changes.'}</span>
-            {saveStatus !== 'saved' && <span style={{ fontSize: '0.78rem', fontWeight: 500, opacity: 0.7 }}>Save or cancel to discard.</span>}
-          </div>
-        )}
-
-        {/* ── Footer ── */}
-        <div className="ss-footer">
-          <button className="ss-btn-cancel" onClick={handleCancel} disabled={!isDirty && saveStatus !== 'saved'}>Cancel</button>
-          <button className="ss-btn-save" onClick={handleSave} disabled={saving || !isDirty}>{saving ? 'Saving…' : 'Save Changes'}</button>
-        </div>
       </div>
     </>
   );
