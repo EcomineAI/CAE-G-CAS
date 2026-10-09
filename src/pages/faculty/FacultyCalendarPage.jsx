@@ -44,7 +44,7 @@ const facultyCalStyles = `
 }
 .fcp-slot-badge.has-pending { background: #fef3c7; color: #7c5200; border-color: rgba(217,119,6,0.3); }
 .fcp-slot-badge.blocked { background: #fee2e2; color: #991b1b; border-color: rgba(220,38,38,0.3); font-weight: 800; }
-.fcp-slot-badge.ooo { background: #f3f4f6; color: #374151; border-color: #9ca3af; font-weight: 800; }
+.fcp-slot-badge.ooo { background: #f3f4f6; color: #374151; border-color: #9ca3af; font-weight: 800; white-space: normal; text-align: center; line-height: 1.2; }
 
 /* Blocked day cell */
 .fcp-day-blocked {
@@ -591,7 +591,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
         <span className="sc-day-num">{d}</span>
         {block && (
           block.reason === 'Out of office'
-            ? <span className="fcp-slot-badge ooo" title="Out of office">OOO</span>
+            ? <span className="fcp-slot-badge ooo" title="Out of office">Out of office</span>
             : <span className="fcp-slot-badge blocked" title={block.reason || 'Blocked'}>Blocked</span>
         )}
         {!block && showBadge && (
