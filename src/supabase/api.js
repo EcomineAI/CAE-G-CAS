@@ -453,6 +453,45 @@ export const createBlockedDate = async ({ faculty_id, from_date, to_date, reason
   return data;
 };
 
+/**
+ * Set out-of-office for a date range:
+ * creates a blocked_date, cancels all Pending+Approved requests in range, notifies students.
+ */
+export const setOutOfOffice = async (facultyId, fromDate, toDate, facultyName) => {
+  // 1. Block the date range
+  const block = await createBlockedDate({ faculty_id: facultyId, from_date: fromDate, to_date: toDate, reason: 'Out of office' });
+
+  // 2. Fetch affected requests
+  const { data: reqs } = await supabase
+    .from('requests')
+    .select('id, student_id, request_date')
+    .eq('faculty_id', facultyId)
+    .in('status', ['Pending', 'Approved'])
+    .gte('request_date', fromDate)
+    .lte('request_date', toDate);
+
+  // 3. Cancel each and notify student
+  for (const req of (reqs || [])) {
+    await supabase.from('requests').update({
+      status: 'Cancelled',
+      cancel_reason: 'Faculty is out of office',
+      updated_at: new Date().toISOString(),
+    }).eq('id', req.id);
+    if (req.student_id) {
+      await insertNotification(
+        req.student_id, 'cancelled',
+        `${facultyName} is out of office from ${fromDate} to ${toDate}. Your appointment has been cancelled.`,
+        req.id
+      );
+    }
+  }
+
+  // 4. Update faculty status
+  await updateProfile(facultyId, { status: 'Out of office' });
+
+  return { block, cancelledCount: (reqs || []).length };
+};
+
 /** Delete a blocked date range by id. */
 export const deleteBlockedDate = async (id) => {
   const { error } = await supabase

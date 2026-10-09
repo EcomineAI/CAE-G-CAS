@@ -1135,10 +1135,13 @@ const FacultyContent = ({ initialFacultyId = null }) => {
     const block = await isDateBlocked(selectedFaculty.id, targetDate);
     console.log('[booking] block result:', block);
     if (block) {
+      const facultyDisplayName = selectedFaculty?.name || 'The faculty';
       toast.error(
-        block.reason
-          ? `This date is blocked by the faculty (${block.reason}).`
-          : 'This date is blocked by the faculty.'
+        block.reason === 'Out of office'
+          ? `${facultyDisplayName} is out of office on this date and is not accepting appointments.`
+          : block.reason
+            ? `This date is blocked by the faculty (${block.reason}).`
+            : 'This date is blocked by the faculty.'
       );
       return;
     }

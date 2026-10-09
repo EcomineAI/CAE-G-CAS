@@ -44,6 +44,7 @@ const facultyCalStyles = `
 }
 .fcp-slot-badge.has-pending { background: #fef3c7; color: #7c5200; border-color: rgba(217,119,6,0.3); }
 .fcp-slot-badge.blocked { background: #fee2e2; color: #991b1b; border-color: rgba(220,38,38,0.3); font-weight: 800; }
+.fcp-slot-badge.ooo { background: #f3f4f6; color: #374151; border-color: #9ca3af; font-weight: 800; }
 
 /* Blocked day cell */
 .fcp-day-blocked {
@@ -588,7 +589,11 @@ const FacultyCalendarPage = ({ onTabChange }) => {
         aria-label={`${MONTH_NAMES[month]} ${d}${block ? ' (blocked)' : ''}`}
       >
         <span className="sc-day-num">{d}</span>
-        {block && <span className="fcp-slot-badge blocked" title={block.reason || 'Blocked'}>Blocked</span>}
+        {block && (
+          block.reason === 'Out of office'
+            ? <span className="fcp-slot-badge ooo" title="Out of office">OOO</span>
+            : <span className="fcp-slot-badge blocked" title={block.reason || 'Blocked'}>Blocked</span>
+        )}
         {!block && showBadge && (
           <span className={`fcp-slot-badge${hasPending ? ' has-pending' : ''}`}>
             {isFiltered
@@ -710,16 +715,17 @@ const FacultyCalendarPage = ({ onTabChange }) => {
           {/* Day detail */}
           {selectedDate && detailData ? (
             <div className="fcp-detail-card">
-              {/* Blocked banner */}
+              {/* Blocked / OOO banner */}
               {(() => {
                 const block = findBlock(blockedDates, selectedDate);
                 if (!block) return null;
+                const isOoo = block.reason === 'Out of office';
                 return (
-                  <div className="fcp-block-banner">
+                  <div className="fcp-block-banner" style={isOoo ? { background: '#f3f4f6', color: '#374151', borderBottom: '1px solid #d1d5db' } : {}}>
                     <div>
-                      <strong>This date is blocked.</strong>
-                      {block.reason && <> — <em>{block.reason}</em></>}
-                      <div className="fcp-block-banner-sub">
+                      <strong>{isOoo ? 'Out of office.' : 'This date is blocked.'}</strong>
+                      {!isOoo && block.reason && <> — <em>{block.reason}</em></>}
+                      <div className="fcp-block-banner-sub" style={isOoo ? { color: '#6b7280' } : {}}>
                         {block.from === block.to ? 'Single day' : `Range: ${block.from} to ${block.to}`}
                       </div>
                     </div>

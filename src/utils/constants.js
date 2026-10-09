@@ -11,16 +11,15 @@ export const ROOM_OPTIONS = ['TBA', ...Array.from({ length: 201 }, (_, i) => Str
 
 // Philippine name prefixes (grouped) — General/Civil + Academic only
 export const PH_PREFIXES = {
-  'General / Civil': ['Mr.', 'Ms.', 'Mrs.', 'Miss', 'Mx.'],
-  'Academic': ['Dr.', 'Prof.', 'Asst. Prof.', 'Assoc. Prof.'],
+  'General / Civil': ['Mr.', 'Ms.', 'Mrs.'],
+  'Academic': ['Dr.', 'Prof.'],
 };
 
 // Philippine name suffixes (grouped) — Military/Government removed
 export const PH_SUFFIXES = {
   'Generational': ['Jr.', 'Sr.', 'II', 'III', 'IV', 'V'],
   'Doctoral': ['Ph.D.', 'Ed.D.', 'D.B.A.', 'D.M.', 'D.Sc.', 'D.Eng.', 'M.D.', 'J.D.', 'LL.D.'],
-  'Masters': ['M.A.', 'M.S.', 'M.B.A.', 'M.Ed.', 'M.Eng.', 'M.P.A.', 'LL.M.', 'M.P.H.'],
-  "Bachelor's": ['LL.B.', 'A.B.', 'B.S.', 'B.A.', 'B.Ed.'],
+  'Masters': ['M.A.', 'M.S.', 'M.B.A.', 'M.Ed.', 'M.Eng.', 'M.P.A.', 'LL.M.', 'M.P.H.', 'MCSC', 'MSIT'],
   'Professional Licenses': ['CPA', 'RN', 'RPh', 'RMT', 'PT', 'OD', 'Engr.', 'Arch.', 'Atty.', 'LPT', 'PME', 'BSMT'],
 };
 

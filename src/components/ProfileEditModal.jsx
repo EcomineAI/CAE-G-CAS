@@ -689,12 +689,12 @@ export default function ProfileEditModal({
 
             <div className="pem-divider"><span>Honorifics</span></div>
             <div className="pem-two-col">
-              <div className="pem-field">
-                <label className="pem-label">
-                  Prefix
-                  {prefix && <span className="pem-label-hint" style={{ color: 'var(--accent, #2e4a87)' }}>{prefix}</span>}
-                </label>
-                {isFaculty ? (
+              {isFaculty && (
+                <div className="pem-field">
+                  <label className="pem-label">
+                    Prefix
+                    {prefix && <span className="pem-label-hint" style={{ color: 'var(--accent, #2e4a87)' }}>{prefix}</span>}
+                  </label>
                   <select className="pem-select" value={prefix} onChange={e => setPrefix(e.target.value)}>
                     <option value="">None</option>
                     {Object.entries(PH_PREFIXES).map(([group, list]) => (
@@ -703,16 +703,11 @@ export default function ProfileEditModal({
                       </optgroup>
                     ))}
                   </select>
-                ) : (
-                  <select className="pem-select" value={prefix} onChange={e => setPrefix(e.target.value)}>
-                    <option value="">None</option>
-                    {STUDENT_PREFIXES.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                )}
-              </div>
+                </div>
+              )}
               <div className="pem-field">
                 <label className="pem-label">
-                  Suffix
+                  {isFaculty ? 'Suffix' : 'Generational Suffix'}
                   {suffix && <span className="pem-label-hint" style={{ color: 'var(--accent, #2e4a87)' }}>{suffix}</span>}
                 </label>
                 {isFaculty ? (
