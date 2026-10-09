@@ -328,7 +328,7 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange, profileStatus = 
       {profileStatus === 'Available' && !hasSchedulesToday && (
         <div className="fdc-banner">
           <span>Students see you as <strong>Available</strong>, but you have no consultation hours today.</span>
-          <button className="fdc-banner-btn" onClick={() => onTabChange('Schedule')}>Change Status</button>
+          <button className="fdc-banner-btn" onClick={() => onTabChange('Calendar')}>Change Status</button>
         </div>
       )}
 

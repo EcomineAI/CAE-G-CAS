@@ -6,7 +6,7 @@ import { debouncedSave, toast } from '../../supabase/ux';
 import { Layout, Calendar, CalendarDays, Clock, Bell, User, ChevronDown, CheckCircle, AlertCircle, XCircle, Settings, Menu, X as CloseIcon, Info, LogOut, ShieldCheck, FileText } from 'lucide-react';
 import { getInitials } from '../../utils/dateUtils';
 import FacultyDashboardContent from './FacultyDashboardContent';
-import FacultyScheduleContent from './FacultyScheduleContent';
+
 import FacultyRequestsContent from './FacultyRequestsContent';
 import FacultyAboutContent from './FacultyAboutContent';
 import FacultyCalendarPage from './FacultyCalendarPage';
@@ -927,7 +927,7 @@ const FacultyDashboard = () => {
       case 'Calendar':
         return <FacultyCalendarPage onTabChange={handleTabChange} />;
       case 'Schedule':
-        return <FacultyScheduleContent />;
+        return <FacultyCalendarPage onTabChange={handleTabChange} />;
       case 'Requests':
         return <FacultyRequestsContent
           initialFilter={requestFilter}
