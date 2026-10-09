@@ -566,11 +566,7 @@ const DashboardContent = ({ onTabChange, realName }) => {
                     onKeyDown={e => e.key === 'Enter' && !isUnavailable && onTabChange('Faculty', 'All', f.id)}
                   >
                     <div className="dc-avail-avatar">
-                      {f.avatar ? (
-                        <img src={f.avatar} alt={f.name} onError={e => { e.currentTarget.style.display = 'none'; }} />
-                      ) : (
-                        <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{getInitials(f.name)}</span>
-                      )}
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{getInitials(f.name)}</span>
                     </div>
                     <div className="dc-avail-info">
                       <p className="dc-avail-name">{f.name?.split(' ').slice(0, 2).join(' ') || 'Faculty'}</p>

@@ -569,9 +569,7 @@ const StudentDashboard = () => {
           {/* User chip */}
           <div className="sd-user-chip" onClick={() => setShowProfileModal(true)}>
             <div className="sd-user-avatar">
-              {realAvatar
-                ? <img src={realAvatar} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
-                : initials}
+              {initials}
             </div>
             <div className="sd-user-chip-text" style={{ minWidth: 0 }}>
               <p className="sd-user-name">
@@ -697,7 +695,7 @@ const StudentDashboard = () => {
             {/* User info */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '1rem', background: 'rgba(255,255,255,0.07)', borderRadius: '12px', marginBottom: '1.5rem' }}>
               <div style={{ width: 50, height: 50, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', overflow: 'hidden', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '1.2rem', flexShrink: 0 }}>
-                {realAvatar ? <img src={realAvatar} alt="avatar" style={{ width: '100%' }} /> : initials}
+                {initials}
               </div>
               <div>
                 <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: '#fff' }}>{displayName}</p>

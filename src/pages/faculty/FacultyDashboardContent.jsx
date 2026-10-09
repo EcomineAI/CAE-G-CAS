@@ -381,9 +381,7 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
         ) : pendingList.map(req => (
           <div key={req.id} className="fdc-req-row">
             <div className="fdc-avatar">
-              {req.avatar
-                ? <img src={req.avatar} alt={req.name} />
-                : <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{getInitials(req.name)}</span>}
+              <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{getInitials(req.name)}</span>
             </div>
             <div className="fdc-req-info">
               <div className="fdc-req-name">
@@ -419,9 +417,7 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
         ) : upcomingList.map(req => (
           <div key={req.id} className="fdc-upcoming-row">
             <div className="fdc-avatar">
-              {req.avatar
-                ? <img src={req.avatar} alt={req.name} />
-                : <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{getInitials(req.name)}</span>}
+              <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{getInitials(req.name)}</span>
             </div>
             <div className="fdc-upcoming-info">
               <div className="fdc-upcoming-name">

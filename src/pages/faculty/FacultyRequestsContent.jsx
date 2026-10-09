@@ -450,10 +450,7 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
               >
                 {/* Avatar */}
                 <div className="frc-avatar">
-                  {req.avatar
-                    ? <img src={req.avatar} alt={req.name} />
-                    : <User size={18} />
-                  }
+                  <User size={18} />
                 </div>
 
                 {/* Info */}

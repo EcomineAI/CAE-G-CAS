@@ -367,10 +367,7 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
                     >
                       <div className="sc-appt-card-header">
                         <div className="sc-appt-avatar">
-                          {r.avatar
-                            ? <img src={r.avatar} alt={r.name} />
-                            : <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{getInitials(r.name)}</span>
-                          }
+                          <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{getInitials(r.name)}</span>
                         </div>
                         <div className="sc-appt-info">
                           <div className="sc-appt-name">{r.name}</div>

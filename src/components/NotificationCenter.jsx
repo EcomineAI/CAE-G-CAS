@@ -308,14 +308,9 @@ const NotificationCenter = ({ userId, isOpen, onClose, role = 'Student', onNotif
                     const avatarColor = nameToColor(senderName || '');
                     return (
                       <div className="nc-avatar" style={{ background: senderName ? avatarColor + '33' : '#b2e0e033' }}>
-                        {notif.senderProfile?.avatar_url ? (
-                          <img src={notif.senderProfile.avatar_url} alt="sender"
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                        ) : (
-                          <span style={{ fontSize: '0.82rem', fontWeight: 800, color: senderName ? avatarColor : '#5bc8c8' }}>
-                            {senderName ? getInitials(senderName.replace(/^(Dr|Mr|Ms|Mrs|Prof)\.?\s*/i, '').trim()) : '?'}
-                          </span>
-                        )}
+                        <span style={{ fontSize: '0.82rem', fontWeight: 800, color: senderName ? avatarColor : '#5bc8c8' }}>
+                          {senderName ? getInitials(senderName.replace(/^(Dr|Mr|Ms|Mrs|Prof)\.?\s*/i, '').trim()) : '?'}
+                        </span>
                         <div className="nc-avatar-icon" style={{ background: meta.iconBg }}>
                           {meta.icon}
                         </div>

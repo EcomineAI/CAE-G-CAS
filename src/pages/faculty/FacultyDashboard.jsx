@@ -1119,7 +1119,7 @@ const FacultyDashboard = () => {
                 <p className="fac-profile-role">{profileDept}</p>
               </div>
               <div className={`prof-avatar ${profileStatus?.toLowerCase().replace(/\s+/g,'-')}`}>
-                {profileAvatar ? <img src={profileAvatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)' }}>{getInitials(profileName)}</span>}
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)' }}>{getInitials(profileName)}</span>
               </div>
             </div>
           </div>
@@ -1204,7 +1204,7 @@ const FacultyDashboard = () => {
           </div>
           <div className="mobile-profile-section">
             <div className={`prof-avatar ${profileStatus?.toLowerCase().replace(/\s+/g,'-')}`} style={{ width: '52px', height: '52px' }}>
-              {profileAvatar ? <img src={profileAvatar} alt="avatar" style={{ width: '100%' }} /> : <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-secondary)' }}>{getInitials(profileName)}</span>}
+              <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-secondary)' }}>{getInitials(profileName)}</span>
             </div>
             <div>
               <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>{profileName}</p>

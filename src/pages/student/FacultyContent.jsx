@@ -1282,15 +1282,9 @@ const FacultyContent = ({ initialFacultyId = null }) => {
               return (
                 <div className="faculty-card" key={idx}>
                   <div className="faculty-avatar">
-                    {faculty.avatar ? (
-                      <img src={faculty.avatar} alt={faculty.name}
-                        onError={e => { e.currentTarget.style.display = 'none'; }}
-                      />
-                    ) : (
-                      <span style={{ color: '#fff', fontWeight: 700, fontSize: '1rem', letterSpacing: '0.02em' }}>
-                        {getInitials(faculty.name)}
-                      </span>
-                    )}
+                    <span style={{ color: '#fff', fontWeight: 700, fontSize: '1rem', letterSpacing: '0.02em' }}>
+                      {getInitials(faculty.name)}
+                    </span>
                   </div>
 
                   <div className="faculty-info">

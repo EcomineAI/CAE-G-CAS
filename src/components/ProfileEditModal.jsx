@@ -626,10 +626,7 @@ export default function ProfileEditModal({
             <div className="pem-avatar-card">
               <div className="pem-avatar-wrap">
                 <div className="pem-avatar-circle">
-                  {avatarUrl
-                    ? <img src={avatarUrl} alt="avatar" onError={e => { e.target.style.display = 'none'; }} />
-                    : getInitials(computedName) || <User size={26} strokeWidth={1.5} />
-                  }
+                  {getInitials(computedName) || <User size={26} strokeWidth={1.5} />}
                 </div>
                 <div className="pem-avatar-badge">
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none">

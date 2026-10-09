@@ -530,7 +530,12 @@ const FacultyCalendarPage = ({ onTabChange }) => {
     const totalSlots  = daySchedules.reduce((sum,s) => sum + (s.max_slots||0), 0);
     const filledSlots = dayRequests.filter(r => r.status === 'Approved').length;
     const hasPending  = dayRequests.some(r => r.status === 'Pending');
-    const hasEvents   = daySchedules.length > 0 || dayRequests.length > 0;
+
+    // When a filter is active, only show badge if filtered requests exist for this day
+    const isFiltered   = statusFilter !== 'All';
+    const showBadge    = isFiltered
+      ? dayRequests.length > 0
+      : daySchedules.length > 0 || dayRequests.length > 0;
 
     cells.push(
       <div
@@ -543,17 +548,16 @@ const FacultyCalendarPage = ({ onTabChange }) => {
       >
         <span className="sc-day-num">{d}</span>
         {block && <span className="fcp-slot-badge blocked" title={block.reason || 'Blocked'}>Blocked</span>}
-        {!block && hasEvents && (
+        {!block && showBadge && (
           <span className={`fcp-slot-badge${hasPending ? ' has-pending' : ''}`}>
-            {totalSlots > 0
-              ? `${filledSlots} of ${totalSlots}`
-              : dayRequests.length > 0
-                ? `${dayRequests.length} req`
-                : `${daySchedules.length} slot${daySchedules.length !== 1 ? 's' : ''}`}
+            {isFiltered
+              ? `${dayRequests.length} ${statusFilter.toLowerCase()}`
+              : totalSlots > 0
+                ? `${filledSlots} of ${totalSlots}`
+                : dayRequests.length > 0
+                  ? `${dayRequests.length} req`
+                  : `${daySchedules.length} slot${daySchedules.length !== 1 ? 's' : ''}`}
           </span>
-        )}
-        {!block && hasPending && !hasEvents && (
-          <span className="fcp-slot-badge has-pending">{dayRequests.filter(r => r.status==='Pending').length} pending</span>
         )}
       </div>
     );
@@ -770,10 +774,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
                             return (
                               <div key={r.id || ri} className="fcp-student-row">
                                 <div className="fcp-student-avatar">
-                                  {r.avatar
-                                    ? <img src={r.avatar} alt={r.name} />
-                                    : <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>{getInitials(r.name || r.studentName)}</span>
-                                  }
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>{getInitials(r.name || r.studentName)}</span>
                                 </div>
                                 <span className="fcp-student-name">{r.name || r.studentName || '—'}</span>
                                 <span className="fcp-appt-badge" style={{ background: st.bg, color: st.color, borderColor: st.border }}>{r.status}</span>
@@ -790,10 +791,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
                         return (
                           <div key={r.id || idx} className="fcp-student-row" style={{ paddingLeft: '1rem' }}>
                             <div className="fcp-student-avatar">
-                              {r.avatar
-                                ? <img src={r.avatar} alt={r.name} />
-                                : <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>{getInitials(r.name || r.studentName)}</span>
-                              }
+                              <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>{getInitials(r.name || r.studentName)}</span>
                             </div>
                             <span className="fcp-student-name">{r.name || r.studentName || '—'}</span>
                             <span className="fcp-appt-badge" style={{ background: st.bg, color: st.color, borderColor: st.border }}>{r.status}</span>
