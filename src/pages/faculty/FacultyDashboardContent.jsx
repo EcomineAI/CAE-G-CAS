@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Inbox, Calendar } from 'lucide-react';
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
-import { getFacultyRequests, getFacultySchedules, getProfile, updateRequestStatus } from '../../supabase/api';
-import { subscribeToRequests, subscribeToSchedules } from '../../supabase/realtime';
+import { getFacultyRequests, getProfile, updateRequestStatus } from '../../supabase/api';
+import { subscribeToRequests } from '../../supabase/realtime';
 import { toast, withMinDelay, prefetch, optimistic } from '../../supabase/ux';
 
 const S = `
@@ -210,12 +210,11 @@ const fmt = (dateStr) => {
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 };
 
-const FacultyDashboardContent = ({ onTabChange, onStatusChange, profileStatus = 'Available' }) => {
+const FacultyDashboardContent = ({ onTabChange }) => {
   const { user } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [requests, setRequests] = useState([]);
-  const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [declineTarget, setDeclineTarget] = useState(null);
   const [declineReason, setDeclineReason] = useState('');
@@ -231,20 +230,14 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange, profileStatus = 
         setDisplayName(name);
         setFirstName(name.split(' ')[0]);
       }
-      const [reqs, scheds] = await withMinDelay(
-        Promise.all([getFacultyRequests(user.id), getFacultySchedules(user.id)]),
-        300
-      );
+      const reqs = await withMinDelay(getFacultyRequests(user.id), 300);
       setRequests(reqs);
-      setSchedules(scheds);
       setLoading(false);
-      prefetch(`schedules-${user.id}`, () => Promise.resolve(scheds));
       prefetch(`requests-${user.id}`, () => Promise.resolve(reqs));
     };
     fetchData();
-    const unsubReqs   = subscribeToRequests(user.id, 'faculty', setRequests, () => getFacultyRequests(user.id));
-    const unsubScheds = subscribeToSchedules(user.id, setSchedules, () => getFacultySchedules(user.id));
-    return () => { unsubReqs(); unsubScheds(); };
+    const unsubReqs = subscribeToRequests(user.id, 'faculty', setRequests, () => getFacultyRequests(user.id));
+    return () => { unsubReqs(); };
   }, [user]);
 
   const handleApprove = async (req) => {
@@ -304,11 +297,6 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange, profileStatus = 
   };
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const hasSchedulesToday = schedules.some(s => {
-    if (s.schedule_type === 'one-time') return s.specific_date === todayStr;
-    const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
-    return s.day === dayName;
-  });
 
   const pendingList   = requests.filter(r => r.status === 'Pending').slice(0, 3);
   const upcomingList  = requests.filter(r => r.status === 'Approved' && r.date >= todayStr)
@@ -324,13 +312,6 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange, profileStatus = 
     <div className="fdc-wrap">
       <style>{S}</style>
 
-      {/* Warning banner */}
-      {profileStatus === 'Available' && !hasSchedulesToday && (
-        <div className="fdc-banner">
-          <span>Students see you as <strong>Available</strong>, but you have no consultation hours today.</span>
-          <button className="fdc-banner-btn" onClick={() => onTabChange('Calendar')}>Change Status</button>
-        </div>
-      )}
 
       {/* Welcome */}
       <div className="fdc-welcome">

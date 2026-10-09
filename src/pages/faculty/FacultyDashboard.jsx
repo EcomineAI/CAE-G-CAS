@@ -923,7 +923,7 @@ const FacultyDashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'Dashboard':
-        return <FacultyDashboardContent onTabChange={handleTabChange} onStatusChange={setProfileStatus} profileStatus={profileStatus} />;
+        return <FacultyDashboardContent onTabChange={handleTabChange} />;
       case 'Calendar':
         return <FacultyCalendarPage onTabChange={handleTabChange} />;
       case 'Schedule':
@@ -951,7 +951,7 @@ const FacultyDashboard = () => {
       case 'Admin':
         return <AdminContent />;
       default:
-        return <FacultyDashboardContent onTabChange={handleTabChange} onStatusChange={setProfileStatus} profileStatus={profileStatus} />;
+        return <FacultyDashboardContent onTabChange={handleTabChange} />;
     }
   };
 
