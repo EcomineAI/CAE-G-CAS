@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle, WifiOff, Search, Users, Clock, XCircle, LayoutList, LayoutGrid, Columns } from 'lucide-react';
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
-import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount, isDateBlocked } from '../../supabase/api';
+import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount, isDateBlocked, getBlockedDates } from '../../supabase/api';
 import { subscribeToFacultyStatus } from '../../supabase/realtime';
 import { FacultyCardSkeleton, toast, withMinDelay } from '../../supabase/ux';
 import { formatTimeRange } from '../../utils/dateUtils';
@@ -984,6 +984,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
   const [submittedReqId, setSubmittedReqId] = useState(null);
   const [selectedDateIdx, setSelectedDateIdx] = useState(0);
   const [selectedSlotIdx, setSelectedSlotIdx] = useState(null);
+  const [facultyBlockedDates, setFacultyBlockedDates] = useState([]);
   const [topicOpen, setTopicOpen] = useState(false);
   const [layoutMode, setLayoutMode] = useState(() => localStorage.getItem('gcas_faculty_layout') || 'grid');
   const { isOnline } = useNetworkStatus();
@@ -1087,9 +1088,14 @@ const FacultyContent = ({ initialFacultyId = null }) => {
     setSubject('');
     setReason('');
     setTopicOpen(false);
+    setFacultyBlockedDates([]);
     setLoading(true);
-    const schedules = await getSchedulesForFaculty(faculty.id);
+    const [schedules, blocks] = await Promise.all([
+      getSchedulesForFaculty(faculty.id),
+      getBlockedDates(faculty.id),
+    ]);
     setFacultySchedules(schedules);
+    setFacultyBlockedDates(blocks || []);
     setLoading(false);
     setFacultyView('booking');
   };
@@ -1343,6 +1349,9 @@ const FacultyContent = ({ initialFacultyId = null }) => {
         const today = new Date();
         today.setHours(0,0,0,0);
 
+        const findBlock = (blocks, dateStr) =>
+          blocks.find(b => dateStr >= b.from_date && dateStr <= b.to_date) || null;
+
         const dateCells = Array.from({ length: 7 }, (_, i) => {
           const d = new Date(today);
           d.setDate(today.getDate() + i);
@@ -1355,7 +1364,10 @@ const FacultyContent = ({ initialFacultyId = null }) => {
           const oneTimeSlots = facultySchedules.filter(s => s.schedule_type === 'one-time' && s.specific_date === dateStr);
           const allSlots = [...daySlots, ...oneTimeSlots];
           const totalLeft = allSlots.reduce((sum, s) => sum + Math.max(0, s.max_slots - (s.filled || 0)), 0);
-          return { d, dayName, dateNum, dateStr, allSlots, totalLeft, hasSlots: allSlots.length > 0, isToday: i === 0 };
+          const block = findBlock(facultyBlockedDates, dateStr);
+          const isBlocked = !!block;
+          const isOoo = block?.reason === 'Out of office';
+          return { d, dayName, dateNum, dateStr, allSlots, totalLeft, hasSlots: allSlots.length > 0, isToday: i === 0, isBlocked, isOoo, blockReason: block?.reason || null };
         });
 
         const selected = dateCells[selectedDateIdx];
@@ -1365,6 +1377,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
 
         const handleInlineSubmit = async (e) => {
           e.preventDefault();
+          if (selected.isBlocked) { toast.error(selected.isOoo ? 'Faculty is out of office on this date.' : 'This date is blocked.'); return; }
           if (!chosenSlot) { toast.error('Please select a time slot.'); return; }
           if (!subject) { toast.error('Please select a consultation topic.'); return; }
           await handleBookSlot(chosenSlot, selected.dateStr);
@@ -1384,13 +1397,18 @@ const FacultyContent = ({ initialFacultyId = null }) => {
                 <div className="bk-date-strip">
                   {dateCells.map((cell, i) => {
                     const isSelected = i === selectedDateIdx;
-                    let sub = 'No Hours';
-                    if (cell.hasSlots) sub = cell.totalLeft === 0 ? 'Full' : `${cell.totalLeft} Left`;
+                    let sub;
+                    if (cell.isOoo) sub = 'Out of office';
+                    else if (cell.isBlocked) sub = 'Blocked';
+                    else if (!cell.hasSlots) sub = 'No Hours';
+                    else sub = cell.totalLeft === 0 ? 'Full' : `${cell.totalLeft} Left`;
                     return (
                       <button
                         key={i}
-                        className={`bk-date-cell${isSelected ? ' selected' : ''}${!cell.hasSlots ? ' no-hours' : ''}`}
-                        onClick={() => { setSelectedDateIdx(i); setSelectedSlotIdx(null); }}
+                        className={`bk-date-cell${isSelected && !cell.isBlocked ? ' selected' : ''}${cell.isBlocked ? ' blocked no-hours' : !cell.hasSlots ? ' no-hours' : ''}`}
+                        onClick={() => { if (!cell.isBlocked) { setSelectedDateIdx(i); setSelectedSlotIdx(null); } }}
+                        disabled={cell.isBlocked}
+                        style={cell.isBlocked ? { opacity: 0.45, cursor: 'not-allowed' } : {}}
                       >
                         <span className="bk-date-cell-day">{cell.isToday ? 'Today' : cell.dayName.slice(0,3)}</span>
                         <span className="bk-date-cell-num">{cell.dateNum}</span>
@@ -1402,7 +1420,11 @@ const FacultyContent = ({ initialFacultyId = null }) => {
 
                 {/* Day label */}
                 <div className="bk-day-label">{selected.isToday ? 'Today, ' : ''}{selectedLabel}</div>
-                {selected.allSlots.length > 0 && (
+                {selected.isBlocked ? (
+                  <div className="bk-day-sub" style={{ color: '#78909c' }}>
+                    {selected.isOoo ? 'Faculty is out of office on this date' : 'This date is blocked by the faculty'}
+                  </div>
+                ) : selected.allSlots.length > 0 && (
                   <div className="bk-day-sub" style={{ color: selected.totalLeft === 0 ? '#ff1744' : selected.totalLeft <= 2 ? '#ffab00' : '#00c853' }}>
                     {selected.totalLeft === 0
                       ? `No slots remaining for ${selected.dayName}`
@@ -1412,6 +1434,10 @@ const FacultyContent = ({ initialFacultyId = null }) => {
 
                 {loading ? (
                   <div className="bk-empty">Loading schedules…</div>
+                ) : selected.isBlocked ? (
+                  <div className="bk-empty">
+                    {selected.isOoo ? `${selectedFaculty.name} is out of office on this date. Please select another date.` : 'This date is unavailable. Please select another date.'}
+                  </div>
                 ) : selected.allSlots.length === 0 ? (
                   <div className="bk-empty">No available schedule for this day</div>
                 ) : (
