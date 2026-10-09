@@ -56,6 +56,14 @@ const facultyCalStyles = `
 }
 .fcp-day-blocked:hover { background: rgba(239,68,68,0.1); }
 
+/* Past day cell */
+.fcp-day-past {
+  opacity: 0.38;
+  cursor: default;
+}
+.fcp-day-past:hover { background: transparent !important; }
+.fcp-day-past .fcp-slot-badge { opacity: 0.7; }
+
 /* Blocked banner inside day detail */
 .fcp-block-banner {
   display: flex; align-items: center; justify-content: space-between;
@@ -381,7 +389,12 @@ const FacultyCalendarPage = ({ onTabChange }) => {
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
-  const goToday   = () => { setCurrentDate(new Date()); setSelectedDate(null); };
+  const goToday   = () => {
+    const t = new Date();
+    const ts = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+    setCurrentDate(t);
+    setSelectedDate(ts);
+  };
 
   const today    = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
@@ -552,6 +565,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
     const dateStr   = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday    = dateStr === todayStr;
     const isSelected = dateStr === selectedDate;
+    const isPast     = dateStr < todayStr;
     const { daySchedules, dayRequests } = getEventsForDate(dateStr);
     const block = findBlock(blockedDates, dateStr);
     const totalSlots  = daySchedules.reduce((sum,s) => sum + (s.max_slots||0), 0);
@@ -567,7 +581,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
     cells.push(
       <div
         key={d}
-        className={`sc-day${isToday ? ' sc-day-today' : ''}${isSelected ? ' sc-day-selected' : ''}${block ? ' fcp-day-blocked' : ''}`}
+        className={`sc-day${isToday ? ' sc-day-today' : ''}${isSelected ? ' sc-day-selected' : ''}${block ? ' fcp-day-blocked' : ''}${isPast ? ' fcp-day-past' : ''}`}
         onClick={() => handleDayClick(dateStr)}
         role="button" tabIndex={0}
         onKeyDown={e => e.key === 'Enter' && handleDayClick(dateStr)}
@@ -832,8 +846,12 @@ const FacultyCalendarPage = ({ onTabChange }) => {
                 </>
               )}
 
-              {/* Add one-time slot — always visible when a date is selected */}
-              {showAddSlotForm ? (
+              {/* Add one-time slot — only for today or future dates */}
+              {selectedDate && selectedDate < todayStr ? (
+                <div style={{ padding: '0.75rem 1rem', fontSize: '0.78rem', color: 'var(--text-muted)', fontStyle: 'italic', borderTop: '1px solid var(--border-color, #e5e8f0)', marginTop: '0.25rem' }}>
+                  This date has already passed.
+                </div>
+              ) : showAddSlotForm ? (
                 <div className="fcp-slot-edit" style={{ margin: '0.75rem 0.9rem 0' }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.6rem' }}>
                     New slot for {selectedDayLabel}
@@ -873,19 +891,21 @@ const FacultyCalendarPage = ({ onTabChange }) => {
                 </div>
               ) : null}
 
-              <div className="fcp-detail-actions">
-                <button
-                  className="fcp-block-btn"
-                  onClick={() => { if (selectedDate) { setBdFrom(selectedDate); setBdTo(selectedDate); } setBdReason(''); setModal('block'); }}
-                >
-                  <Ban size={13} /> Block this date
-                </button>
-                {!showAddSlotForm && (
-                  <button className="fcp-add-slot-btn" onClick={() => setShowAddSlotForm(true)}>
-                    <Plus size={13} /> Add slot
+              {selectedDate && selectedDate >= todayStr && (
+                <div className="fcp-detail-actions">
+                  <button
+                    className="fcp-block-btn"
+                    onClick={() => { if (selectedDate) { setBdFrom(selectedDate); setBdTo(selectedDate); } setBdReason(''); setModal('block'); }}
+                  >
+                    <Ban size={13} /> Block this date
                   </button>
-                )}
-              </div>
+                  {!showAddSlotForm && (
+                    <button className="fcp-add-slot-btn" onClick={() => setShowAddSlotForm(true)}>
+                      <Plus size={13} /> Add slot
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="fcp-no-day">
