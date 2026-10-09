@@ -1072,11 +1072,11 @@ const FacultyContent = ({ initialFacultyId = null }) => {
   );
 
   const handleRequestAppointment = async (faculty) => {
-    if (faculty.status === 'Unavailable') {
-      toast.error(`${faculty.name} is currently unavailable and not accepting requests.`);
+    if (faculty.status === 'Unavailable' || faculty.status === 'Out of office') {
+      toast.error(`${faculty.name} is currently ${faculty.status === 'Out of office' ? 'out of office' : 'unavailable'} and not accepting requests.`);
       return;
     }
-    
+
     if (faculty.status === 'Busy') {
       toast.warning(`${faculty.name} is currently busy. Your request might take longer to be approved.`);
     }
@@ -1122,6 +1122,11 @@ const FacultyContent = ({ initialFacultyId = null }) => {
 
     if (slot.filled >= slot.max_slots) {
       toast.error('This consultation slot is already fully booked.');
+      return;
+    }
+
+    if (selectedFaculty.status === 'Unavailable' || selectedFaculty.status === 'Out of office') {
+      toast.error(`${selectedFaculty.name} is currently ${selectedFaculty.status === 'Out of office' ? 'out of office' : 'unavailable'} and not accepting requests.`);
       return;
     }
 
@@ -1277,10 +1282,11 @@ const FacultyContent = ({ initialFacultyId = null }) => {
                 </div>
               </div>
             ) : filteredFaculty.map((faculty, idx) => {
-              const isUnavailable = faculty.status === 'Unavailable';
+              const isUnavailable = faculty.status === 'Unavailable' || faculty.status === 'Out of office';
               const isBusy = faculty.status === 'Busy';
-              const statusColor = isUnavailable ? '#616161' : isBusy ? '#ff1744' : '#00c853';
-              const statusLabel = isUnavailable ? 'Unavailable Today' : isBusy ? 'Busy' : null;
+              const isOoo = faculty.status === 'Out of office';
+              const statusColor = isOoo ? '#616161' : isUnavailable ? '#616161' : isBusy ? '#ff1744' : '#00c853';
+              const statusLabel = isOoo ? 'Out of office' : isUnavailable ? 'Unavailable Today' : isBusy ? 'Busy' : null;
 
               return (
                 <div className="faculty-card" key={idx}>
