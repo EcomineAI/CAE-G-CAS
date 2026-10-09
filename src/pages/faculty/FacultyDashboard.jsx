@@ -923,7 +923,7 @@ const FacultyDashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'Dashboard':
-        return <FacultyDashboardContent onTabChange={handleTabChange} onStatusChange={setProfileStatus} />;
+        return <FacultyDashboardContent onTabChange={handleTabChange} onStatusChange={setProfileStatus} profileStatus={profileStatus} />;
       case 'Calendar':
         return <FacultyCalendarPage onTabChange={handleTabChange} />;
       case 'Schedule':
@@ -951,7 +951,7 @@ const FacultyDashboard = () => {
       case 'Admin':
         return <AdminContent />;
       default:
-        return <FacultyDashboardContent onTabChange={handleTabChange} onStatusChange={setProfileStatus} />;
+        return <FacultyDashboardContent onTabChange={handleTabChange} onStatusChange={setProfileStatus} profileStatus={profileStatus} />;
     }
   };
 
@@ -1208,7 +1208,19 @@ const FacultyDashboard = () => {
       />
 
       {showTerms && user?.id && (
-        <TermsModal userId={isAdminBypass ? null : user.id} readOnly={isAdminBypass ? true : termsReadOnly} onAccepted={() => setShowTerms(false)} />
+        <TermsModal
+          userId={isAdminBypass ? null : user.id}
+          readOnly={isAdminBypass ? true : termsReadOnly}
+          onAccepted={async () => {
+            setShowTerms(false);
+            if (!isAdminBypass && !termsReadOnly) {
+              localStorage.setItem(`gcas_tnc_${user.id}`, '1');
+              try {
+                await supabase.from('profiles').update({ tnc_accepted: true }).eq('id', user.id);
+              } catch {/* DB column may not exist yet — localStorage flag still protects */}
+            }
+          }}
+        />
       )}
 
       {showLogoutConfirm && (

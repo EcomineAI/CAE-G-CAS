@@ -362,10 +362,14 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
     if (!req || !reason) return;
     setCancelModal({ open: false, req: null, reason: '', note: '' });
     const cancelReason = [reason, note].filter(Boolean).join(' — ');
+    const notifCtx = {
+      studentId: req.avatarSeed,
+      facultyName: user?.user_metadata?.full_name || 'Faculty',
+    };
     await optimistic(
       setRequests, requests,
       requests.map(r => r.id === req.id ? { ...r, status: 'Cancelled', cancel_reason: cancelReason } : r),
-      () => updateRequestStatus(req.id, 'Cancelled', cancelReason, null, null, null),
+      () => updateRequestStatus(req.id, 'Cancelled', cancelReason, null, null, notifCtx),
       { success: 'Appointment cancelled', error: 'Failed to cancel' }
     );
   };

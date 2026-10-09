@@ -591,6 +591,8 @@ export default function ProfileEditModal({
       setTimeout(() => setSaved(false), 2200);
       onSaved({ ...payload, full_name: computedName, avatar_url: avatarUrl });
       import('../supabase/ux').then(({ toast }) => toast.success('Profile updated!'));
+    } else {
+      import('../supabase/ux').then(({ toast }) => toast.error('Failed to save profile. Please try again.'));
     }
   };
 

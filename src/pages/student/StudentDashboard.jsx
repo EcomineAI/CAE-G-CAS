@@ -752,7 +752,19 @@ const StudentDashboard = () => {
           forceComplete={/^\d+$/.test(realName)}
         />
         {showTerms && user?.id && (
-          <TermsModal userId={user.id} readOnly={termsReadOnly} onAccepted={() => setShowTerms(false)} />
+          <TermsModal
+            userId={user.id}
+            readOnly={termsReadOnly}
+            onAccepted={async () => {
+              setShowTerms(false);
+              if (!termsReadOnly) {
+                localStorage.setItem(`gcas_tnc_${user.id}`, '1');
+                try {
+                  await supabase.from('profiles').update({ tnc_accepted: true }).eq('id', user.id);
+                } catch {/* DB column may not exist yet — localStorage flag still protects */}
+              }
+            }}
+          />
         )}
         {showLogoutConfirm && (
           <LogoutConfirm

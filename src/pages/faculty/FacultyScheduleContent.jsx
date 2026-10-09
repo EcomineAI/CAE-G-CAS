@@ -446,7 +446,7 @@ const FacultyScheduleContent = () => {
             <div className="card-day">
               {item.schedule_type === 'one-time' ? (
                 <span style={{ color: 'var(--accent, #2e4a87)' }}>
-                   {new Date(item.specific_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                   {new Date(item.specific_date + 'T00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
               ) : item.day}
             </div>

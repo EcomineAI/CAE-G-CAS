@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CalendarDays, Clock, MapPin, Plus, Ban, Activity, Trash2, X, Pencil, Check } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { getFacultyRequests, getFacultySchedules, createSchedule, updateSchedule, deleteSchedule, getBlockedDates, createBlockedDate, deleteBlockedDate } from '../../supabase/api';
+import { getFacultyRequests, getFacultySchedules, createSchedule, updateSchedule, deleteSchedule, getBlockedDates, createBlockedDate, deleteBlockedDate, setOutOfOffice, getProfile } from '../../supabase/api';
 import { subscribeToRequests, subscribeToSchedules } from '../../supabase/realtime';
 import { withMinDelay, toast } from '../../supabase/ux';
 import SharedCalendarGrid, { STATUS_STYLES, WEEKDAYS, MONTH_NAMES, fmt12, calendarSharedStyles } from '../../components/SharedCalendarGrid';
@@ -350,6 +350,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
   const [blockedDates, setBlockedDates] = useState([]);
   const [popover, setPopover] = useState(null);
   const [modal, setModal] = useState(null);
+  const [facultyDisplayName, setFacultyDisplayName] = useState('');
   const detailsRef = useRef(null);
 
   // Weekly Hours modal state
@@ -368,13 +369,17 @@ const FacultyCalendarPage = ({ onTabChange }) => {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const [reqs, scheds, blocks] = await withMinDelay(
-        Promise.all([getFacultyRequests(user.id), getFacultySchedules(user.id), getBlockedDates(user.id)]),
+      const [reqs, scheds, blocks, profile] = await withMinDelay(
+        Promise.all([getFacultyRequests(user.id), getFacultySchedules(user.id), getBlockedDates(user.id), getProfile(user.id)]),
         300
       );
       setRequests(reqs);
       setSchedules(scheds);
       setBlockedDates(blocks.map(normBlock));
+      if (profile) {
+        const parts = [profile.name_prefix, profile.full_name, profile.name_suffix].filter(Boolean);
+        setFacultyDisplayName(parts.join(' ') || 'Faculty');
+      }
       setLoading(false);
     };
     fetchData();
@@ -826,7 +831,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
                                 <span className="fcp-student-name">{r.name || r.studentName || '—'}</span>
                                 <span className="fcp-appt-badge" style={{ background: st.bg, color: st.color, borderColor: st.border }}>{r.status}</span>
                                 {r.status !== 'Cancelled' && r.status !== 'Declined' && (
-                                  <button className="fcp-cancel-btn" onClick={e => { e.stopPropagation(); onTabChange('Requests', getReqFilter(r.status)); }}>Cancel</button>
+                                  <button className="fcp-cancel-btn" onClick={e => { e.stopPropagation(); onTabChange('Requests', getReqFilter(r.status)); }}>View</button>
                                 )}
                               </div>
                             );
@@ -1079,12 +1084,27 @@ const FacultyCalendarPage = ({ onTabChange }) => {
               onClick={async () => {
                 if (!user) return;
                 setBdSaving(true);
-                const row = await createBlockedDate({ faculty_id: user.id, from_date: bdFrom, to_date: bdTo, reason: bdReason || '' });
+                let row = null;
+                if (bdReason === 'Out of office') {
+                  // Use setOutOfOffice so existing bookings are cancelled and students notified
+                  const result = await setOutOfOffice(user.id, bdFrom, bdTo, facultyDisplayName || 'Faculty');
+                  row = result?.block || null;
+                  if (row) {
+                    const n = result.cancelledCount || 0;
+                    toast?.success?.(
+                      n > 0
+                        ? `Out of office set. ${n} appointment${n !== 1 ? 's' : ''} cancelled and students notified.`
+                        : `Out of office set for ${bdFrom === bdTo ? bdFrom : `${bdFrom} to ${bdTo}`}.`
+                    );
+                  }
+                } else {
+                  row = await createBlockedDate({ faculty_id: user.id, from_date: bdFrom, to_date: bdTo, reason: bdReason || '' });
+                  if (row) toast?.success?.(bdFrom === bdTo ? `${bdFrom} blocked` : `${bdFrom} to ${bdTo} blocked`);
+                }
                 setBdSaving(false);
                 if (row) {
                   setBlockedDates(prev => [...prev, normBlock(row)]);
                   setModal(null); setBdReason('');
-                  toast?.success?.(bdFrom === bdTo ? `${bdFrom} blocked` : `${bdFrom} to ${bdTo} blocked`);
                 } else {
                   toast?.error?.('Could not save block. Check your database connection.');
                 }

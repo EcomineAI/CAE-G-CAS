@@ -210,7 +210,7 @@ const fmt = (dateStr) => {
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 };
 
-const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
+const FacultyDashboardContent = ({ onTabChange, onStatusChange, profileStatus = 'Available' }) => {
   const { user } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -325,7 +325,7 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
       <style>{S}</style>
 
       {/* Warning banner */}
-      {status === 'Available' && !hasSchedulesToday && (
+      {profileStatus === 'Available' && !hasSchedulesToday && (
         <div className="fdc-banner">
           <span>Students see you as <strong>Available</strong>, but you have no consultation hours today.</span>
           <button className="fdc-banner-btn" onClick={() => onTabChange('Schedule')}>Change Status</button>

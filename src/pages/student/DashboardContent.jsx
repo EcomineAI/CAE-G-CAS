@@ -551,10 +551,10 @@ const DashboardContent = ({ onTabChange, realName }) => {
           ) : (
             <div className="dc-avail-grid">
               {facultyList.map((f, i) => {
-                const isUnavailable = f.status === 'Unavailable';
+                const isUnavailable = f.status === 'Unavailable' || f.status === 'Out of office';
                 const isBusy = f.status === 'Busy';
                 const dotColor = isUnavailable ? '#616161' : isBusy ? '#ff1744' : '#00c853';
-                const statusText = isUnavailable ? 'Unavailable' : isBusy ? 'Busy' : 'Available';
+                const statusText = f.status === 'Out of office' ? 'Out of office' : isUnavailable ? 'Unavailable' : isBusy ? 'Busy' : 'Available';
                 return (
                   <div
                     key={i}

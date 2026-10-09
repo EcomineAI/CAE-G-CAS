@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { User, Archive, ClipboardList, Calendar, Clock, MapPin } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { getStudentRequests, updateRequestDetails, updateRequestStatus, deleteRequest, getSchedulesForFaculty, submitRequest } from '../../supabase/api';
+import { getStudentRequests, updateRequestDetails, updateRequestStatus, deleteRequest, getSchedulesForFaculty, submitRequest, isDateBlocked, checkActiveRequestForSlot } from '../../supabase/api';
 import { subscribeToRequests } from '../../supabase/realtime';
 import { withMinDelay, optimistic, toast } from '../../supabase/ux';
-import { calculateStudentSlot, formatTimeRange } from '../../utils/dateUtils';
+import { formatTimeRange } from '../../utils/dateUtils';
 
 const CANCEL_REASONS = [
   'Schedule conflict',
@@ -126,16 +126,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
   const handleFilterClick = (f) => { setActiveFilter(f); if (onResetFilter) onResetFilter(); };
 
   const getDividedTime = (app) => {
-    if (app.status !== 'Approved') return app.startTime ? formatTimeRange(app.startTime, app.endTime) : app.time;
-    const slotReqs = requests
-      .filter(r => r.schedule_id === app.schedule_id && r.date === app.date && r.status === 'Approved')
-      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    const idx = slotReqs.findIndex(r => r.id === app.id);
-    if (idx === -1) return app.startTime ? formatTimeRange(app.startTime, app.endTime) : app.time;
-    const timeStr = app.startTime ? formatTimeRange(app.startTime, app.endTime) : app.time;
-    if (!timeStr) return '—';
-    const [start, end] = String(timeStr).split(' - ');
-    return calculateStudentSlot(start, end, app.max_slots || 5, idx);
+    return app.startTime ? formatTimeRange(app.startTime, app.endTime) : (app.time || '—');
   };
 
   const formatDate = (dateStr) => {
@@ -147,6 +138,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
   const filteredData = requests.filter(app => {
     if (activeFilter === 'All') return true;
     if (activeFilter === 'Declined') return ['Declined','Cancelled'].includes(app.status);
+    if (activeFilter === 'History') return ['Completed','Declined','Cancelled'].includes(app.status);
     return app.status === activeFilter;
   });
 
@@ -197,21 +189,65 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
   };
   const executeResched = async () => {
     const cells = buildReschedDates();
-    const slot = cells[reschedDateIdx].allSlots[reschedSlotIdx];
+    const cell = cells[reschedDateIdx];
+    const slot = cell.allSlots[reschedSlotIdx];
     if (!slot) { toast.error('Please select a time slot.'); return; }
     const { app } = reschedModal;
+    const targetDate = cell.dateStr;
+
+    // Check if the chosen date is blocked (OOO or otherwise)
+    const block = await isDateBlocked(app.faculty_id || app.avatarSeed, targetDate);
+    if (block) {
+      toast.error(
+        block.reason === 'Out of office'
+          ? 'The faculty is out of office on that date. Please pick another date.'
+          : block.reason
+            ? `That date is blocked by the faculty (${block.reason}).`
+            : 'That date is blocked by the faculty.'
+      );
+      return;
+    }
+
+    // Check the new slot isn't already taken by another of this student's active requests
+    const slotTaken = await checkActiveRequestForSlot(user.id, slot.id);
+    if (slotTaken) {
+      toast.error('You already have an active request for that time slot.');
+      return;
+    }
+
     setReschedModal(null);
+    const studentName = user?.user_metadata?.full_name || 'A student';
     await updateRequestStatus(app.id, 'Cancelled', 'Rescheduled by student', null, null,
-      { facultyId: app.avatarSeed, studentName: user?.displayName || user?.user_metadata?.full_name || 'A student', day: app.day, time: app.time });
+      { facultyId: app.avatarSeed, studentName, day: app.day, time: app.time });
+
+    const notifCtx = {
+      facultyId: app.faculty_id || app.avatarSeed,
+      studentId: user.id,
+      studentName,
+      day: slot.schedule_type === 'one-time'
+        ? new Date(targetDate + 'T00:00').toLocaleDateString('en-US', { weekday: 'long' })
+        : (slot.day || ''),
+      time: slot.start_time && slot.end_time
+        ? `${String(slot.start_time).slice(0, 5)} - ${String(slot.end_time).slice(0, 5)}`
+        : '',
+    };
+
     const result = await submitRequest({
-      student_id: user.id, faculty_id: app.faculty_id || app.avatarSeed,
-      schedule_id: slot.id, subject: app.subject, details: app.details,
-      status: 'Pending', request_date: new Date().toISOString().split('T')[0],
-    }, null);
+      student_id: user.id,
+      faculty_id: app.faculty_id || app.avatarSeed,
+      schedule_id: slot.id,
+      subject: app.subject,
+      details: app.details,
+      status: 'Pending',
+      request_date: targetDate,
+    }, notifCtx);
+
     if (result) {
       setRequests(prev => prev.map(r => r.id === app.id ? { ...r, status: 'Cancelled' } : r));
       toast.success('Rescheduled! New request is pending approval.');
-    } else { toast.error('Failed to reschedule. Please try again.'); }
+    } else {
+      toast.error('Failed to reschedule. Please try again.');
+    }
   };
 
   // ── Archive ──
@@ -258,16 +294,22 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
 
       {/* Filter tabs */}
       <div style={{ display: 'flex', marginBottom: '1.2rem', border: '1.5px solid #cdd6f0', borderRadius: 8, overflow: 'hidden', width: 'fit-content', background: '#eef2fb' }}>
-        {['All','Pending','Approved','Completed','Declined'].map((f, i, arr) => (
-          <button key={f} onClick={() => handleFilterClick(f)} style={{
+        {[
+          { key: 'All',       label: 'All' },
+          { key: 'Pending',   label: 'Pending' },
+          { key: 'Approved',  label: 'Approved' },
+          { key: 'Completed', label: 'Completed' },
+          { key: 'Declined',  label: 'Declined / Cancelled' },
+        ].map(({ key, label }, i, arr) => (
+          <button key={key} onClick={() => handleFilterClick(key)} style={{
             padding: '0.45rem 1.2rem', fontFamily: 'inherit',
             border: 'none',
             borderRight: i < arr.length - 1 ? '1.5px solid #cdd6f0' : 'none',
-            background: activeFilter === f ? '#1a3a8f' : 'transparent',
-            color: activeFilter === f ? '#fff' : '#1a3a8f',
+            background: activeFilter === key ? '#1a3a8f' : 'transparent',
+            color: activeFilter === key ? '#fff' : '#1a3a8f',
             fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer',
             transition: 'all 0.15s',
-          }}>{f}</button>
+          }}>{label}</button>
         ))}
       </div>
 

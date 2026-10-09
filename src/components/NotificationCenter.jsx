@@ -332,12 +332,11 @@ const NotificationCenter = ({ userId, isOpen, onClose, role = 'Student', onNotif
         </div>
 
         {/* Footer */}
-        <div className="nc-footer">
-          <button className="nc-view-all">View all notification</button>
-          {unreadCount > 0 && (
-            <button className="nc-mark-all" onClick={markAllAsRead}>Mark all read</button>
-          )}
-        </div>
+        {unreadCount > 0 && (
+          <div className="nc-footer">
+            <button className="nc-mark-all" onClick={markAllAsRead}>Mark all as read</button>
+          </div>
+        )}
 
       </div>
     </div>

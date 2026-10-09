@@ -196,6 +196,8 @@ export const getFacultyRequests = async (facultyId) => {
         ? `${String(req.schedule.start_time).slice(0, 5)} - ${String(req.schedule.end_time).slice(0, 5)}`
         : 'TBD',
       date: req.request_date,
+      created_at: req.created_at,
+      schedule_id: req.schedule_id,
       status: req.status,
       subject: req.subject,
       details: req.details,
@@ -285,7 +287,7 @@ export const getStudentRequests = async (studentId) => {
     .select(`
       *,
       faculty:profiles!requests_faculty_id_fkey(full_name, avatar_url, name_prefix, name_suffix),
-      schedule:schedules(day, start_time, end_time, max_slots)
+      schedule:schedules(day, start_time, end_time, max_slots, room)
     `)
     .eq('student_id', studentId)
     .eq('is_student_deleted', false)
@@ -316,6 +318,7 @@ export const getStudentRequests = async (studentId) => {
       ? `${String(req.schedule.start_time).slice(0, 5)} - ${String(req.schedule.end_time).slice(0, 5)}`
       : 'TBD',
     date: req.request_date,
+    created_at: req.created_at,
     status: req.status,
     subject: req.subject,
     details: req.details,
@@ -328,7 +331,8 @@ export const getStudentRequests = async (studentId) => {
     facultyNote: req.faculty_note || null,
     facultyDeleted: req.is_faculty_deleted ?? false,
     schedule_id: req.schedule_id,
-    max_slots: req.schedule?.max_slots || 1
+    max_slots: req.schedule?.max_slots || 1,
+    room: req.schedule?.room || ''
     };
   });
 };
