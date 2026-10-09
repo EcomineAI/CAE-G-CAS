@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Moon, Sun, Eye, Zap, Type, CheckCircle2, FlaskConical } from 'lucide-react';
+import { Moon, Sun, Eye, Zap, Type, CheckCircle2 } from 'lucide-react';
 
 const fsStyles = `
 .fs-wrap {
@@ -100,78 +100,6 @@ const fsStyles = `
 .fs-chip { display: flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; font-weight: 600; }
 .fs-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
-/* Experimental card */
-.fs-card-experimental {
-  background: var(--card-bg, #fff);
-  border: 1.5px dashed #f59e0b;
-  border-radius: 12px;
-  padding: 1rem 1.3rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-}
-.fs-exp-header {
-  display: flex; align-items: center; gap: 0.55rem;
-  margin-bottom: 0.25rem;
-}
-.fs-exp-icon {
-  width: 28px; height: 28px; border-radius: 8px;
-  background: #fef3c7; border: 1px solid #fde68a;
-  display: flex; align-items: center; justify-content: center;
-  color: #d97706; flex-shrink: 0;
-}
-.fs-exp-title { font-size: 1rem; font-weight: 800; color: var(--text-primary); margin: 0; }
-.fs-exp-badge {
-  font-size: 0.62rem; font-weight: 800; letter-spacing: 0.07em;
-  text-transform: uppercase; color: #d97706;
-  background: #fef3c7; border: 1px solid #fde68a;
-  padding: 0.15rem 0.5rem; border-radius: 20px;
-}
-.fs-exp-sub {
-  font-size: 0.76rem; color: var(--text-muted);
-  margin: 0 0 0.85rem; line-height: 1.5;
-}
-.fs-exp-warning {
-  display: flex; align-items: flex-start; gap: 0.5rem;
-  background: #fffbeb; border: 1px solid #fde68a;
-  border-radius: 8px; padding: 0.55rem 0.75rem;
-  font-size: 0.75rem; color: #92400e; line-height: 1.5;
-  margin-top: 0.5rem;
-}
-.fs-exp-warning-dot { width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; margin-top: 4px; }
-
-/* Experimental master toggle row */
-.fs-exp-master-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding-bottom: 0.85rem;
-  margin-bottom: 0.85rem;
-  border-bottom: 1.5px solid #fde68a;
-}
-.fs-exp-master-label { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); margin: 0 0 2px; }
-.fs-exp-master-sub   { font-size: 0.73rem; color: var(--text-muted); margin: 0; }
-
-/* Experimental switch — amber when on */
-.fs-switch-exp input:checked + .fs-slider { background: #f59e0b; }
-
-/* Experimental features body — fades when off */
-.fs-exp-body { transition: opacity 0.2s, filter 0.2s; }
-.fs-exp-body.disabled { opacity: 0.38; pointer-events: none; filter: grayscale(0.4); }
-
-/* Experimental row */
-.fs-row-exp {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0.8rem 0;
-  border-bottom: 1px solid var(--border-color, #e5e8f0);
-}
-.fs-row-exp:last-child { border-bottom: none; }
-.fs-exp-row-label { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin: 0 0 2px; }
-.fs-exp-row-sub   { font-size: 0.75rem; color: var(--text-muted); margin: 0; }
-.fs-exp-pill {
-  font-size: 0.6rem; font-weight: 800; letter-spacing: 0.05em;
-  text-transform: uppercase; color: #d97706;
-  background: #fef3c7; border: 1px solid #fde68a;
-  padding: 0.1rem 0.4rem; border-radius: 10px;
-  margin-left: 0.4rem; vertical-align: middle;
-}
 `;
 
 const FSwitch = ({ checked, onChange, disabled }) => (
@@ -200,20 +128,6 @@ const FacultySettingsContent = ({
   const [minNotice, setMinNotice] = useState(() => localStorage.getItem('gcas_fac_min_notice') || '2 hours');
   const [bookingWindow, setBookingWindow] = useState(() => localStorage.getItem('gcas_fac_booking_window') || '2 weeks');
   const [inAppNotif, setInAppNotif] = useState(true);
-
-  // Experimental features (UI-only, not wired to DB)
-  const [expEnabled, setExpEnabled] = useState(() => localStorage.getItem('gcas_exp_enabled') === 'true');
-  const saveExpEnabled = (v) => { setExpEnabled(v); localStorage.setItem('gcas_exp_enabled', v); };
-
-  const [maxPerDay, setMaxPerDay] = useState(() => localStorage.getItem('gcas_exp_max_per_day') || '5');
-  const [reminderBefore, setReminderBefore] = useState(() => localStorage.getItem('gcas_exp_reminder') || 'off');
-  const [vacationMode, setVacationMode] = useState(() => localStorage.getItem('gcas_exp_vacation') === 'true');
-  const [defaultMode, setDefaultMode] = useState(() => localStorage.getItem('gcas_exp_default_mode') || 'In-person');
-
-  const saveMaxPerDay = (v) => { setMaxPerDay(v); localStorage.setItem('gcas_exp_max_per_day', v); };
-  const saveReminder = (v) => { setReminderBefore(v); localStorage.setItem('gcas_exp_reminder', v); };
-  const saveVacation = (v) => { setVacationMode(v); localStorage.setItem('gcas_exp_vacation', v); };
-  const saveDefaultMode = (v) => { setDefaultMode(v); localStorage.setItem('gcas_exp_default_mode', v); };
 
   const saveMinNotice = (v) => { setMinNotice(v); localStorage.setItem('gcas_fac_min_notice', v); };
   const saveBookingWindow = (v) => { setBookingWindow(v); localStorage.setItem('gcas_fac_booking_window', v); };
@@ -344,109 +258,6 @@ const FacultySettingsContent = ({
           />
         </div>
 
-        {/* Experimental */}
-        <div className="fs-card-experimental">
-          <div className="fs-exp-header">
-            <div className="fs-exp-icon"><FlaskConical size={14} /></div>
-            <p className="fs-exp-title">Experimental</p>
-            <span className="fs-exp-badge">Beta</span>
-          </div>
-
-          {/* Master toggle */}
-          <div className="fs-exp-master-row">
-            <div>
-              <p className="fs-exp-master-label">Enable experimental features</p>
-              <p className="fs-exp-master-sub">Turn on to access early access settings below.</p>
-            </div>
-            <label className="fs-switch fs-switch-exp" onClick={e => e.stopPropagation()}>
-              <input type="checkbox" checked={expEnabled} onChange={() => saveExpEnabled(!expEnabled)} />
-              <span className="fs-slider" />
-            </label>
-          </div>
-
-          <div className={`fs-exp-body${expEnabled ? '' : ' disabled'}`}>
-          <p className="fs-exp-sub" style={{ marginBottom: '0.1rem' }}>
-            These features are for UI and visual changes only. They are not connected to the database and will not affect actual booking behavior.
-          </p>
-
-          {/* Max appointments per day */}
-          <div className="fs-row-exp">
-            <div>
-              <p className="fs-exp-row-label">
-                Max appointments per day
-                <span className="fs-exp-pill">experimental</span>
-              </p>
-              <p className="fs-exp-row-sub">Cap how many students can book you in a single day.</p>
-            </div>
-            <div className="fs-select-wrap">
-              <select className="fs-select" value={maxPerDay} onChange={e => saveMaxPerDay(e.target.value)}>
-                {['1','2','3','4','5','6','7','8','10','Unlimited'].map(v => (
-                  <option key={v} value={v}>{v === 'Unlimited' ? 'Unlimited' : `${v} per day`}</option>
-                ))}
-              </select>
-              <span className="fs-select-chevron">▾</span>
-            </div>
-          </div>
-
-          {/* Reminder before appointment */}
-          <div className="fs-row-exp">
-            <div>
-              <p className="fs-exp-row-label">
-                Reminder before appointment
-                <span className="fs-exp-pill">experimental</span>
-              </p>
-              <p className="fs-exp-row-sub">Get a bell notification before your appointment starts.</p>
-            </div>
-            <div className="fs-select-wrap">
-              <select className="fs-select" value={reminderBefore} onChange={e => saveReminder(e.target.value)}>
-                <option value="off">Off</option>
-                <option value="15 mins">15 mins</option>
-                <option value="30 mins">30 mins</option>
-                <option value="1 hour">1 hour</option>
-              </select>
-              <span className="fs-select-chevron">▾</span>
-            </div>
-          </div>
-
-          {/* Default consultation mode */}
-          <div className="fs-row-exp">
-            <div>
-              <p className="fs-exp-row-label">
-                Default consultation mode
-                <span className="fs-exp-pill">experimental</span>
-              </p>
-              <p className="fs-exp-row-sub">Pre-fill mode when creating slots: In-person or Online.</p>
-            </div>
-            <div className="fs-select-wrap">
-              <select className="fs-select" value={defaultMode} onChange={e => saveDefaultMode(e.target.value)}>
-                <option value="In-person">In-person</option>
-                <option value="Online">Online</option>
-                <option value="Either">Either</option>
-              </select>
-              <span className="fs-select-chevron">▾</span>
-            </div>
-          </div>
-
-          {/* Vacation mode */}
-          <div className="fs-row-exp">
-            <div>
-              <p className="fs-exp-row-label">
-                Vacation mode
-                <span className="fs-exp-pill">experimental</span>
-              </p>
-              <p className="fs-exp-row-sub">Pause all incoming booking requests temporarily.</p>
-            </div>
-            <FSwitch checked={vacationMode} onChange={() => saveVacation(!vacationMode)} />
-          </div>
-
-          {vacationMode && (
-            <div className="fs-exp-warning">
-              <span className="fs-exp-warning-dot" />
-              <span>Vacation mode is on. This is a visual change only and does not block students from booking.</span>
-            </div>
-          )}
-          </div>{/* end fs-exp-body */}
-        </div>
       </div>
     </>
   );

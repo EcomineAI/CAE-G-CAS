@@ -371,9 +371,6 @@ const dashStyles = `
 }
 `;
 
-const allAvatars = Array.from({ length: 20 }, (_, i) =>
-  `https://api.dicebear.com/7.x/lorelei/svg?seed=Student${i + 1}&backgroundColor=e5e7eb,f3f4f6`
-);
 
 const StudentDashboard = () => {
   const { user } = useAuth();
@@ -415,7 +412,7 @@ const StudentDashboard = () => {
     getProfile(user.id).then(p => {
       if (p) {
         setRealName(p.full_name || 'Student');
-        setRealAvatar(p.avatar_url || allAvatars[0]);
+        setRealAvatar(p.avatar_url || null);
         setProfilePrefix(p.name_prefix || '');
         setProfileSuffix(p.name_suffix || '');
         setProfileData(p);

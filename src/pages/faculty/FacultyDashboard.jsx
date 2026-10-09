@@ -4,6 +4,7 @@ import { supabase, ensureProfile } from '../../supabase/supabase';
 import { getProfile, updateProfile, updateFacultyStatus } from '../../supabase/api';
 import { debouncedSave, toast } from '../../supabase/ux';
 import { Layout, Calendar, CalendarDays, Clock, Bell, User, ChevronDown, CheckCircle, AlertCircle, XCircle, Settings, Menu, X as CloseIcon, Info, LogOut, ShieldCheck, FileText } from 'lucide-react';
+import { getInitials } from '../../utils/dateUtils';
 import FacultyDashboardContent from './FacultyDashboardContent';
 import FacultyScheduleContent from './FacultyScheduleContent';
 import FacultyRequestsContent from './FacultyRequestsContent';
@@ -819,6 +820,10 @@ const FacultyDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (user?.id === 'admin-bypass') setActiveTab('Admin');
+  }, [user?.id]);
+
   // 20 clean, modern avatars using Lorelei style (no specific gender labels or cultural identifiers)
   // Faculty profile state
 
@@ -950,13 +955,16 @@ const FacultyDashboard = () => {
     }
   };
 
-  const navItems = [
-    { id: 'Dashboard', icon: Layout },
-    { id: 'Calendar', icon: CalendarDays },
-    { id: 'Requests', icon: Clock },
-    { id: 'About', icon: Info },
-    ...(user?.id === 'admin-bypass' ? [{ id: 'Admin', icon: ShieldCheck }] : []),
-  ];
+  const isAdminBypass = user?.id === 'admin-bypass';
+
+  const navItems = isAdminBypass
+    ? [{ id: 'Admin', icon: ShieldCheck }]
+    : [
+        { id: 'Dashboard', icon: Layout },
+        { id: 'Calendar', icon: CalendarDays },
+        { id: 'Requests', icon: Clock },
+        { id: 'About', icon: Info },
+      ];
 
   const bottomNavItems = [
     { id: 'Settings', icon: Settings },
@@ -1111,7 +1119,7 @@ const FacultyDashboard = () => {
                 <p className="fac-profile-role">{profileDept}</p>
               </div>
               <div className={`prof-avatar ${profileStatus?.toLowerCase().replace(/\s+/g,'-')}`}>
-                {profileAvatar ? <img src={profileAvatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={18} />}
+                {profileAvatar ? <img src={profileAvatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)' }}>{getInitials(profileName)}</span>}
               </div>
             </div>
           </div>
@@ -1139,15 +1147,17 @@ const FacultyDashboard = () => {
         </main>
       </div>
 
-      {/* Mobile bottom nav */}
-      <div className="bottom-nav">
-        {[{ id: 'Dashboard', icon: Layout }, { id: 'Calendar', icon: CalendarDays }, { id: 'Requests', icon: Clock }].map((item) => (
-          <button key={item.id} className={`bottom-nav-item ${activeTab === item.id ? 'active' : ''}`} onClick={() => handleActiveTabSet(item.id)}>
-            <item.icon size={20} />
-            <span className="bottom-nav-text">{item.id}</span>
-          </button>
-        ))}
-      </div>
+      {/* Mobile bottom nav — hidden for admin-bypass */}
+      {!isAdminBypass && (
+        <div className="bottom-nav">
+          {[{ id: 'Dashboard', icon: Layout }, { id: 'Calendar', icon: CalendarDays }, { id: 'Requests', icon: Clock }].map((item) => (
+            <button key={item.id} className={`bottom-nav-item ${activeTab === item.id ? 'active' : ''}`} onClick={() => handleActiveTabSet(item.id)}>
+              <item.icon size={20} />
+              <span className="bottom-nav-text">{item.id}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <NotificationCenter
         userId={user?.id}
@@ -1194,7 +1204,7 @@ const FacultyDashboard = () => {
           </div>
           <div className="mobile-profile-section">
             <div className={`prof-avatar ${profileStatus?.toLowerCase().replace(/\s+/g,'-')}`} style={{ width: '52px', height: '52px' }}>
-              {profileAvatar ? <img src={profileAvatar} alt="avatar" style={{ width: '100%' }} /> : <User size={26} />}
+              {profileAvatar ? <img src={profileAvatar} alt="avatar" style={{ width: '100%' }} /> : <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-secondary)' }}>{getInitials(profileName)}</span>}
             </div>
             <div>
               <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>{profileName}</p>

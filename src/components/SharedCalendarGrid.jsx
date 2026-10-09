@@ -6,7 +6,7 @@ export const STATUS_STYLES = {
   Pending:   { bg: '#fef3c7', color: '#7c5200', border: '#d97706' },
   Declined:  { bg: '#fee2e2', color: '#b91c1c', border: '#f87171' },
   Cancelled: { bg: '#f3f4f6', color: '#374151', border: '#9ca3af' },
-  Completed: { bg: '#f3f4f6', color: '#374151', border: '#9ca3af' },
+  Completed: { bg: '#e0f2fe', color: '#0369a1', border: '#38bdf8' },
 };
 
 export const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -300,6 +300,51 @@ export const calendarSharedStyles = `
   color: var(--text-muted);
   font-weight: 600;
   padding: 1px 3px;
+}
+
+/* Multi-event count badge (shown when day has 2+ events) */
+.sc-multi-badge {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--bg-primary, #f0f2f8);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  padding: 2px 5px;
+  width: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: filter 0.12s;
+}
+.sc-multi-badge:hover { filter: brightness(0.96); }
+.sc-multi-count {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-primary, #1a2d5a);
+  line-height: 1;
+}
+.sc-multi-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+.sc-multi-dots {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.sc-multi-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 /* ── Legend ── */

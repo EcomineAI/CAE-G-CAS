@@ -4,6 +4,17 @@
 // ============================================================
 
 /**
+ * Returns up to two initials from a display name.
+ * "June Vic Abello" → "JV"  |  "Erica Monton" → "EM"  |  "Admin" → "A"
+ */
+export const getInitials = (name) => {
+  if (!name) return '?';
+  const words = name.trim().split(/\s+/);
+  if (words.length === 1) return words[0][0].toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+};
+
+/**
  * Formats a 24-hour time string to 12-hour AM/PM.
  * "14:30:00" → "2:30 PM"
  * "07:00" → "7:00 AM"

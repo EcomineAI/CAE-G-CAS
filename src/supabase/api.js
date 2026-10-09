@@ -479,9 +479,9 @@ export const isDateBlocked = async (facultyId, dateStr) => {
 export const getAllRequests = async () => {
   const { data, error } = await supabase
     .from('requests')
-    .select('id, status, request_date, created_at, student:profiles!requests_student_id_fkey(full_name), faculty:profiles!requests_faculty_id_fkey(full_name)')
+    .select('id, status, request_date, created_at, student_id, faculty_id, subject, student:profiles!requests_student_id_fkey(full_name), faculty:profiles!requests_faculty_id_fkey(full_name)')
     .order('created_at', { ascending: false })
-    .limit(100);
+    .limit(200);
 
   if (error) {
     logError('Error fetching all requests:', error);
@@ -491,8 +491,32 @@ export const getAllRequests = async () => {
     id: r.id,
     status: r.status,
     date: r.request_date || r.created_at,
+    studentId: r.student_id,
+    facultyId: r.faculty_id,
     studentName: r.student?.full_name || '—',
     facultyName: r.faculty?.full_name || '—',
+    subject: r.subject || null,
+  }));
+};
+
+// Admin-only: bypasses RLS via SECURITY DEFINER RPC function.
+// Requires running this SQL in Supabase dashboard first:
+//   create or replace function admin_get_all_requests()
+//   returns setof requests security definer set search_path = public language sql
+//   as $$ select * from requests order by created_at desc limit 200; $$;
+export const getAllRequestsAdmin = async () => {
+  const { data, error } = await supabase.rpc('admin_get_all_requests');
+  if (error) {
+    logError('Error fetching all requests (admin RPC):', error);
+    return [];
+  }
+  return (data || []).map(r => ({
+    id: r.id,
+    status: r.status,
+    date: r.request_date || r.created_at,
+    studentId: r.student_id,
+    facultyId: r.faculty_id,
+    subject: r.subject || null,
   }));
 };
 
@@ -524,7 +548,7 @@ export const getAllFaculty = async () => {
       fullName: base,
       namePrefix: prefix,
       nameSuffix: suffix,
-      avatar: f.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${f.id}`,
+      avatar: f.avatar_url || null,
       status: f.status || 'Available',
       dept: f.department || 'Faculty'
     };

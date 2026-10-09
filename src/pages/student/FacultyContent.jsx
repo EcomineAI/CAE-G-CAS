@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, WifiOff, Search, Users, Clock, XCircle } from 'lucide-react';
+import { CheckCircle, WifiOff, Search, Users, Clock, XCircle, LayoutList, LayoutGrid, Columns } from 'lucide-react';
+import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount, isDateBlocked } from '../../supabase/api';
 import { subscribeToFacultyStatus } from '../../supabase/realtime';
@@ -60,6 +61,53 @@ const facultyStyles = `
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.85rem;
+}
+
+/* ── Layout modes ── */
+.faculty-grid.mode-list    { grid-template-columns: 1fr; gap: 0.6rem; }
+.faculty-grid.mode-grid    { grid-template-columns: repeat(2, 1fr); gap: 0.85rem; }
+.faculty-grid.mode-compact { grid-template-columns: repeat(4, 1fr); gap: 0.6rem; }
+
+/* List mode — wider cards */
+.faculty-grid.mode-list .faculty-card { padding: 1rem 1.4rem; }
+.faculty-grid.mode-list .faculty-avatar { width: 58px; height: 58px; font-size: 1.3rem; }
+.faculty-grid.mode-list .faculty-name  { font-size: 1rem; }
+.faculty-grid.mode-list .faculty-dept  { font-size: 0.78rem; }
+
+/* Compact mode — small tiles */
+.faculty-grid.mode-compact .faculty-card {
+  flex-direction: column; align-items: center;
+  text-align: center; padding: 1rem 0.6rem; gap: 0.45rem;
+}
+.faculty-grid.mode-compact .faculty-avatar { width: 46px; height: 46px; font-size: 1rem; }
+.faculty-grid.mode-compact .faculty-name   { font-size: 0.76rem; white-space: normal; text-align: center; }
+.faculty-grid.mode-compact .faculty-dept   { font-size: 0.65rem; }
+.faculty-grid.mode-compact .faculty-next-slot { display: none; }
+.faculty-grid.mode-compact .request-btn { width: 100%; padding: 0.4rem 0.5rem; font-size: 0.73rem; }
+
+/* Layout toggle row */
+.fc-layout-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+.fc-layout-count { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; }
+.fc-layout-btns {
+  display: flex; gap: 0.25rem;
+  background: var(--bg-primary, #f0f2f8);
+  padding: 3px; border-radius: 9px;
+  border: 1px solid var(--border-color);
+}
+.fc-layout-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 27px; border: none; border-radius: 6px;
+  cursor: pointer; transition: all 0.15s;
+  background: transparent; color: var(--text-muted);
+}
+.fc-layout-btn:hover  { color: var(--text-primary); }
+.fc-layout-btn.active { background: #1a2d5a; color: #fff; }
+
+@media (max-width: 600px) {
+  .faculty-grid.mode-compact { grid-template-columns: repeat(2, 1fr); }
 }
 
 .faculty-card {
@@ -937,6 +985,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
   const [selectedDateIdx, setSelectedDateIdx] = useState(0);
   const [selectedSlotIdx, setSelectedSlotIdx] = useState(null);
   const [topicOpen, setTopicOpen] = useState(false);
+  const [layoutMode, setLayoutMode] = useState(() => localStorage.getItem('gcas_faculty_layout') || 'grid');
   const { isOnline } = useNetworkStatus();
 
   useEffect(() => {
@@ -1164,7 +1213,30 @@ const FacultyContent = ({ initialFacultyId = null }) => {
             />
           </div>
 
-          <div className="faculty-grid">
+          {/* Layout toggle */}
+          {!loading && (
+            <div className="fc-layout-bar">
+              <span className="fc-layout-count">{filteredFaculty.length} faculty member{filteredFaculty.length !== 1 ? 's' : ''}</span>
+              <div className="fc-layout-btns">
+                {[
+                  { mode: 'list',    Icon: LayoutList,  label: 'List' },
+                  { mode: 'grid',    Icon: LayoutGrid,  label: 'Grid' },
+                  { mode: 'compact', Icon: Columns,     label: 'Compact' },
+                ].map(({ mode, Icon, label }) => (
+                  <button
+                    key={mode}
+                    title={label}
+                    className={`fc-layout-btn${layoutMode === mode ? ' active' : ''}`}
+                    onClick={() => { setLayoutMode(mode); localStorage.setItem('gcas_faculty_layout', mode); }}
+                  >
+                    <Icon size={14} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className={`faculty-grid mode-${layoutMode}`}>
             {loading ? (
               <FacultyCardSkeleton count={6} />
             ) : filteredFaculty.length === 0 ? (
@@ -1215,8 +1287,8 @@ const FacultyContent = ({ initialFacultyId = null }) => {
                         onError={e => { e.currentTarget.style.display = 'none'; }}
                       />
                     ) : (
-                      <span style={{ color: '#fff', fontWeight: 700, fontSize: '1.1rem' }}>
-                        {faculty.name?.[0] ?? '?'}
+                      <span style={{ color: '#fff', fontWeight: 700, fontSize: '1rem', letterSpacing: '0.02em' }}>
+                        {getInitials(faculty.name)}
                       </span>
                     )}
                   </div>
@@ -1328,8 +1400,10 @@ const FacultyContent = ({ initialFacultyId = null }) => {
                 {/* Day label */}
                 <div className="bk-day-label">{selected.isToday ? 'Today, ' : ''}{selectedLabel}</div>
                 {selected.allSlots.length > 0 && (
-                  <div className="bk-day-sub" style={{ color: availableSlots.length === 0 ? '#ff1744' : availableSlots.length <= 2 ? '#ffab00' : '#00c853' }}>
-                    {availableSlots.length} available slot{availableSlots.length !== 1 ? 's' : ''} for {selected.dayName}
+                  <div className="bk-day-sub" style={{ color: selected.totalLeft === 0 ? '#ff1744' : selected.totalLeft <= 2 ? '#ffab00' : '#00c853' }}>
+                    {selected.totalLeft === 0
+                      ? `No slots remaining for ${selected.dayName}`
+                      : `${selected.totalLeft} slot${selected.totalLeft !== 1 ? 's' : ''} remaining for ${selected.dayName}`}
                   </div>
                 )}
 

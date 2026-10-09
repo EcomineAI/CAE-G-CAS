@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase/supabase';
 import { updateProfile } from '../supabase/api';
-import { FlaskConical, Type, CheckCircle2 } from 'lucide-react';
+import { Type, CheckCircle2 } from 'lucide-react';
 
 const styles = `
 .ss-wrap { display: flex; flex-direction: column; max-width: 700px; width: 100%; }
@@ -148,59 +148,6 @@ const styles = `
 .ss-change-bar.dirty { background: #fff8e1; border: 1.5px solid #ffe082; color: #92400e; }
 .ss-change-bar.saved { background: #f0fdf4; border: 1.5px solid #bbf7d0; color: #166534; }
 
-/* Experimental card */
-.ss-card-exp {
-  background: var(--card-bg,#fff);
-  border: 1.5px dashed #f59e0b;
-  border-radius: 12px; padding: 1rem 1.3rem;
-  margin-bottom: 1rem;
-}
-.ss-exp-header { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.25rem; }
-.ss-exp-icon {
-  width: 28px; height: 28px; border-radius: 8px;
-  background: #fef3c7; border: 1px solid #fde68a;
-  display: flex; align-items: center; justify-content: center;
-  color: #d97706; flex-shrink: 0;
-}
-.ss-exp-title { font-size: 1rem; font-weight: 800; color: var(--text-primary); margin: 0; }
-.ss-exp-badge {
-  font-size: 0.62rem; font-weight: 800; letter-spacing: 0.07em;
-  text-transform: uppercase; color: #d97706;
-  background: #fef3c7; border: 1px solid #fde68a;
-  padding: 0.15rem 0.5rem; border-radius: 20px;
-}
-.ss-exp-master-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding-bottom: 0.85rem; margin-bottom: 0.85rem;
-  border-bottom: 1.5px solid #fde68a;
-}
-.ss-exp-master-label { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); margin: 0 0 2px; }
-.ss-exp-master-sub   { font-size: 0.73rem; color: var(--text-muted); margin: 0; }
-.ss-switch-exp input:checked + .ss-slider { background: #f59e0b; }
-.ss-exp-body { transition: opacity 0.2s, filter 0.2s; }
-.ss-exp-body.disabled { opacity: 0.38; pointer-events: none; filter: grayscale(0.4); }
-.ss-exp-sub { font-size: 0.76rem; color: var(--text-muted); margin: 0 0 0.1rem; line-height: 1.5; }
-.ss-row-exp {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0.8rem 0; border-bottom: 1px solid var(--border-color,#e5e8f0);
-}
-.ss-row-exp:last-child { border-bottom: none; }
-.ss-exp-row-label { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin: 0 0 2px; }
-.ss-exp-row-sub   { font-size: 0.75rem; color: var(--text-muted); margin: 0; }
-.ss-exp-pill {
-  font-size: 0.6rem; font-weight: 800; letter-spacing: 0.05em;
-  text-transform: uppercase; color: #d97706;
-  background: #fef3c7; border: 1px solid #fde68a;
-  padding: 0.1rem 0.4rem; border-radius: 10px;
-  margin-left: 0.4rem; vertical-align: middle;
-}
-.ss-exp-warning {
-  display: flex; align-items: flex-start; gap: 0.5rem;
-  background: #fffbeb; border: 1px solid #fde68a;
-  border-radius: 8px; padding: 0.55rem 0.75rem;
-  font-size: 0.75rem; color: #92400e; line-height: 1.5; margin-top: 0.5rem;
-}
-.ss-exp-warning-dot { width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; margin-top: 4px; }
 `;
 
 const SSwitch = ({ checked, onChange, disabled, amber }) => (
@@ -267,13 +214,6 @@ const SharedSettingsContent = ({
   // ── Faculty booking rules (localStorage, UI only for now) ──
   const [minNotice, setMinNotice] = useState(() => localStorage.getItem('gcas_fac_min_notice') || '2 hours');
   const [bookingWindow, setBookingWindow] = useState(() => localStorage.getItem('gcas_fac_booking_window') || '2 weeks');
-
-  // ── Experimental (faculty only) ──
-  const [expEnabled, setExpEnabled] = useState(() => localStorage.getItem('gcas_exp_enabled') === 'true');
-  const [maxPerDay, setMaxPerDay] = useState(() => localStorage.getItem('gcas_exp_max_per_day') || '5');
-  const [reminderBefore, setReminderBefore] = useState(() => localStorage.getItem('gcas_exp_reminder') || 'off');
-  const [vacationMode, setVacationMode] = useState(() => localStorage.getItem('gcas_exp_vacation') === 'true');
-  const [defaultMode, setDefaultMode] = useState(() => localStorage.getItem('gcas_exp_default_mode') || 'In-person');
 
   useEffect(() => {
     if (!userId) return;
@@ -473,61 +413,6 @@ const SharedSettingsContent = ({
             </div>
           )}
         </div>
-
-        {/* ── Experimental (faculty only) ── */}
-        {isFaculty && (
-          <div className="ss-card-exp">
-            <div className="ss-exp-header">
-              <div className="ss-exp-icon"><FlaskConical size={14} /></div>
-              <p className="ss-exp-title">Experimental</p>
-              <span className="ss-exp-badge">Beta</span>
-            </div>
-            <div className="ss-exp-master-row">
-              <div>
-                <p className="ss-exp-master-label">Enable experimental features</p>
-                <p className="ss-exp-master-sub">Turn on to access early access settings below.</p>
-              </div>
-              <label className={`ss-switch ss-switch-exp`} onClick={e => e.stopPropagation()}>
-                <input type="checkbox" checked={expEnabled} onChange={() => { const v = !expEnabled; setExpEnabled(v); localStorage.setItem('gcas_exp_enabled', v); }} />
-                <span className="ss-slider" />
-              </label>
-            </div>
-            <div className={`ss-exp-body${expEnabled ? '' : ' disabled'}`}>
-              <p className="ss-exp-sub">These features are for UI and visual changes only. They are not connected to the database and will not affect actual booking behavior.</p>
-              {[
-                { key:'maxPerDay', label:'Max appointments per day', sub:'Cap how many students can book you in a single day.', type:'select', opts:['1','2','3','4','5','6','7','8','10','Unlimited'].map(v => ({ value:v, label: v==='Unlimited'?'Unlimited':`${v} per day` })), value: maxPerDay, onChange: v => { setMaxPerDay(v); localStorage.setItem('gcas_exp_max_per_day',v); } },
-                { key:'reminder', label:'Reminder before appointment', sub:'Get a bell notification before your appointment starts.', type:'select', opts:[{value:'off',label:'Off'},{value:'15 mins',label:'15 mins'},{value:'30 mins',label:'30 mins'},{value:'1 hour',label:'1 hour'}], value: reminderBefore, onChange: v => { setReminderBefore(v); localStorage.setItem('gcas_exp_reminder',v); } },
-                { key:'mode', label:'Default consultation mode', sub:'Pre-fill mode when creating slots: In-person or Online.', type:'select', opts:[{value:'In-person',label:'In-person'},{value:'Online',label:'Online'},{value:'Either',label:'Either'}], value: defaultMode, onChange: v => { setDefaultMode(v); localStorage.setItem('gcas_exp_default_mode',v); } },
-              ].map(item => (
-                <div className="ss-row-exp" key={item.key}>
-                  <div>
-                    <p className="ss-exp-row-label">{item.label}<span className="ss-exp-pill">experimental</span></p>
-                    <p className="ss-exp-row-sub">{item.sub}</p>
-                  </div>
-                  <div className="ss-select-wrap">
-                    <select className="ss-select" value={item.value} onChange={e => item.onChange(e.target.value)}>
-                      {item.opts.map(o => <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>)}
-                    </select>
-                    <span className="ss-select-chevron">▾</span>
-                  </div>
-                </div>
-              ))}
-              <div className="ss-row-exp">
-                <div>
-                  <p className="ss-exp-row-label">Vacation mode<span className="ss-exp-pill">experimental</span></p>
-                  <p className="ss-exp-row-sub">Pause all incoming booking requests temporarily.</p>
-                </div>
-                <SSwitch checked={vacationMode} onChange={() => { const v = !vacationMode; setVacationMode(v); localStorage.setItem('gcas_exp_vacation', v); }} />
-              </div>
-              {vacationMode && (
-                <div className="ss-exp-warning">
-                  <span className="ss-exp-warning-dot" />
-                  <span>Vacation mode is on. This is a visual change only and does not block students from booking.</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* ── Change bar ── */}
         {(isDirty || saveStatus === 'saved') && (

@@ -7,7 +7,7 @@ const ADMIN_USER = {
   email: 'Admin@gmail.com',
   role: 'faculty',
   displayName: 'Admin',
-  avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=admin`,
+  avatarUrl: null,
 };
 
 // Clear per-role UI state when the signed-in user changes
@@ -62,7 +62,7 @@ const processUser = async (sessionUser) => {
     ...sessionUser,
     role: profile?.role || 'student', // only reached when profile is explicitly null (no row)
     displayName: profile?.full_name || formatNameFromEmail(sessionUser.email),
-    avatarUrl: oauthAvatar || profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sessionUser.email}`
+    avatarUrl: oauthAvatar || profile?.avatar_url || null
   };
 };
 

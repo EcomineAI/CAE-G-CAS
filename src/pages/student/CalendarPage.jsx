@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CalendarDays } from 'lucide-react';
+import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { getStudentRequests } from '../../supabase/api';
 import { subscribeToRequests } from '../../supabase/realtime';
@@ -88,7 +89,8 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
     Approved:  requests.filter(r => r.status === 'Approved').length,
     Pending:   requests.filter(r => r.status === 'Pending').length,
     Declined:  requests.filter(r => r.status === 'Declined').length,
-    Cancelled: requests.filter(r => ['Cancelled', 'Completed'].includes(r.status)).length,
+    Cancelled: requests.filter(r => r.status === 'Cancelled').length,
+    Completed: requests.filter(r => r.status === 'Completed').length,
   };
 
   const filteredRequests = statusFilter === 'All'
@@ -172,9 +174,6 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
     const dayReqs = filteredRequests.filter(r => r.date === dateStr);
     const isToday = dateStr === todayStr;
     const isSelected = dateStr === selectedDate;
-    const visiblePills = dayReqs.slice(0, 2);
-    const extra = dayReqs.length - visiblePills.length;
-
     cells.push(
       <div
         key={d}
@@ -186,26 +185,35 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
         aria-label={`${MONTH_NAMES[month]} ${d}${dayReqs.length > 0 ? `, ${dayReqs.length} appointment${dayReqs.length > 1 ? 's' : ''}` : ''}`}
       >
         <span className="sc-day-num">{d}</span>
-        {visiblePills.map((r, idx) => {
+        {dayReqs.length === 1 && (() => {
+          const r = dayReqs[0];
           const st = STATUS_STYLES[r.status] || STATUS_STYLES.Cancelled;
-          const timeLabel = r.startTime && r.endTime
-            ? `${fmt12(r.startTime)} - ${fmt12(r.endTime)}`
-            : r.time || '';
           return (
             <div
-              key={idx}
-              className="sc-pill sc-pill-detailed"
+              className="sc-pill"
               style={{ background: st.bg, color: st.color, borderColor: st.border, '--pill-dot': st.border }}
               onClick={(e) => openPopover(e, r)}
               title={`${r.name} · ${r.status}`}
             >
               <span className="sc-pill-name">{r.name}</span>
-              {timeLabel && <span className="sc-pill-time">{timeLabel}</span>}
-              {r.subject && <span className="sc-pill-subject">{r.subject}</span>}
             </div>
           );
-        })}
-        {extra > 0 && <div className="sc-more">+{extra} more</div>}
+        })()}
+        {dayReqs.length >= 2 && (() => {
+          const statusColors = { Approved: '#00c853', Pending: '#ffab00', Declined: '#ff1744', Cancelled: '#78909c', Completed: '#38bdf8' };
+          const uniqueStatuses = [...new Set(dayReqs.map(r => r.status))];
+          return (
+            <div className="sc-multi-badge" onClick={(e) => { e.stopPropagation(); handleDayClick(dateStr); }}>
+              <span className="sc-multi-count">{dayReqs.length}</span>
+              <span className="sc-multi-label">appts</span>
+              <div className="sc-multi-dots">
+                {uniqueStatuses.map(s => (
+                  <div key={s} className="sc-multi-dot" style={{ background: statusColors[s] || '#9ca3af' }} title={s} />
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   }
@@ -214,6 +222,7 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
     { label: 'Approved',  key: 'Approved',  dotColor: '#3b82f6', badgeBg: '#dbeafe', badgeColor: '#1e3a8a', filter: 'Approved' },
     { label: 'Pending',   key: 'Pending',   dotColor: '#d97706', badgeBg: '#fef3c7', badgeColor: '#7c5200', filter: 'Pending' },
     { label: 'Declined',  key: 'Declined',  dotColor: '#f87171', badgeBg: '#fee2e2', badgeColor: '#b91c1c', filter: 'History' },
+    { label: 'Completed', key: 'Completed', dotColor: '#38bdf8', badgeBg: '#e0f2fe', badgeColor: '#0369a1', filter: 'History' },
     { label: 'Cancelled', key: 'Cancelled', dotColor: '#9ca3af', badgeBg: '#f3f4f6', badgeColor: '#374151', filter: 'History' },
   ];
 
@@ -221,6 +230,7 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
     { color: '#00c853', label: 'Approved' },
     { color: '#ffab00', label: 'Pending' },
     { color: '#ff1744', label: 'Declined' },
+    { color: '#38bdf8', label: 'Completed' },
     { color: '#78909c', label: 'Cancelled' },
   ];
 
@@ -359,7 +369,7 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
                         <div className="sc-appt-avatar">
                           {r.avatar
                             ? <img src={r.avatar} alt={r.name} />
-                            : <span>{r.name?.[0] || '?'}</span>
+                            : <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{getInitials(r.name)}</span>
                           }
                         </div>
                         <div className="sc-appt-info">

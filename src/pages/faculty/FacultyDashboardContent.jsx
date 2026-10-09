@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Inbox, Calendar } from 'lucide-react';
+import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { getFacultyRequests, getFacultySchedules, getProfile, updateRequestStatus } from '../../supabase/api';
 import { subscribeToRequests, subscribeToSchedules } from '../../supabase/realtime';
@@ -382,7 +383,7 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
             <div className="fdc-avatar">
               {req.avatar
                 ? <img src={req.avatar} alt={req.name} />
-                : <span style={{ fontSize: '1rem', fontWeight: 700 }}>{req.name?.[0] || '?'}</span>}
+                : <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{getInitials(req.name)}</span>}
             </div>
             <div className="fdc-req-info">
               <div className="fdc-req-name">
@@ -420,7 +421,7 @@ const FacultyDashboardContent = ({ onTabChange, onStatusChange }) => {
             <div className="fdc-avatar">
               {req.avatar
                 ? <img src={req.avatar} alt={req.name} />
-                : <span style={{ fontSize: '1rem', fontWeight: 700 }}>{req.name?.[0] || '?'}</span>}
+                : <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{getInitials(req.name)}</span>}
             </div>
             <div className="fdc-upcoming-info">
               <div className="fdc-upcoming-name">

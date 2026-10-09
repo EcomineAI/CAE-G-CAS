@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, Clock, History, ArrowRight, MapPin } from 'lucide-react';
+import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { getStudentRequests, getAllFaculty } from '../../supabase/api';
 import { subscribeToRequests, subscribeToFacultyStatus } from '../../supabase/realtime';
@@ -568,7 +569,7 @@ const DashboardContent = ({ onTabChange, realName }) => {
                       {f.avatar ? (
                         <img src={f.avatar} alt={f.name} onError={e => { e.currentTarget.style.display = 'none'; }} />
                       ) : (
-                        <span>{f.name?.[0] ?? '?'}</span>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{getInitials(f.name)}</span>
                       )}
                     </div>
                     <div className="dc-avail-info">

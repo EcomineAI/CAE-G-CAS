@@ -40,7 +40,7 @@ export const ensureProfile = async () => {
       ? localPart
       : localPart.split(/[._-]/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '),
     role: isStudent ? 'student' : 'faculty',
-    avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`,
+    avatar_url: null,
     status: 'Available'
   };
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, X, Check, Calendar, AlertTriangle } from 'lucide-react';
 import { supabase } from '../supabase/supabase';
-import { formatTimeAgo } from '../utils/dateUtils';
+import { formatTimeAgo, getInitials } from '../utils/dateUtils';
 
 const TYPE_META = {
   approved:    { label: 'Request approved',    icon: <Check  size={14} color="#fff" />, iconBg: '#22c55e' },
@@ -47,6 +47,27 @@ const showOsNotification = (notif) => {
   }).catch(() => {});
 };
 
+const playNotifSound = () => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+    [[660, 0, 0.18], [880, 0.13, 0.22]].forEach(([freq, delay, dur]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.001, now + delay);
+      gain.gain.linearRampToValueAtTime(0.22, now + delay + 0.018);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + delay + dur);
+      osc.start(now + delay);
+      osc.stop(now + delay + dur + 0.01);
+    });
+    setTimeout(() => ctx.close(), 900);
+  } catch (_) {}
+};
+
 const NotificationCenter = ({ userId, isOpen, onClose, role = 'Student', onNotificationClick }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading]             = useState(true);
@@ -60,6 +81,7 @@ const NotificationCenter = ({ userId, isOpen, onClose, role = 'Student', onNotif
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
         async (payload) => {
           showOsNotification(payload.new);
+          playNotifSound();
           let senderProfile = null;
           if (payload.new.sender_id) {
             const { data } = await supabase.from('profiles').select('id, avatar_url, full_name').eq('id', payload.new.sender_id).single();
@@ -290,8 +312,8 @@ const NotificationCenter = ({ userId, isOpen, onClose, role = 'Student', onNotif
                           <img src={notif.senderProfile.avatar_url} alt="sender"
                             style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                         ) : (
-                          <span style={{ fontSize: '1.1rem', fontWeight: 800, color: senderName ? avatarColor : '#5bc8c8' }}>
-                            {senderName ? senderName.replace(/^(Dr|Mr|Ms|Mrs|Prof)\.?\s*/i, '')[0].toUpperCase() : '?'}
+                          <span style={{ fontSize: '0.82rem', fontWeight: 800, color: senderName ? avatarColor : '#5bc8c8' }}>
+                            {senderName ? getInitials(senderName.replace(/^(Dr|Mr|Ms|Mrs|Prof)\.?\s*/i, '').trim()) : '?'}
                           </span>
                         )}
                         <div className="nc-avatar-icon" style={{ background: meta.iconBg }}>
