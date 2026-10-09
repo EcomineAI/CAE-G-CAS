@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, ensureProfile } from '../../supabase/supabase';
-import { getProfile, updateProfile, updateFacultyStatus } from '../../supabase/api';
+import { getProfile, updateProfile, updateFacultyStatus, setOutOfOffice } from '../../supabase/api';
 import { debouncedSave, toast } from '../../supabase/ux';
 import { Layout, Calendar, CalendarDays, Clock, Bell, User, ChevronDown, CheckCircle, AlertCircle, XCircle, Settings, Menu, X as CloseIcon, Info, LogOut, ShieldCheck, FileText } from 'lucide-react';
 import { getInitials } from '../../utils/dateUtils';
@@ -1030,8 +1030,8 @@ const FacultyDashboard = () => {
                 <span style={{ position: 'absolute', top: 2, right: 2, background: '#ef4444', color: 'white', fontSize: '0.55rem', padding: '1px 4px', borderRadius: '50%', fontWeight: 700 }}>{unreadCount}</span>
               )}
             </button>
-            {/* Status pill in topbar */}
-            <div style={{ position: 'relative' }}>
+            {/* Status pill in topbar — hidden for admin */}
+            {!isAdminBypass && <div style={{ position: 'relative' }}>
               <button
                 onClick={() => setIsStatusOpen(v => !v)}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.55rem 1.1rem', borderRadius: 20, border: '1.5px solid var(--topbar-border, #e5e8f0)', background: 'var(--card-bg, #fff)', fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.15s' }}
@@ -1097,7 +1097,20 @@ const FacultyDashboard = () => {
                       <input type="date" value={oooDate} onChange={e => setOooDate(e.target.value)}
                         style={{ flex: 1, padding: '0.55rem 0.7rem', borderRadius: 9, border: '1.5px solid var(--border-color,#e5e8f0)', fontFamily: 'inherit', fontSize: '0.82rem', color: 'var(--text-primary)', background: 'var(--bg-primary,#f0f2f8)', outline: 'none' }}
                       />
-                      <button onClick={() => { if (oooDate) { setProfileStatus('Out of office'); saveStatusDebounced(user?.id, 'Out of office'); toast.success('Out of office set'); } }}
+                      <button onClick={async () => {
+                          if (!oooDate || !user?.id) return;
+                          const today2 = new Date();
+                          const fromDate = `${today2.getFullYear()}-${String(today2.getMonth()+1).padStart(2,'0')}-${String(today2.getDate()).padStart(2,'0')}`;
+                          const name = [profilePrefix, profileName, profileSuffix].filter(Boolean).join(' ') || 'Faculty';
+                          const result = await setOutOfOffice(user.id, fromDate, oooDate, name);
+                          setProfileStatus('Out of office');
+                          if (result?.cancelledCount > 0) {
+                            toast.success(`Out of office set. ${result.cancelledCount} appointment${result.cancelledCount !== 1 ? 's' : ''} cancelled and students notified.`);
+                          } else {
+                            toast.success('Out of office set. No appointments were affected.');
+                          }
+                          setOooDate('');
+                        }}
                         style={{ padding: '0.55rem 0.9rem', borderRadius: 9, border: '1.5px solid var(--border-color,#e5e8f0)', background: 'transparent', fontFamily: 'inherit', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', color: 'var(--text-primary)', transition: 'background 0.15s' }}
                         onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-primary,#f0f2f8)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -1110,18 +1123,30 @@ const FacultyDashboard = () => {
                   </div>
                 </>
               )}
-            </div>
+            </div>}
 
             <div className="fac-topbar-divider" />
-            <div className="fac-profile-chip" onClick={openProfileModal} title="Edit Profile">
-              <div style={{ lineHeight: 1.2 }}>
-                <p className="fac-profile-name">{profilePrefix ? `${profilePrefix} ` : ''}{profileName || 'Faculty'}{profileSuffix ? `, ${profileSuffix}` : ''}</p>
-                <p className="fac-profile-role">{profileDept}</p>
+            {isAdminBypass ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.35rem 0.75rem', borderRadius: 12, background: 'var(--bg-primary, #f0f2f8)', border: '1px solid var(--border-color, #e5e8f0)' }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1a2d5a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <ShieldCheck size={16} color="#fff" />
+                </div>
+                <div style={{ lineHeight: 1.2 }}>
+                  <p style={{ margin: 0, fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-primary)' }}>Admin</p>
+                  <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-muted)' }}>System Administrator</p>
+                </div>
               </div>
-              <div className={`prof-avatar ${profileStatus?.toLowerCase().replace(/\s+/g,'-')}`}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)' }}>{getInitials(profileName)}</span>
+            ) : (
+              <div className="fac-profile-chip" onClick={openProfileModal} title="Edit Profile">
+                <div style={{ lineHeight: 1.2 }}>
+                  <p className="fac-profile-name">{profilePrefix ? `${profilePrefix} ` : ''}{profileName || 'Faculty'}{profileSuffix ? `, ${profileSuffix}` : ''}</p>
+                  <p className="fac-profile-role">{profileDept}</p>
+                </div>
+                <div className={`prof-avatar ${profileStatus?.toLowerCase().replace(/\s+/g,'-')}`}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)' }}>{getInitials(profileName)}</span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -1182,8 +1207,8 @@ const FacultyDashboard = () => {
         forceComplete={false}
       />
 
-      {showTerms && user?.id && user.id !== 'admin-bypass' && (
-        <TermsModal userId={user.id} readOnly={termsReadOnly} onAccepted={() => setShowTerms(false)} />
+      {showTerms && user?.id && (
+        <TermsModal userId={isAdminBypass ? null : user.id} readOnly={isAdminBypass ? true : termsReadOnly} onAccepted={() => setShowTerms(false)} />
       )}
 
       {showLogoutConfirm && (
