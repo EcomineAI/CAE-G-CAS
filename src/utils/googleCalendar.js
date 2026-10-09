@@ -129,39 +129,3 @@ export const fetchCalendarEvents = async (accessToken) => {
   }));
 };
 
-/**
- * Group events by date label for display.
- * Returns array of { label, dateStr, events[] }
- */
-export const groupEventsByDay = (events) => {
-  const groups = {};
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  events.forEach(ev => {
-    const dateStr = ev.start.split('T')[0];
-    if (!groups[dateStr]) groups[dateStr] = [];
-    groups[dateStr].push(ev);
-  });
-
-  return Object.entries(groups)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([dateStr, evs]) => {
-      const [y, m, d] = dateStr.split('-').map(Number);
-      const date = new Date(y, m - 1, d);
-      date.setHours(0, 0, 0, 0);
-      const diffDays = Math.round((date - today) / 86400000);
-      let label;
-      if (diffDays === 0) label = 'Today';
-      else if (diffDays === 1) label = 'Tomorrow';
-      else label = date.toLocaleDateString('en-PH', { weekday: 'long', month: 'short', day: 'numeric' });
-      return { label, dateStr, events: evs };
-    });
-};
-
-export const formatEventTime = (ev) => {
-  if (ev.allDay) return 'All day';
-  const fmt = (iso) =>
-    new Date(iso).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit', hour12: true });
-  return `${fmt(ev.start)} – ${fmt(ev.end)}`;
-};

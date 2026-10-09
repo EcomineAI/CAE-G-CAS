@@ -21,7 +21,7 @@
 | `README.md` | Project overview, setup, changelog. |
 | `SUPABASE_SETUP.md` | Step-by-step guide for creating database tables in Supabase. |
 | `cloud.py` | Python tunnel script to expose local server to a public URL for mobile testing. |
-| `main logo.png` / `public/logo.png` / `src/pages/logo.png` | The navy "F" book logo used across the brand (login, sidebars, favicon). |
+| `public/logo.png` / `src/pages/logo.png` | The navy "F" book logo used across the brand (login, sidebars, favicon). |
 | `public/manifest.json` | PWA manifest. |
 | `public/sw.js` | Service worker (offline/caching). |
 | `seeds/sample_data.sql` | Seed data for Supabase. |
@@ -75,8 +75,7 @@ Pure UI/UX terms modal — **no database writes anywhere**. Flow:
 
 Supports a `readOnly` prop that skips the scroll gate (used when the modal is opened just to view the terms, like from the login page).
 
-### `SharedTermsContent.jsx`
-The actual Terms & Conditions content as a reusable component. Used inside dashboards for the "Terms & Policy" view.
+
 
 ### `SharedSettingsContent.jsx` *(new, unified)*
 **One component for both student and faculty settings** — controlled by a `role="student"` or `role="faculty"` prop. Keeps the UI identical for shared settings (Dark Mode, Text Size, Accessibility, Appearance) and only diverges for role-specific fields:
@@ -86,10 +85,7 @@ The actual Terms & Conditions content as a reusable component. Used inside dashb
 - Saves to `student_prefs` or `faculty_prefs` table based on `role`
 
 ### `SharedCalendarGrid.jsx`
-Reusable calendar grid used by both student and faculty calendar pages.
-
-### `CalendarView.jsx`
-Shared calendar component for appointment views.
+Reusable calendar grid used by both student and faculty calendar pages. Also re-exports `fmt12`, `STATUS_STYLES`, `WEEKDAYS`, `MONTH_NAMES`, and `calendarSharedStyles`.
 
 ### `NotificationCenter.jsx`
 Bell icon dropdown showing in-app notifications (approved, declined, cancelled, new request). Realtime-driven.
@@ -102,15 +98,6 @@ Wraps a route and checks:
 1. Is the user logged in? → If no, redirect to `/login`
 2. Does the user have the right role? → If student tries `/faculty`, redirect to `/student`
 3. Still loading? → Show "Loading..."
-
-### `Button.jsx`, `Input.jsx`, `Navbar.jsx`
-Legacy primitive components, mostly superseded by inline-styled components inside each page. Still exist for compatibility.
-
-### `SettingsModal.jsx`
-Legacy global settings modal. Superseded by `SharedSettingsContent` rendered inline as a tab inside each dashboard.
-
-### `ToggleRole.jsx`
-Legacy toggle switch for student/faculty login. **No longer used** since login is unified.
 
 ---
 
@@ -175,10 +162,9 @@ Every database read/write goes through this file.
 
 ### `realtime.js`
 WebSocket subscriptions to Supabase so the UI updates live:
-- `subscribeToSchedules(...)` — schedule changes
-- `subscribeToRequests(...)` — new / updated requests
-- `subscribeToFacultyStatus(...)` — availability changes
-- `subscribeToAllSchedules(...)` — any schedule change system-wide
+- `subscribeToSchedules(facultyId, ...)` — schedule changes for a specific faculty
+- `subscribeToRequests(userId, role, ...)` — new / updated requests (faculty or student side)
+- `subscribeToFacultyStatus(...)` — availability changes across all faculty
 
 ### `ux.js`
 UX utilities: toast system (`toast.success/error/warning/loading`), `optimistic()` helper for optimistic UI with rollback, 6 skeleton components, `withMinDelay`, `debouncedSave`, `prefetch`, cache helpers.
@@ -192,16 +178,10 @@ SQL migration script for the current schema version.
 
 ---
 
-### `src/pages/LandingPage/`
-
-**No longer the root route.** `/` now goes straight to `LoginPage`. The file still exists but is unused.
-
----
-
 ### `src/pages/Login/`
 
-#### `LoginPage.jsx` *(fully rewritten — one unified login)*
-A single login page for both students and faculty. The old separate `StudentLogin` / `FacultyLogin` wrappers still exist in `Student/` and `Faculty/` subfolders but just re-export `LoginPage` for backwards compatibility.
+#### `LoginPage.jsx` — Unified login
+A single login page for both students and faculty. `/` goes straight here; the old `LandingPage` and separate `StudentLogin`/`FacultyLogin` stubs have been removed.
 
 **What it does:**
 - Single ID / email input and password field
@@ -262,12 +242,10 @@ First-run welcome / onboarding screen.
 Project info, team members, version.
 
 #### `SettingsContent.jsx`
-Legacy student-only settings. Superseded by `SharedSettingsContent`.
+Standalone settings page used for certain modal-style settings access within the student shell.
 
 #### `StudentRequest.jsx`
-Minimal placeholder page.
-
-#### `appointmentsData.js` — Legacy mock data (unused)
+Stub placeholder — route `/student/request` is wired but not yet implemented.
 
 ---
 
@@ -284,28 +262,17 @@ Same shell pattern as student with navy `#00004e` sidebar. All the same sidebar 
 #### `FacultyDashboardContent.jsx` — Overview Tab
 Welcome banner with name from DB, status selector (Available/Busy/Unavailable, debounced save), 4 metric cards, pending requests preview, schedule preview.
 
-#### `FacultyScheduleContent.jsx` — Schedule Manager Tab
-CRUD for consultation time slots. 2-column grid of schedule cards with progress bars, add/edit modal.
-
 #### `FacultyRequestsContent.jsx` — Requests Tab
 Filterable list of incoming requests with approve/decline actions, decline reason capture, soft-delete.
 
-#### `FacultyCalendarPage.jsx` — Calendar Tab
-Monthly calendar view of appointments and schedules.
+#### `FacultyCalendarPage.jsx` — Calendar + Schedule Tab
+Monthly calendar view of appointments, schedules, and OOO/blocked-date management. Handles all schedule CRUD (previously split with `FacultyScheduleContent`).
 
 #### `FacultyAboutContent.jsx` — About Tab
 Mirrors the student About page.
 
-#### `FacultySettingsContent.jsx`
-Legacy faculty-only settings. Superseded by `SharedSettingsContent`.
-
-#### `FacultyTermsContent.jsx`
-Legacy inline terms page. Terms now shown via `TermsModal` popup.
-
 #### `FacultyManage.jsx`
-Minimal placeholder page.
-
-#### `facultyData.js` — Legacy mock data (unused)
+Stub placeholder — route `/faculty/manage` is wired but not yet implemented.
 
 ---
 

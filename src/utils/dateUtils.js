@@ -117,6 +117,18 @@ export const formatRelativeTime = (isoStr) => {
 
 export const formatTimeAgo = formatRelativeTime;
 
+/**
+ * Short 12-hour format: "14:00" → "2 PM", "14:30" → "2:30 PM"
+ * Drops ":00" for whole hours for compact display in cards and calendars.
+ */
+export const fmt12 = (timeStr) => {
+  if (!timeStr) return '';
+  const [h, m] = String(timeStr).split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 || 12;
+  return m === 0 ? `${hour} ${ampm}` : `${hour}:${String(m).padStart(2, '0')} ${ampm}`;
+};
+
 // Day-of-week name → index (0 = Sunday)
 const DAY_INDEX = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
 

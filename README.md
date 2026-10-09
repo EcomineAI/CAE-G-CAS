@@ -64,10 +64,10 @@ Create a centralized management system that reduces uncertainty by providing rea
 - **🔀 Rebrand: G-CAS → FACS** — *Faculty Appointment & Consultation System*. New navy "F" book logo across the entire app.
 - **🔑 Unified Login (#login):** Removed the separate student/faculty login screens. One login page for everyone. Role is now fetched from `profiles.role` instead of being derived from the email pattern.
 - **👤 Admin Role Toggle (#admin):** New `updateUserRole()` API and a per-user Student/Faculty pill toggle inside the Admin Dashboard. Admins can reassign any user's role on the fly.
-- **🚪 No More LandingPage:** `/` now goes straight to login. The LandingPage file is retained but no longer routed.
+- **🚪 No More LandingPage:** `/` now goes straight to login. The `LandingPage` component and all legacy login sub-stubs (`StudentLogin`, `FacultyLogin`) have been removed from the codebase.
 - **📜 TermsModal Rewrite:** The old DB-coupled, state-glitchy terms modal has been replaced with a pure UI/UX implementation. Scroll-to-unlock gate with a bouncing "Scroll to read all" hint. Checkbox was removed entirely — scroll alone unlocks the Close button.
 - **🚪 LogoutConfirm Modal:** New reusable `<LogoutConfirm>` component. Both student and faculty logout buttons now show a confirmation modal with a red logout icon, "Log out of FACS?" title, and Cancel + Log Out buttons.
-- **🧩 Shared Components:** Introduced `SharedSettingsContent` and `SharedTermsContent` so both student and faculty render the exact same UI from a single source of truth (role prop controls the diverging fields).
+- **🧩 Shared Components:** Introduced `SharedSettingsContent` so both student and faculty render the exact same settings UI from a single source of truth (role prop controls the diverging fields).
 - **🧭 Collapsible Hover Sidebars:** Both dashboards. CSS-only hover-expand (no JS state). Icons sit in a fixed-width `.nav-icon` container so they stay perfectly still when the sidebar expands — only labels slide in.
 - **🎨 Sidebar Brand Unification:** Student sidebar now uses the same navy `#00004e` as faculty for brand consistency.
 - **🖼️ Bare PNG Logo:** Removed the inverted CSS filter — the new logo is already colored navy and looks great on the dark sidebar as-is.

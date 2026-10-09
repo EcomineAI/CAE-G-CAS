@@ -6,9 +6,6 @@ export const APP_NAME = 'FACS';
 export const APP_FULL_NAME = 'Faculty Appointment & Consultation System';
 export const APP_SHORT = 'FACS';
 
-// Room number range for schedule room selection (300–500)
-export const ROOM_OPTIONS = ['TBA', ...Array.from({ length: 201 }, (_, i) => String(300 + i))];
-
 // Philippine name prefixes (grouped) — General/Civil + Academic only
 export const PH_PREFIXES = {
   'General / Civil': ['Mr.', 'Ms.', 'Mrs.'],

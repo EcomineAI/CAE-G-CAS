@@ -1,5 +1,8 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { fmt12 } from '../utils/dateUtils';
+
+export { fmt12 };
 
 export const STATUS_STYLES = {
   Approved:  { bg: '#dbeafe', color: '#1e3a8a', border: '#3b82f6' },
@@ -11,14 +14,6 @@ export const STATUS_STYLES = {
 
 export const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-
-export const fmt12 = (timeStr) => {
-  if (!timeStr) return '';
-  const [h, m] = String(timeStr).split(':').map(Number);
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const hour = h % 12 || 12;
-  return m === 0 ? `${hour} ${ampm}` : `${hour}:${String(m).padStart(2, '0')} ${ampm}`;
-};
 
 export const calendarSharedStyles = `
 /* ── Shared calendar layout ── */

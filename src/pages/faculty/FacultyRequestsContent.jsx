@@ -5,7 +5,7 @@ import { AppointmentDetailsModal } from '../shared';
 import { getFacultyRequests, updateRequestStatus, deleteRequest } from '../../supabase/api';
 import { subscribeToRequests } from '../../supabase/realtime';
 import { RequestCardSkeleton, optimistic, withMinDelay, toast } from '../../supabase/ux';
-import { calculateStudentSlot, buildGcalUrl } from '../../utils/dateUtils';
+import { calculateStudentSlot, buildGcalUrl, fmt12 } from '../../utils/dateUtils';
 import { getToken, createCalendarEvent } from '../../utils/googleCalendar';
 
 const requestStyles = `
@@ -224,13 +224,6 @@ const STATUS_COLORS = {
   Declined:  { bg: '#fee2e2', color: '#b91c1c', border: '#fecaca' },
   Cancelled: { bg: '#f1f5f9', color: '#374151', border: '#cbd5e1' },
   Completed: { bg: '#ede9fe', color: '#3730a3', border: '#c4b5fd' },
-};
-
-const fmt12 = (t) => {
-  if (!t) return '';
-  const [h, m] = String(t).split(':').map(Number);
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
 };
 
 const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, onFocusHandled }) => {

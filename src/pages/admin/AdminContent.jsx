@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Users, GraduationCap, CalendarClock, CheckCircle, XCircle, Clock, X } from 'lucide-react';
 import { getAllProfiles, getAllRequestsAdmin } from '../../supabase/api';
-import { getInitials } from '../../utils/dateUtils';
+import { getInitials, fmt12 } from '../../utils/dateUtils';
 
 const REQ_STATUS_STYLE = {
   Pending:   { bg: '#fef3c7', color: '#7c5200',  border: '#d97706' },
@@ -20,11 +20,6 @@ const STATUS_DOT_COLOR = {
 const AVATAR_COLORS = ['#5bc8c8','#2e4a87','#7c3aed','#0891b2','#0d9488','#6366f1'];
 const nameToColor = (name = '') => AVATAR_COLORS[(name.charCodeAt(0) || 0) % AVATAR_COLORS.length];
 
-const fmt12 = (t) => {
-  if (!t) return '';
-  const [h, m] = String(t).split(':').map(Number);
-  return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${h >= 12 ? 'PM' : 'AM'}`;
-};
 const fmtDate = (d) => d
   ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
   : '—';

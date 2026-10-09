@@ -16,7 +16,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase, ensureProfile } from '../../supabase/supabase';
 import { getProfile, updateProfile } from '../../supabase/api';
 import { useNavigate } from 'react-router-dom';
-import SettingsModal from '../../components/SettingsModal';
 import NotificationCenter from '../../components/NotificationCenter';
 import ProfileEditModal from '../../components/ProfileEditModal';
 import TermsModal from '../../components/TermsModal';
@@ -383,7 +382,6 @@ const StudentDashboard = () => {
   const [accessibilityPrefs, setAccessibilityPrefs] = useState({ reducedMotion: false, dyslexicFont: false });
   const [initialFilter, setInitialFilter] = useState('All');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [focusAppointmentId, setFocusAppointmentId] = useState(null);
