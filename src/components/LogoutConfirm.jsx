@@ -70,7 +70,7 @@ const LogoutConfirm = ({ onConfirm, onCancel, loading = false }) => (
     <style>{styles}</style>
     <div className="lc-card" onClick={e => e.stopPropagation()}>
       <div className="lc-icon"><LogOut size={24} /></div>
-      <h3 className="lc-title">Log out of FACS?</h3>
+      <h3 className="lc-title">Log out of Askademic?</h3>
       <p className="lc-text">You will need to sign in again to use your account.</p>
 
       <div className="lc-footer">

@@ -180,8 +180,10 @@ const facultyDashStyles = `
 
 /* ── Sidebar ── */
 .fac-sidebar {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
   width: 68px;
-  flex-shrink: 0;
   background: var(--sidebar-bg, #1a2d5a);
   display: flex;
   flex-direction: column;
@@ -312,6 +314,7 @@ const facultyDashStyles = `
   flex-direction: column;
   overflow: hidden;
   background: var(--main-bg, #f0f2f8);
+  padding-left: 68px;
 }
 
 .fac-topbar {
@@ -323,6 +326,10 @@ const facultyDashStyles = `
   background: var(--topbar-bg, #ffffff);
   border-bottom: 1px solid var(--topbar-border, #e5e8f0);
   flex-shrink: 0;
+  transition: padding-left 0.22s cubic-bezier(0.4,0,0.2,1);
+}
+.fac-sidebar:hover ~ .fac-main-area .fac-topbar {
+  padding-left: calc(270px - 68px + 2rem);
 }
 
 .fac-topbar-icon-btn {
@@ -909,7 +916,7 @@ const FacultyDashboard = () => {
     setLoggingOut(true);
     localStorage.removeItem('gcas_faculty_tab');
     localStorage.removeItem('gcas_student_tab');
-    localStorage.removeItem('facs_last_uid');
+    localStorage.removeItem('askademic_last_uid');
     sessionStorage.removeItem('admin_bypass');
     await supabase.auth.signOut();
     navigate('/');
@@ -977,9 +984,9 @@ const FacultyDashboard = () => {
       {/* ── Sidebar ── */}
       <aside className="fac-sidebar">
         <div className="fac-sidebar-brand">
-          <img src={logo} alt="FACS" />
+          <img src={logo} alt="Askademic" />
           <div className="fac-sidebar-brand-text">
-            <span className="fac-sidebar-brand-name">FACS</span>
+            <span className="fac-sidebar-brand-name">Askademic</span>
             <span className="fac-sidebar-brand-sub">Faculty &amp; Consultation System</span>
           </div>
         </div>
@@ -1155,7 +1162,7 @@ const FacultyDashboard = () => {
           <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)} style={{ display: 'flex' }}>
             <Menu size={24} />
           </button>
-          <span style={{ fontWeight: 900, fontSize: '1.1rem', color: 'var(--accent, #2e4a87)' }}>FACS</span>
+          <span style={{ fontWeight: 900, fontSize: '1.1rem', color: 'var(--accent, #2e4a87)' }}>Askademic</span>
           <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
             <button className="fac-topbar-icon-btn" onClick={() => setIsNotifOpen(!isNotifOpen)} style={{ position: 'relative' }}>
               <Bell size={24} />
@@ -1234,7 +1241,7 @@ const FacultyDashboard = () => {
       {isMobileMenuOpen && (
         <div className="mobile-drawer">
           <div className="drawer-header">
-            <span style={{ fontWeight: 900, fontSize: '1.2rem', color: 'var(--accent, #2e4a87)' }}>FACS</span>
+            <span style={{ fontWeight: 900, fontSize: '1.2rem', color: 'var(--accent, #2e4a87)' }}>Askademic</span>
             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }} onClick={() => setIsMobileMenuOpen(false)}>
               <CloseIcon size={28} />
             </button>

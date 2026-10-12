@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Archive, ClipboardList, Calendar, Clock, MapPin } from 'lucide-react';
+import { User, Archive, ClipboardList, Calendar, Clock, MapPin, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { getStudentRequests, updateRequestDetails, updateRequestStatus, deleteRequest, getSchedulesForFaculty, submitRequest, isDateBlocked, checkActiveRequestForSlot } from '../../supabase/api';
 import { subscribeToRequests } from '../../supabase/realtime';
@@ -15,12 +15,20 @@ const CANCEL_REASONS = [
 
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-const BADGE = {
-  approved:  { background: '#00c853', color: '#fff' },
-  pending:   { background: '#ffab00', color: '#fff' },
-  declined:  { background: '#ff1744', color: '#fff' },
-  cancelled: { background: '#78909c', color: '#fff' },
-  completed: { background: '#00b0ff', color: '#fff' },
+const STATUS_BAR = {
+  Approved:  '#00c853',
+  Pending:   '#ffab00',
+  Declined:  '#ff1744',
+  Cancelled: '#78909c',
+  Completed: '#00b0ff',
+};
+
+const STATUS_BADGE = {
+  Approved:  { bg: '#dcfce7', color: '#14532d' },
+  Pending:   { bg: '#fef9c3', color: '#713f12' },
+  Declined:  { bg: '#fee2e2', color: '#7f1d1d' },
+  Cancelled: { bg: '#f1f5f9', color: '#334155' },
+  Completed: { bg: '#e0f2fe', color: '#0c4a6e' },
 };
 
 const OVERLAY = {
@@ -31,6 +39,103 @@ const OVERLAY = {
 const PAD = { padding: '1.6rem 1.8rem' };
 
 const STYLES = `
+@keyframes apptShim { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.appt-skel {
+  background: linear-gradient(90deg,#eef0f6 25%,#dde1ec 50%,#eef0f6 75%);
+  background-size: 200% 100%;
+  animation: apptShim 1.4s ease-in-out infinite;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+/* ── Card ── */
+@keyframes acFadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+.ac-card {
+  display: flex; align-items: stretch; gap: 0;
+  background: #fff;
+  border: 1.5px solid #e5e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.12s;
+  animation: acFadeIn 0.22s ease;
+}
+.ac-card:hover { box-shadow: 0 4px 16px rgba(26,45,90,0.10); border-color: #c5d0f0; transform: translateY(-1px); }
+.ac-card.selected { border-color: #1a2d5a; box-shadow: 0 4px 20px rgba(26,45,90,0.16); }
+.ac-bar { width: 4px; flex-shrink: 0; border-radius: 0; }
+.ac-body { flex: 1; padding: 0.85rem 1rem; min-width: 0; }
+.ac-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.35rem; }
+.ac-name { font-size: 0.92rem; font-weight: 700; color: #1a2d5a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ac-badge { font-size: 0.67rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+.ac-meta { font-size: 0.76rem; color: #6b7280; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.ac-subject { font-size: 0.78rem; color: #374151; font-weight: 500; margin-top: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ac-chevron { display: flex; align-items: center; padding: 0 0.7rem; color: #c5d0f0; flex-shrink: 0; transition: color 0.15s; }
+.ac-card.selected .ac-chevron { color: #1a2d5a; }
+.ac-card:hover .ac-chevron { color: #1a2d5a; }
+
+/* ── Group label ── */
+.ac-group-label {
+  font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #9ca3af;
+  padding: 0.9rem 0 0.4rem;
+}
+.ac-group-label:first-child { padding-top: 0; }
+
+/* ── Detail panel ── */
+.ac-detail {
+  background: #fff;
+  border: 1.5px solid #e5e8f0;
+  border-radius: 14px;
+  padding: 1.4rem 1.5rem;
+  box-shadow: 0 2px 12px rgba(26,45,90,0.07);
+  animation: acFadeIn 0.2s ease;
+}
+.ac-detail-ref { font-size: 0.72rem; font-weight: 700; color: #9ca3af; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; }
+.ac-detail-subject { font-size: 1.2rem; font-weight: 800; color: #1a2d5a; margin: 0 0 0.15rem; }
+.ac-detail-faculty { font-size: 0.84rem; color: #6b7280; margin-bottom: 1rem; }
+.ac-detail-info {
+  background: #f0f6ff; border: 1px solid #c7dff7; border-radius: 10px;
+  padding: 0.85rem 1rem; margin-bottom: 1rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+.ac-detail-info-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.83rem; color: #1f2937; font-weight: 500; }
+.ac-detail-note {
+  border-left: 3px solid #1a2d5a; background: #f0f6ff;
+  border-radius: 0 8px 8px 0; padding: 0.65rem 0.9rem;
+  font-size: 0.81rem; margin-bottom: 0.8rem; color: #1f2937;
+}
+.ac-detail-decline {
+  border-left: 3px solid #ef4444; background: #fee2e2;
+  border-radius: 0 8px 8px 0; padding: 0.65rem 0.9rem;
+  font-size: 0.81rem; margin-bottom: 0.8rem; color: #b91c1c;
+}
+.ac-detail-hint { font-size: 0.76rem; color: #9ca3af; margin: 0 0 1rem; }
+.ac-detail-actions { display: flex; flex-direction: column; gap: 0.5rem; }
+.ac-action-btn {
+  width: 100%; padding: 0.72rem; border-radius: 9px; font-family: inherit;
+  font-size: 0.84rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s;
+}
+.ac-action-btn:hover { opacity: 0.88; }
+.ac-empty-panel {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 300px; color: #a0aec0; text-align: center; gap: 0.7rem;
+  background: #ffffff;
+  border: 1.5px solid #e5e8f0;
+  border-radius: 14px; padding: 2rem;
+  box-shadow: 0 2px 12px rgba(26,45,90,0.07);
+}
+
+/* ── Filter chips ── */
+.ac-filter-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+.ac-chip {
+  padding: 0.38rem 1rem; border-radius: 50px; border: 1.5px solid #d1d5db;
+  background: #fff; color: #374151; font-size: 0.81rem; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.ac-chip:hover { border-color: #1a2d5a; color: #1a2d5a; }
+.ac-chip.active { background: #1a2d5a; border-color: #1a2d5a; color: #fff; }
+
+/* ── Modal shared ── */
 .appt-modal {
   background: #fff; border-radius: 16px; width: 93%; max-width: 480px;
   box-shadow: 0 24px 60px rgba(0,0,0,0.22); overflow: visible;
@@ -86,8 +191,8 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
   const [activeFilter, setActiveFilter] = useState(initialFilter);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState(null);
 
-  const [detailModal, setDetailModal] = useState(null);
   const [cancelModal, setCancelModal] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelDropOpen, setCancelDropOpen] = useState(false);
@@ -110,24 +215,20 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
     return () => unsub();
   }, [user]);
 
-  // Open details modal when a notification deep-link arrives
   useEffect(() => {
     if (!focusAppointmentId || requests.length === 0) return;
     const target = requests.find(r => r.id === focusAppointmentId);
     if (target) {
-      const idx = requests.findIndex(r => r.id === focusAppointmentId);
-      const refId = `REF${String(idx + 1).padStart(4, '0')}`;
-      setActiveFilter('All'); // make sure it's visible regardless of current filter
-      setDetailModal({ app: target, refId });
+      setActiveFilter('All');
+      setSelectedId(target.id);
       if (onFocusHandled) onFocusHandled();
     }
   }, [focusAppointmentId, requests]);
 
-  const handleFilterClick = (f) => { setActiveFilter(f); if (onResetFilter) onResetFilter(); };
+  const handleFilterClick = (f) => { setActiveFilter(f); setSelectedId(null); if (onResetFilter) onResetFilter(); };
 
-  const getDividedTime = (app) => {
-    return app.startTime ? formatTimeRange(app.startTime, app.endTime) : (app.time || '—');
-  };
+  const getDividedTime = (app) =>
+    app.startTime ? formatTimeRange(app.startTime, app.endTime) : (app.time || '—');
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
@@ -142,35 +243,38 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
     return app.status === activeFilter;
   });
 
-  const badge = (status) => ({
-    ...(BADGE[(status||'').toLowerCase()] || BADGE.cancelled),
-    display: 'inline-block', padding: '0.28rem 0.85rem',
-    borderRadius: 6, fontSize: '0.76rem', fontWeight: 700,
-    textAlign: 'center', whiteSpace: 'nowrap', minWidth: 82,
-  });
+  // Group by date proximity
+  const todayStr = new Date().toISOString().split('T')[0];
+  const weekEnd = (() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; })();
+
+  const groups = [
+    { key: 'upcoming', label: 'This Week & Upcoming', items: filteredData.filter(a => a.date >= todayStr) },
+    { key: 'past',     label: 'Past',                 items: filteredData.filter(a => a.date < todayStr) },
+  ].filter(g => g.items.length > 0);
+
+  const selectedApp = requests.find(r => r.id === selectedId) || null;
+  const selectedIdx = requests.findIndex(r => r.id === selectedId);
+  const refId = selectedIdx >= 0 ? `REF${String(selectedIdx + 1).padStart(4, '0')}` : '';
+
+  const canAct = selectedApp && ['Pending','Approved'].includes(selectedApp.status);
 
   // ── Cancel ──
-  const openCancel = (app, refId) => {
-    setDetailModal(null); setCancelReason(''); setCancelDropOpen(false);
-    setCancelModal({ app, refId });
-  };
+  const openCancel = (app) => { setCancelReason(''); setCancelDropOpen(false); setCancelModal({ app }); };
   const executeCancel = async () => {
     if (!cancelReason) { toast.error('Please select a reason.'); return; }
-    const { app } = cancelModal;
-    setCancelModal(null);
-    await optimistic(
-      setRequests, requests,
+    const { app } = cancelModal; setCancelModal(null);
+    await optimistic(setRequests, requests,
       requests.map(r => r.id === app.id ? { ...r, status: 'Cancelled' } : r),
       () => updateRequestStatus(app.id, 'Cancelled', cancelReason, null, null,
-        { facultyId: app.avatarSeed, studentName: user?.displayName || user?.user_metadata?.full_name || 'A student', day: app.day, time: app.time }),
-      { success: 'Appointment cancelled', error: 'Failed to cancel' }
-    );
+        { facultyId: app.avatarSeed, studentName: user?.displayName || 'A student', day: app.day, time: app.time }),
+      { success: 'Appointment cancelled', error: 'Failed to cancel' });
+    setSelectedId(null);
   };
 
   // ── Reschedule ──
-  const openResched = async (app, refId) => {
-    setDetailModal(null); setReschedDateIdx(0); setReschedSlotIdx(null);
-    setReschedLoading(true); setReschedModal({ app, refId });
+  const openResched = async (app) => {
+    setReschedDateIdx(0); setReschedSlotIdx(null);
+    setReschedLoading(true); setReschedModal({ app });
     const schedules = await getSchedulesForFaculty(app.faculty_id || app.avatarSeed);
     setReschedSchedules(schedules); setReschedLoading(false);
   };
@@ -194,60 +298,35 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
     if (!slot) { toast.error('Please select a time slot.'); return; }
     const { app } = reschedModal;
     const targetDate = cell.dateStr;
-
-    // Check if the chosen date is blocked (OOO or otherwise)
     const block = await isDateBlocked(app.faculty_id || app.avatarSeed, targetDate);
     if (block) {
-      toast.error(
-        block.reason === 'Out of office'
-          ? 'The faculty is out of office on that date. Please pick another date.'
-          : block.reason
-            ? `That date is blocked by the faculty (${block.reason}).`
-            : 'That date is blocked by the faculty.'
-      );
+      toast.error(block.reason === 'Out of office'
+        ? 'The faculty is out of office on that date.'
+        : block.reason ? `That date is blocked (${block.reason}).` : 'That date is blocked.');
       return;
     }
-
-    // Check the new slot isn't already taken by another of this student's active requests
     const slotTaken = await checkActiveRequestForSlot(user.id, slot.id);
-    if (slotTaken) {
-      toast.error('You already have an active request for that time slot.');
-      return;
-    }
-
+    if (slotTaken) { toast.error('You already have an active request for that slot.'); return; }
     setReschedModal(null);
     const studentName = user?.user_metadata?.full_name || 'A student';
     await updateRequestStatus(app.id, 'Cancelled', 'Rescheduled by student', null, null,
       { facultyId: app.avatarSeed, studentName, day: app.day, time: app.time });
-
     const notifCtx = {
-      facultyId: app.faculty_id || app.avatarSeed,
-      studentId: user.id,
-      studentName,
+      facultyId: app.faculty_id || app.avatarSeed, studentId: user.id, studentName,
       day: slot.schedule_type === 'one-time'
         ? new Date(targetDate + 'T00:00').toLocaleDateString('en-US', { weekday: 'long' })
         : (slot.day || ''),
       time: slot.start_time && slot.end_time
-        ? `${String(slot.start_time).slice(0, 5)} - ${String(slot.end_time).slice(0, 5)}`
-        : '',
+        ? `${String(slot.start_time).slice(0,5)} - ${String(slot.end_time).slice(0,5)}` : '',
     };
-
     const result = await submitRequest({
-      student_id: user.id,
-      faculty_id: app.faculty_id || app.avatarSeed,
-      schedule_id: slot.id,
-      subject: app.subject,
-      details: app.details,
-      status: 'Pending',
-      request_date: targetDate,
+      student_id: user.id, faculty_id: app.faculty_id || app.avatarSeed,
+      schedule_id: slot.id, subject: app.subject, details: app.details,
+      status: 'Pending', request_date: targetDate,
     }, notifCtx);
-
-    if (result) {
-      setRequests(prev => prev.map(r => r.id === app.id ? { ...r, status: 'Cancelled' } : r));
-      toast.success('Rescheduled! New request is pending approval.');
-    } else {
-      toast.error('Failed to reschedule. Please try again.');
-    }
+    if (result) { setRequests(prev => prev.map(r => r.id === app.id ? { ...r, status: 'Cancelled' } : r)); toast.success('Rescheduled! New request is pending.'); }
+    else toast.error('Failed to reschedule. Please try again.');
+    setSelectedId(null);
   };
 
   // ── Archive ──
@@ -255,188 +334,184 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
     const app = deleteModal; setDeleteModal(null);
     await optimistic(setRequests, requests, requests.filter(r => r.id !== app.id),
       () => deleteRequest(app.id, 'student'), { success: 'Record archived', error: 'Failed to archive' });
+    setSelectedId(null);
   };
 
   const dateCells = reschedModal ? buildReschedDates() : [];
   const selectedCell = dateCells[reschedDateIdx];
 
-  // columns: fixed px widths so header & data always align
-  const COL = '1fr 1.3fr 1.4fr 1.2fr 1fr 1.4fr';
-
-  const rowStyle = (isHeader, isLast) => ({
-    display: 'grid',
-    gridTemplateColumns: COL,
-    background: isHeader ? '#1a3a8f' : '#eef2fb',
-    borderBottom: isHeader ? 'none' : isLast ? 'none' : '1.5px solid #cdd6f0',
-  });
-
-  const cellStyle = (isHeader, addBorder) => ({
-    padding: '0.88rem 1rem',
-    display: 'flex', alignItems: 'center',
-    fontSize: isHeader ? '0.74rem' : '0.84rem',
-    fontWeight: isHeader ? 700 : 600,
-    color: isHeader ? '#fff' : '#1a2d5a',
-    letterSpacing: isHeader ? '0.04em' : 'normal',
-    textTransform: isHeader ? 'uppercase' : 'none',
-    borderRight: addBorder ? (isHeader ? '1px solid rgba(255,255,255,0.2)' : '1px solid #cdd6f0') : 'none',
-    minWidth: 0,
-    overflow: 'visible',
-  });
-
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ maxWidth: 1120, margin: '0 auto' }}>
       <style>{STYLES}</style>
 
-      {/* Subtitle */}
-      <div style={{ background: '#fff', border: '1px solid #e5e8f0', borderRadius: 10, padding: '0.7rem 1.1rem', marginBottom: '1rem', fontSize: '0.83rem', color: '#6b7280', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-        View real-time availability and appointments
-      </div>
-
-      {/* Filter tabs */}
-      <div style={{ display: 'flex', marginBottom: '1.2rem', border: '1.5px solid #cdd6f0', borderRadius: 8, overflow: 'hidden', width: 'fit-content', background: '#eef2fb' }}>
+      {/* Filter chips */}
+      <div className="ac-filter-row">
         {[
-          { key: 'All',       label: 'All' },
-          { key: 'Pending',   label: 'Pending' },
-          { key: 'Approved',  label: 'Approved' },
+          { key: 'All', label: 'All' },
+          { key: 'Pending', label: 'Pending' },
+          { key: 'Approved', label: 'Approved' },
           { key: 'Completed', label: 'Completed' },
-          { key: 'Declined',  label: 'Declined / Cancelled' },
-        ].map(({ key, label }, i, arr) => (
-          <button key={key} onClick={() => handleFilterClick(key)} style={{
-            padding: '0.45rem 1.2rem', fontFamily: 'inherit',
-            border: 'none',
-            borderRight: i < arr.length - 1 ? '1.5px solid #cdd6f0' : 'none',
-            background: activeFilter === key ? '#1a3a8f' : 'transparent',
-            color: activeFilter === key ? '#fff' : '#1a3a8f',
-            fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer',
-            transition: 'all 0.15s',
-          }}>{label}</button>
+          { key: 'Declined', label: 'Declined / Cancelled' },
+        ].map(({ key, label }) => (
+          <button key={key} className={`ac-chip${activeFilter === key ? ' active' : ''}`} onClick={() => handleFilterClick(key)}>{label}</button>
         ))}
       </div>
 
-      {/* Table */}
-      <div style={{ border: '1.5px solid #cdd6f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 10px rgba(26,58,143,0.08)', background: '#eef2fb' }}>
+      {/* Split layout */}
+      <div style={{ display: 'flex', gap: '1.2rem', alignItems: 'flex-start' }}>
 
-        {/* Header */}
-        <div style={rowStyle(true, false)}>
-          {['Reference ID','Date & Time','Faculty Member','Topic','Status','Actions'].map((col, i, arr) => (
-            <div key={col} style={cellStyle(true, i < arr.length - 1)}>{col}</div>
-          ))}
+        {/* ── LEFT: Card list ── */}
+        <div style={{ flex: '0 0 400px', display: 'flex', flexDirection: 'column' }}>
+          {loading ? (
+            Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="ac-card" style={{ marginBottom: 8, opacity: 1 - i * 0.18, pointerEvents: 'none' }}>
+                <div className="ac-bar" style={{ background: '#e5e8f0' }} />
+                <div className="ac-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div className="ac-head">
+                    <span className="appt-skel" style={{ height: 14, width: 140 }} />
+                    <span className="appt-skel" style={{ height: 18, width: 64, borderRadius: 20 }} />
+                  </div>
+                  <span className="appt-skel" style={{ height: 11, width: '70%' }} />
+                  <span className="appt-skel" style={{ height: 11, width: '50%' }} />
+                </div>
+              </div>
+            ))
+          ) : filteredData.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem 1.5rem', color: '#9ca3af', background: '#ffffff', borderRadius: 14, border: '1.5px solid #e5e8f0', boxShadow: '0 2px 12px rgba(26,45,90,0.07)' }}>
+              <ClipboardList size={36} strokeWidth={1.5} style={{ marginBottom: '0.7rem', opacity: 0.4 }} />
+              <p style={{ fontWeight: 600, color: '#374151', margin: '0 0 0.3rem' }}>No appointments found</p>
+              <p style={{ fontSize: '0.84rem', margin: 0 }}>
+                Your {activeFilter === 'All' ? '' : activeFilter.toLowerCase()} records will appear here.
+              </p>
+            </div>
+          ) : (
+            groups.map(group => (
+              <div key={group.key}>
+                <div className="ac-group-label">{group.label}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: '0.5rem' }}>
+                  {group.items.map((app, idx) => {
+                    const bar = STATUS_BAR[app.status] || '#78909c';
+                    const bdg = STATUS_BADGE[app.status] || STATUS_BADGE.Cancelled;
+                    const isSelected = selectedId === app.id;
+                    return (
+                      <div
+                        key={app.id}
+                        className={`ac-card${isSelected ? ' selected' : ''}`}
+                        onClick={() => setSelectedId(isSelected ? null : app.id)}
+                      >
+                        <div className="ac-bar" style={{ background: bar }} />
+                        <div className="ac-body">
+                          <div className="ac-head">
+                            <span className="ac-name">{app.name?.split('(')[0]?.trim() || '—'}</span>
+                            <span className="ac-badge" style={{ background: bdg.bg, color: bdg.color }}>{app.status}</span>
+                          </div>
+                          <div className="ac-meta">
+                            <Calendar size={11} />
+                            <span>{formatDate(app.date)}</span>
+                            <Clock size={11} style={{ marginLeft: 2 }} />
+                            <span>{getDividedTime(app)}</span>
+                          </div>
+                          {app.subject && <div className="ac-subject">{app.subject}</div>}
+                        </div>
+                        <div className="ac-chevron"><ChevronRight size={16} /></div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
-        {/* Rows */}
-        {loading ? (
-          <div style={{ padding: '2rem', color: '#9ca3af', fontSize: '0.85rem' }}>Loading…</div>
-        ) : filteredData.length === 0 ? (
-          <div style={{ padding: '4rem 2rem', textAlign: 'center', color: '#9ca3af' }}>
-            <ClipboardList size={40} strokeWidth={1.5} />
-            <p style={{ fontWeight: 600, color: '#374151', fontSize: '1rem', marginTop: '0.8rem', marginBottom: 0 }}>No appointments found</p>
-            <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.88rem' }}>Your {!activeFilter || activeFilter === 'All' ? '' : String(activeFilter).toLowerCase()} records will appear here.</p>
-          </div>
-        ) : filteredData.map((app, idx) => {
-          const isLast = idx === filteredData.length - 1;
-          const refId = `REF${String(idx + 1).padStart(4, '0')}`;
-          return (
-            <div key={app.id} style={rowStyle(false, isLast)}>
-              {/* REF ID */}
-              <div style={cellStyle(false, true)}>
-                <span style={{ fontWeight: 700, color: '#1a2d5a' }}>{refId}</span>
+        {/* ── RIGHT: Detail panel ── */}
+        <div style={{ flex: 1, position: 'sticky', top: '1rem' }}>
+          {!selectedApp ? (
+            <div className="ac-empty-panel">
+              <ClipboardList size={36} strokeWidth={1.3} />
+              <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600 }}>Select an appointment</p>
+              <p style={{ margin: 0, fontSize: '0.78rem' }}>Tap any card on the left to see the details here.</p>
+            </div>
+          ) : (
+            <div className="ac-detail" key={selectedApp.id}>
+              <div className="ac-detail-ref">{refId}</div>
+              <p className="ac-detail-subject">{selectedApp.subject || 'Consultation'}</p>
+              <p className="ac-detail-faculty">with {selectedApp.name || selectedApp.facultyName}</p>
+
+              {/* Status bar */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: STATUS_BAR[selectedApp.status] || '#78909c', flexShrink: 0 }} />
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: STATUS_BAR[selectedApp.status] || '#78909c' }}>{selectedApp.status}</span>
               </div>
-              {/* Date & Time */}
-              <div style={{ ...cellStyle(false, true), flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', gap: 2 }}>
-                <span style={{ fontWeight: 600, fontSize: '0.83rem' }}>{formatDate(app.date)}</span>
-                <span style={{ fontSize: '0.76rem', color: '#6b7280' }}>{getDividedTime(app)}</span>
+
+              {/* Info block */}
+              <div className="ac-detail-info">
+                <div className="ac-detail-info-row">
+                  <Calendar size={14} style={{ color: '#1a2d5a', flexShrink: 0 }} />
+                  <span>{formatDate(selectedApp.date)}</span>
+                </div>
+                <div className="ac-detail-info-row">
+                  <Clock size={14} style={{ color: '#1a2d5a', flexShrink: 0 }} />
+                  <span>{getDividedTime(selectedApp)}</span>
+                </div>
+                {selectedApp.room && (
+                  <div className="ac-detail-info-row">
+                    <MapPin size={14} style={{ color: '#1a2d5a', flexShrink: 0 }} />
+                    <span>Room {selectedApp.room}</span>
+                  </div>
+                )}
+                {selectedApp.day && (
+                  <div className="ac-detail-info-row">
+                    <User size={14} style={{ color: '#1a2d5a', flexShrink: 0 }} />
+                    <span>{selectedApp.day}</span>
+                  </div>
+                )}
               </div>
-              {/* Faculty */}
-              <div style={cellStyle(false, true)}>
-                <User size={14} style={{ color: '#6b7280', flexShrink: 0, marginRight: 6 }} />
-                <span style={{ fontWeight: 500 }}>{app.name || app.facultyName}</span>
-              </div>
-              {/* Topic */}
-              <div style={{ ...cellStyle(false, true), color: '#374151' }}>{app.subject || '—'}</div>
-              {/* Status */}
-              <div style={cellStyle(false, true)}>
-                <span style={badge(app.status)}>{app.status}</span>
-              </div>
-              {/* Actions */}
-              <div style={{ ...cellStyle(false, false), gap: '0.5rem' }}>
-                <button onClick={() => setDetailModal({ app, refId })}
-                  style={{ padding: '0.36rem 0.8rem', borderRadius: 6, border: 'none', background: '#1e3a8a', color: '#fff', fontSize: '0.76rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
-                  View Details
-                </button>
-                {['Completed','Cancelled','Declined'].includes(app.status) && (
-                  <button onClick={() => setDeleteModal(app)} title="Archive"
-                    style={{ padding: '0.32rem 0.45rem', borderRadius: 6, border: '1.5px solid #e5e8f0', background: 'transparent', color: '#9ca3af', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                    <Archive size={14} />
+
+              {selectedApp.faculty_note && (
+                <div className="ac-detail-note">
+                  <strong>Faculty Note:</strong> "{selectedApp.faculty_note}"
+                </div>
+              )}
+              {selectedApp.status === 'Declined' && selectedApp.declineReason && (
+                <div className="ac-detail-decline">
+                  <strong>Decline Reason:</strong> "{selectedApp.declineReason}"
+                </div>
+              )}
+
+              <p className="ac-detail-hint">You can reschedule or cancel as long as it has not started yet.</p>
+
+              <div className="ac-detail-actions">
+                {canAct && (
+                  <button className="ac-action-btn" onClick={() => openCancel(selectedApp)}
+                    style={{ border: '1.5px solid #fca5a5', background: '#fff5f5', color: '#ef4444' }}>
+                    Cancel Request
+                  </button>
+                )}
+                {canAct && (
+                  <button className="ac-action-btn" onClick={() => openResched(selectedApp)}
+                    style={{ border: 'none', background: '#1a2d5a', color: '#fff' }}>
+                    Reschedule
+                  </button>
+                )}
+                {['Completed','Cancelled','Declined'].includes(selectedApp.status) && (
+                  <button className="ac-action-btn" onClick={() => setDeleteModal(selectedApp)}
+                    style={{ border: '1.5px solid #e5e8f0', background: '#fff', color: '#9ca3af', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                    <Archive size={14} /> Archive Record
                   </button>
                 )}
               </div>
             </div>
-          );
-        })}
+          )}
+        </div>
       </div>
-
-      {/* ── Detail Modal ── */}
-      {detailModal && (() => {
-        const { app, refId } = detailModal;
-        const timeStr = getDividedTime(app);
-        const canAct = ['Pending','Approved'].includes(app.status);
-        return (
-          <div style={OVERLAY} onClick={() => setDetailModal(null)}>
-            <div className="appt-modal" onClick={e => e.stopPropagation()}>
-              <div style={PAD}>
-                <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, marginBottom: '0.3rem' }}>{refId}</div>
-                <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#1f2937', margin: '0 0 0.8rem 0' }}>Appointment Details</h2>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.8rem', marginBottom: '1rem' }}>
-                  <div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1f2937', marginBottom: '0.2rem' }}>{app.subject || 'Consultation'}</div>
-                    <div style={{ fontSize: '0.83rem', color: '#6b7280' }}>with {app.name || app.facultyName}</div>
-                  </div>
-                  <span style={{ ...badge(app.status), flexShrink: 0, marginTop: 2 }}>{app.status}</span>
-                </div>
-                <div style={{ background: '#f0f7ff', border: '1px solid #c7dff7', borderRadius: 12, padding: '1rem 1.2rem', marginBottom: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#1f2937', fontWeight: 500 }}>
-                    <Calendar size={15} style={{ color: '#1a2d5a', flexShrink: 0 }} />
-                    <span>{formatDate(app.date)}</span>
-                    <Clock size={15} style={{ color: '#1a2d5a', flexShrink: 0, marginLeft: '0.8rem' }} />
-                    <span>{timeStr}</span>
-                  </div>
-                  {app.room && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#1f2937', fontWeight: 500 }}>
-                      <MapPin size={15} style={{ color: '#1a2d5a', flexShrink: 0 }} />
-                      <span>Room {app.room}</span>
-                    </div>
-                  )}
-                </div>
-                {app.faculty_note && (
-                  <div style={{ background: '#f0f7ff', border: '1px solid #c7dff7', borderLeft: '3px solid #1a2d5a', borderRadius: 8, padding: '0.7rem 0.9rem', fontSize: '0.82rem', marginBottom: '0.8rem' }}>
-                    <strong>Faculty Note:</strong> "{app.faculty_note}"
-                  </div>
-                )}
-                {app.status === 'Declined' && app.declineReason && (
-                  <div style={{ background: '#fee2e2', border: '1px solid #fecaca', borderLeft: '3px solid #ef4444', borderRadius: 8, padding: '0.7rem 0.9rem', fontSize: '0.82rem', marginBottom: '0.8rem', color: '#b91c1c' }}>
-                    <strong>Decline Reason:</strong> "{app.declineReason}"
-                  </div>
-                )}
-                <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginBottom: '1.2rem' }}>You can reschedule or cancel as long as it has not started yet.</p>
-                <div style={{ display: 'flex', gap: '0.7rem' }}>
-                  {canAct && <button onClick={() => openCancel(app, refId)} style={{ flex: 1, padding: '0.72rem', borderRadius: 9, border: '1.5px solid #fca5a5', background: '#fff5f5', color: '#ef4444', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel Request</button>}
-                  {canAct && <button onClick={() => openResched(app, refId)} style={{ flex: 1, padding: '0.72rem', borderRadius: 9, border: '1.5px solid #e5e8f0', background: '#fff', color: '#1f2937', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit' }}>Reschedule</button>}
-                  <button onClick={() => setDetailModal(null)} style={{ flex: 1, padding: '0.72rem', borderRadius: 9, border: 'none', background: '#1a2d5a', color: '#fff', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit' }}>Close</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* ── Cancel Modal ── */}
       {cancelModal && (() => {
-        const { app, refId } = cancelModal;
+        const { app } = cancelModal;
         return (
           <div style={OVERLAY} onClick={() => setCancelModal(null)}>
             <div className="appt-modal" onClick={e => e.stopPropagation()}>
               <div style={PAD}>
-                <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, marginBottom: '0.4rem' }}>{refId}</div>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1f2937', margin: '0 0 0.8rem 0' }}>Cancel this request?</h2>
                 <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '1.2rem', lineHeight: 1.5 }}>
                   You are about to cancel <strong style={{ color: '#1f2937' }}>{app.subject}</strong> with{' '}
@@ -446,8 +521,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
                 <div className="appt-dd-wrap">
                   <button type="button" onClick={() => setCancelDropOpen(v => !v)}
                     style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.7rem 1rem', borderRadius: 10, border: '1.5px solid #e5e8f0', background: '#fff', color: cancelReason ? '#1f2937' : '#9ca3af', fontSize: '0.85rem', fontFamily: 'inherit', cursor: 'pointer' }}>
-                    <span>{cancelReason || 'Select a reason'}</span>
-                    <span>▾</span>
+                    <span>{cancelReason || 'Select a reason'}</span><span>▾</span>
                   </button>
                   {cancelDropOpen && (
                     <div className="appt-dd-menu">
@@ -470,15 +544,14 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
 
       {/* ── Reschedule Modal ── */}
       {reschedModal && (() => {
-        const { app, refId } = reschedModal;
+        const { app } = reschedModal;
         return (
           <div style={OVERLAY} onClick={() => setReschedModal(null)}>
             <div className="appt-modal" onClick={e => e.stopPropagation()}>
               <div style={PAD}>
-                <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, marginBottom: '0.3rem' }}>{refId}</div>
                 <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1f2937', margin: '0 0 0.6rem 0' }}>Re-schedule appointment</h2>
                 <p style={{ fontSize: '0.83rem', color: '#6b7280', marginBottom: '1.1rem', lineHeight: 1.5 }}>
-                  Pick a new date and time for <strong style={{ color: '#1a2d5a', textDecoration: 'underline', textUnderlineOffset: 2 }}>{app.subject}</strong>. The request goes back to pending until {app.name || app.facultyName} approves it.
+                  Pick a new date and time for <strong style={{ color: '#1a2d5a' }}>{app.subject}</strong>. The request goes back to pending until {app.name || app.facultyName} approves it.
                 </p>
                 <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.09em', textTransform: 'uppercase', color: '#9ca3af', marginBottom: '0.5rem' }}>Select Date</div>
                 {reschedLoading ? (

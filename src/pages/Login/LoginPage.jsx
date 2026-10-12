@@ -427,11 +427,11 @@ const LoginPage = () => {
           {/* Brand */}
           <div className="lp-brand">
             <div className="lp-logo-wrap">
-              <img src="/logo.png" alt="FACS" />
+              <img src="/logo.png" alt="Askademic" />
               <span className="lp-logo-glint" aria-hidden="true" />
             </div>
-            <h1 className="lp-title">FACS</h1>
-            <p className="lp-sub">Faculty Appointment &amp; Consultation System<br />Gordon College · Olongapo City</p>
+            <h1 className="lp-title">Askademic</h1>
+            <p className="lp-sub">Askademic<br />Gordon College · Olongapo City</p>
           </div>
 
           {/* Role hint */}
@@ -490,7 +490,7 @@ const LoginPage = () => {
             Terms &amp; Conditions
           </button>
 
-          <p className="lp-footer">© {new Date().getFullYear()} Gordon College · FACS</p>
+          <p className="lp-footer">© {new Date().getFullYear()} Gordon College · Askademic</p>
 
         </div>
       </div>

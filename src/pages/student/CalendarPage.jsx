@@ -164,6 +164,13 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
     return () => document.removeEventListener('mousedown', handler);
   }, [popover]);
 
+  // Skeleton cells shown while data loads
+  const skeletonCells = Array.from({ length: 35 }, (_, i) => (
+    <div key={`sk-${i}`} className="sc-day-skel">
+      <div className="sc-skel sc-day-skel-num" />
+    </div>
+  ));
+
   // Build calendar cells using sc-* classes
   const cells = [];
   for (let i = 0; i < startDay; i++) {
@@ -172,12 +179,14 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
   for (let d = 1; d <= totalDays; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const dayReqs = filteredRequests.filter(r => r.date === dateStr);
-    const isToday = dateStr === todayStr;
+    const isToday    = dateStr === todayStr;
     const isSelected = dateStr === selectedDate;
+    const isPast     = dateStr < todayStr;
+    const hasHistory = isPast && requests.some(r => r.date === dateStr);
     cells.push(
       <div
         key={d}
-        className={`sc-day ${isToday ? 'sc-day-today' : ''} ${isSelected ? 'sc-day-selected' : ''}`}
+        className={`sc-day${isToday ? ' sc-day-today' : ''}${isSelected ? ' sc-day-selected' : ''}${isPast && !hasHistory ? ' sc-day-past' : ''}${hasHistory ? ' sc-day-past-history' : ''}`}
         onClick={() => handleDayClick(dateStr)}
         role="button"
         tabIndex={0}
@@ -247,7 +256,7 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
           selectedDate={selectedDate}
           statusFilter={statusFilter}
           filterOptions={['All', 'Approved', 'Pending']}
-          cells={cells}
+          cells={loading ? skeletonCells : cells}
           legendItems={legendItems}
           onPrev={prevMonth}
           onNext={nextMonth}
@@ -298,7 +307,13 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
           <div className="sc-section">
             <div className="sc-section-title">Activity</div>
             {loading ? (
-              <div className="sc-activity-loading">Loading…</div>
+              Array.from({ length: 5 }, (_, i) => (
+                <div key={i} className="sc-skel-activity-row">
+                  <div className="sc-skel sc-skel-dot" />
+                  <div className="sc-skel sc-skel-label" />
+                  <div className="sc-skel sc-skel-badge" />
+                </div>
+              ))
             ) : (
               activityItems.map(({ label, key, dotColor, badgeBg, badgeColor, filter }) => (
                 <button
@@ -317,6 +332,22 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
               ))
             )}
           </div>
+
+          {/* Upcoming skeleton */}
+          {loading && (
+            <div className="sc-section">
+              <div className="sc-section-title">Upcoming</div>
+              {Array.from({ length: 3 }, (_, i) => (
+                <div key={i} className="sc-skel-upcoming-row">
+                  <div className="sc-skel sc-skel-date" />
+                  <div className="sc-skel-info">
+                    <div className="sc-skel sc-skel-name" />
+                    <div className="sc-skel sc-skel-time" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Upcoming agenda */}
           {!loading && upcomingAppts.length > 0 && (

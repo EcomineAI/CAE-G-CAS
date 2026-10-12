@@ -106,6 +106,8 @@ const DashboardContent = ({ onTabChange, realName }) => {
           display: flex;
           flex-direction: column;
           gap: 0.6rem;
+          max-width: 1120px;
+          margin: 0 auto;
         }
 
         /* ── Greeting ── */
@@ -136,34 +138,45 @@ const DashboardContent = ({ onTabChange, realName }) => {
           gap: 0.6rem;
         }
         .dc-stat-card {
-          background: var(--card-bg);
-          border: 1px solid var(--card-border);
+          background-image: url('/dashboard-card-bg.jpg');
+          background-size: cover;
+          background-position: center;
+          border: none;
           border-radius: 10px;
           padding: 0.75rem 0.9rem 0.65rem 0.9rem;
-          box-shadow: var(--card-shadow);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.18);
           cursor: pointer;
           transition: box-shadow 0.18s, transform 0.14s;
+          position: relative;
+          overflow: hidden;
         }
-        .dc-stat-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.09); transform: translateY(-1px); }
+        .dc-stat-card::before {
+          content: '';
+          position: absolute; inset: 0;
+          background: rgba(10, 20, 55, 0.28);
+          border-radius: 10px;
+          pointer-events: none;
+        }
+        .dc-stat-card > * { position: relative; z-index: 1; }
+        .dc-stat-card:hover { box-shadow: 0 6px 22px rgba(0,0,0,0.28); transform: translateY(-1px); }
         .dc-stat-header {
           display: flex;
           align-items: center;
           justify-content: space-between;
           margin-bottom: 0.3rem;
         }
-        .dc-stat-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin: 0; }
+        .dc-stat-label { font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.80); margin: 0; }
         .dc-stat-icon {
           width: 32px; height: 32px; border-radius: 8px;
-          background: #e8eef8;
+          background: rgba(255,255,255,0.18);
           display: flex; align-items: center; justify-content: center;
           flex-shrink: 0;
         }
-        .sd-root.dark .dc-stat-icon { background: rgba(91,128,196,0.2); }
         .dc-stat-number {
           font-size: 1.6rem; font-weight: 800;
-          color: var(--text-primary); line-height: 1.1; margin: 0 0 0.12rem 0;
+          color: #ffffff; line-height: 1.1; margin: 0 0 0.12rem 0;
         }
-        .dc-stat-sub { font-size: 0.67rem; color: var(--text-muted); margin: 0; }
+        .dc-stat-sub { font-size: 0.67rem; color: rgba(255,255,255,0.65); margin: 0; }
 
         /* ── Next consultation card (filled) ── */
         .dc-next-card {
@@ -415,32 +428,45 @@ const DashboardContent = ({ onTabChange, realName }) => {
           <div className="dc-stat-card" onClick={() => onTabChange('Appointments', 'Approved')}>
             <div className="dc-stat-header">
               <p className="dc-stat-label">Approved</p>
-              <div className="dc-stat-icon"><CheckCircle2 size={17} color="#1a2d5a" /></div>
+              <div className="dc-stat-icon"><CheckCircle2 size={17} color="#ffffff" /></div>
             </div>
-            <p className="dc-stat-number">{loading ? '—' : counts.Approved}</p>
+            {loading ? <div className="dc-skel" style={{ height: 36, width: 56, margin: '0.3rem 0' }} /> : <p className="dc-stat-number">{counts.Approved}</p>}
             <p className="dc-stat-sub">Confirmed Appointments</p>
           </div>
           <div className="dc-stat-card" onClick={() => onTabChange('Appointments', 'Pending')}>
             <div className="dc-stat-header">
               <p className="dc-stat-label">Pending</p>
-              <div className="dc-stat-icon"><Clock size={17} color="#1a2d5a" /></div>
+              <div className="dc-stat-icon"><Clock size={17} color="#ffffff" /></div>
             </div>
-            <p className="dc-stat-number">{loading ? '—' : counts.Pending}</p>
+            {loading ? <div className="dc-skel" style={{ height: 36, width: 56, margin: '0.3rem 0' }} /> : <p className="dc-stat-number">{counts.Pending}</p>}
             <p className="dc-stat-sub">Awaiting Confirmation</p>
           </div>
           <div className="dc-stat-card" onClick={() => onTabChange('Appointments', 'History')}>
             <div className="dc-stat-header">
               <p className="dc-stat-label">History</p>
-              <div className="dc-stat-icon"><History size={17} color="#1a2d5a" /></div>
+              <div className="dc-stat-icon"><History size={17} color="#ffffff" /></div>
             </div>
-            <p className="dc-stat-number">{loading ? '—' : counts.History}</p>
+            {loading ? <div className="dc-skel" style={{ height: 36, width: 56, margin: '0.3rem 0' }} /> : <p className="dc-stat-number">{counts.History}</p>}
             <p className="dc-stat-sub">Past Records</p>
           </div>
         </div>
 
         {/* ── Next consultation ── */}
         {loading ? (
-          <div className="dc-next-empty"><div className="dc-skel" style={{ height: 20, width: '40%', borderRadius: 6 }} /></div>
+          <div className="dc-next-card" style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem', pointerEvents: 'none' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+                <div className="dc-skel" style={{ height: 12, width: '30%' }} />
+                <div className="dc-skel" style={{ height: 18, width: '55%' }} />
+                <div className="dc-skel" style={{ height: 13, width: '40%' }} />
+              </div>
+              <div className="dc-skel" style={{ height: 24, width: 80, borderRadius: 20 }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+              <div className="dc-skel" style={{ height: 12, width: '35%' }} />
+              <div className="dc-skel" style={{ height: 30, width: 120, borderRadius: 8 }} />
+            </div>
+          </div>
         ) : nextAppt ? (
           <div className="dc-next-card">
             <div className="dc-next-top">
@@ -511,7 +537,9 @@ const DashboardContent = ({ onTabChange, realName }) => {
                     <span className="dc-day-lbl">{day.label} {day.num}</span>
                   </div>
                   <div className="dc-day-body">
-                    {dayAppts.map((a, i) => {
+                    {loading ? (
+                      <div className="dc-skel" style={{ height: 28, borderRadius: 6, marginBottom: 3 }} />
+                    ) : dayAppts.map((a, i) => {
                       const sc = getStatusColor(a.status);
                       return (
                         <div key={i} className="dc-day-appt" style={{ background: sc.bg, color: sc.text }}

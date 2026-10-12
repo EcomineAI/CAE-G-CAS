@@ -3,6 +3,7 @@ const aboutStyles = `
   display: flex; flex-direction: column; gap: 1.2rem;
   max-width: 900px;
   width: 100%;
+  margin: 0 auto;
   animation: fadeIn 0.3s ease;
 }
 @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
@@ -76,17 +77,16 @@ const FacultyAboutContent = () => (
   <div className="ab-wrap">
     <style>{aboutStyles}</style>
 
-    <p className="ab-page-title">About FACS</p>
-    <p className="ab-page-sub">Faculty Appointment and Consultation System</p>
+    <p className="ab-page-title">About Askademic</p>
 
-    {/* What is FACS */}
+    {/* What is Askademic */}
     <div className="ab-card">
       <p>
-        <span className="ab-bold">FACS</span> is a web system for scheduling consultations between students and faculty in the College of Computer Studies at Gordon College.
+        <span className="ab-bold">Askademic</span> is a web system for scheduling consultations between students and faculty in the College of Computer Studies at Gordon College.
       </p>
       <p>
         <span className="ab-bold">Why we built it</span><br />
-        Consultation hours are often announced but not followed. Students go to the faculty office and find the instructor is out, in a meeting, or busy. FACS lets students see when a faculty member is available and request a time, so nobody wastes a trip.
+        Consultation hours are often announced but not followed. Students go to the faculty office and find the instructor is out, in a meeting, or busy. Askademic lets students see when a faculty member is available and request a time, so nobody wastes a trip.
       </p>
     </div>
 
@@ -129,7 +129,7 @@ const FacultyAboutContent = () => (
     <div className="ab-project-card">
       <p className="ab-project-title">About the project</p>
       <p>
-        FACS was built as a final course project at the Gordon College College of Computer Studies, Olongapo City.
+        Askademic was built as a final course project at the Gordon College College of Computer Studies, Olongapo City.
       </p>
       <ul className="ab-ul" style={{ marginBottom: '0.6rem' }}>
         <li><span className="ab-bold">Team:</span> Ctrl Alt Elite (CAE)</li>

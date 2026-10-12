@@ -7,24 +7,28 @@ const ProtectedRoute = ({ children, allowedRole }) => {
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        color: 'var(--text-muted)'
+      <div style={{
+        position: 'fixed', inset: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: '#f0f2f8',
       }}>
-        Loading...
+        <style>{`
+          @keyframes pr-spin { to { transform: rotate(360deg); } }
+          .pr-spinner {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            border: 7px solid rgba(26,45,90,0.15);
+            border-top-color: #1a2d5a;
+            animation: pr-spin 0.8s linear infinite;
+          }
+        `}</style>
+        <div className="pr-spinner" />
       </div>
     );
   }
 
-  // Not logged in
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!user) return <Navigate to="/login" replace />;
 
-  // Wrong role
   if (user.role !== allowedRole) {
     return <Navigate to={user.role === 'student' ? '/student' : '/faculty'} replace />;
   }

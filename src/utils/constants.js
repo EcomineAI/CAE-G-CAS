@@ -2,9 +2,9 @@
 // FACS Application Constants — single source of truth
 // ============================================================
 
-export const APP_NAME = 'FACS';
-export const APP_FULL_NAME = 'Faculty Appointment & Consultation System';
-export const APP_SHORT = 'FACS';
+export const APP_NAME = 'Askademic';
+export const APP_FULL_NAME = 'Askademic';
+export const APP_SHORT = 'Askademic';
 
 // Philippine name prefixes (grouped) — General/Civil + Academic only
 export const PH_PREFIXES = {

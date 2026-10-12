@@ -138,13 +138,13 @@ const WelcomeContent = () => {
       `}</style>
 
       <div className="welcome-page">
-        <h1 className="welcome-page-title">Welcome to Faculty Appointment &amp; Consultation System (FACS)</h1>
+        <h1 className="welcome-page-title">Welcome to Askademic</h1>
         <p className="welcome-page-sub">Get started quickly with the guide below.</p>
 
         <div className="welcome-cols">
           {/* Guide card */}
           <div className="welcome-guide-card">
-            <p className="welcome-guide-title">How to use FACS? (Quick Guide)</p>
+            <p className="welcome-guide-title">How to use Askademic? (Quick Guide)</p>
             <div className="welcome-steps">
               {steps.map((step, i) => {
                 const Icon = step.icon;

@@ -125,8 +125,8 @@ const TermsModal = ({ onAccepted, readOnly = false }) => {
 
         <div className="terms-body-wrap">
           <div className="terms-body" ref={bodyRef} onScroll={handleScroll}>
-            <h3>1. Who can use FACS</h3>
-            <p>FACS is for <mark>institutional use only</mark>. You sign in with your <mark>official institutional email</mark> and password. Accounts are provided by the school. <strong style={{color:'#dc2626'}}>Do not share your login with anyone.</strong></p>
+            <h3>1. Who can use Askademic</h3>
+            <p>Askademic is for <mark>institutional use only</mark>. You sign in with your <mark>official institutional email</mark> and password. Accounts are provided by the school. <strong style={{color:'#dc2626'}}>Do not share your login with anyone.</strong></p>
 
             <h3>2. Booking rules</h3>
             <ul>
@@ -168,10 +168,10 @@ const TermsModal = ({ onAccepted, readOnly = false }) => {
             <p><strong>Your rights.</strong> You may ask the school to see, correct, or delete your information, in line with the <mark>Data Privacy Act of 2012 (Republic Act No. 10173)</mark>.</p>
 
             <h3>6. Notifications</h3>
-            <p>FACS shows notifications <mark>inside the system only</mark>. It does not send email or push notifications.</p>
+            <p>Askademic shows notifications <mark>inside the system only</mark>. It does not send email or push notifications.</p>
 
             <h3>7. Limits</h3>
-            <p>FACS is a scheduling tool. A booking does <strong>not guarantee</strong> that a faculty member will be available if something unexpected comes up. The school is not responsible for missed meetings caused by late changes or a lack of internet access.</p>
+            <p>Askademic is a scheduling tool. A booking does <strong>not guarantee</strong> that a faculty member will be available if something unexpected comes up. The school is not responsible for missed meetings caused by late changes or a lack of internet access.</p>
 
             <h3>8. Changes and contact</h3>
             <p>We may update these terms from time to time. Continued use means you accept the changes. For questions, contact <mark>info.ccs@gordoncollege.edu.ph</mark>.</p>

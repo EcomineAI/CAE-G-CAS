@@ -12,12 +12,12 @@ const ADMIN_USER = {
 
 // Clear per-role UI state when the signed-in user changes
 const clearStaleTabState = (currentUserId) => {
-  const lastUid = localStorage.getItem('facs_last_uid');
+  const lastUid = localStorage.getItem('askademic_last_uid');
   if (lastUid && lastUid !== currentUserId) {
     localStorage.removeItem('gcas_student_tab');
     localStorage.removeItem('gcas_faculty_tab');
   }
-  if (currentUserId) localStorage.setItem('facs_last_uid', currentUserId);
+  if (currentUserId) localStorage.setItem('askademic_last_uid', currentUserId);
 };
 
 // Fetch profile with timeout + maybeSingle so missing rows don't throw.

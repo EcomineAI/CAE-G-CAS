@@ -7,7 +7,7 @@ import {
 import DashboardContent from './DashboardContent';
 import FacultyContent from './FacultyContent';
 import AppointmentsContent from './AppointmentsContent';
-import AboutContent from './AboutContent';
+import AboutContent from '../faculty/FacultyAboutContent';
 import CalendarPage from './CalendarPage';
 import WelcomeContent from './WelcomeContent';
 import SharedSettingsContent from '../../components/SharedSettingsContent';
@@ -87,8 +87,10 @@ const dashStyles = `
 
 /* ── Sidebar ── */
 .sd-sidebar {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
   width: 68px;
-  flex-shrink: 0;
   background: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
@@ -235,6 +237,7 @@ const dashStyles = `
 /* ── Main area ── */
 .sd-main {
   flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  padding-left: 68px;
 }
 
 /* Topbar */
@@ -246,6 +249,10 @@ const dashStyles = `
   border-bottom: 1px solid var(--topbar-border);
   flex-shrink: 0;
   gap: 0.8rem;
+  transition: padding-left 0.22s cubic-bezier(0.4,0,0.2,1);
+}
+.sd-sidebar:hover ~ .sd-main .sd-topbar {
+  padding-left: calc(270px - 68px + 2rem);
 }
 
 .sd-topbar-page-title {
@@ -299,7 +306,10 @@ const dashStyles = `
 .sd-content {
   flex: 1; overflow-y: auto; padding: 1.6rem 2rem;
   scrollbar-width: none; -ms-overflow-style: none;
-  background: var(--main-bg);
+  background-image: linear-gradient(rgba(255,255,255,0.72), rgba(255,255,255,0.72)), url('/BG.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   zoom: 1.18;
 }
 .sd-content::-webkit-scrollbar { display: none; }
@@ -471,7 +481,7 @@ const StudentDashboard = () => {
     setLoggingOut(true);
     localStorage.removeItem('gcas_student_tab');
     localStorage.removeItem('gcas_faculty_tab');
-    localStorage.removeItem('facs_last_uid');
+    localStorage.removeItem('askademic_last_uid');
     sessionStorage.removeItem('admin_bypass');
     await supabase.auth.signOut();
     navigate('/');
@@ -501,12 +511,13 @@ const StudentDashboard = () => {
     { id: 'Calendar',     icon: CalendarDays,  label: 'Calendar' },
     { id: 'Faculty',      icon: Users,         label: 'Faculty' },
     { id: 'Appointments', icon: Calendar,      label: 'Appointments' },
+    { id: 'About',        icon: Info,          label: 'About' },
   ];
 
   const pageTitles = {
     Welcome: 'Welcome', Dashboard: 'Dashboard', Calendar: 'Calendar',
     Faculty: 'Faculty Directory', Appointments: 'My Consultation Appointments',
-    Settings: 'Settings',
+    About: 'About Askademic', Settings: 'Settings',
   };
 
   const rootClass = [
@@ -525,10 +536,10 @@ const StudentDashboard = () => {
         <aside className="sd-sidebar">
           {/* Brand */}
           <div className="sd-brand">
-            <img src={logo} alt="FACS" />
+            <img src={logo} alt="Askademic" />
             <div className="sd-brand-text">
-              <span className="sd-brand-name">FACS</span>
-              <span className="sd-brand-sub">Faculty Appointment &amp;<br />Consultation System</span>
+              <span className="sd-brand-name">Askademic</span>
+              <span className="sd-brand-sub">Askademic</span>
             </div>
           </div>
 
@@ -611,7 +622,7 @@ const StudentDashboard = () => {
             >
               <Menu size={22} />
             </button>
-            <span className="sd-mobile-brand">FACS</span>
+            <span className="sd-mobile-brand">Askademic</span>
             <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
               <button className="sd-icon-btn" onClick={() => setIsNotifOpen(v => !v)}>
                 <Bell size={19} />
@@ -642,6 +653,7 @@ const StudentDashboard = () => {
                   onFocusHandled={() => setFocusAppointmentId(null)}
                 />
               )}
+              {activeTab === 'About'    && <AboutContent />}
               {activeTab === 'Settings' && (
                 <SharedSettingsContent
                   role="student"
@@ -682,8 +694,8 @@ const StudentDashboard = () => {
           <div className="sd-drawer">
             <div className="sd-drawer-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <img src={logo} alt="FACS" style={{ width: 32, height: 32, objectFit: 'contain' }} />
-                <span style={{ fontWeight: 900, fontSize: '1.2rem', color: '#fff' }}>FACS</span>
+                <img src={logo} alt="Askademic" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+                <span style={{ fontWeight: 900, fontSize: '1.2rem', color: '#fff' }}>Askademic</span>
               </div>
               <button onClick={() => setIsMobileMenuOpen(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>
                 <CloseIcon size={26} />

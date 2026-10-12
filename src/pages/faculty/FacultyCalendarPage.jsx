@@ -13,10 +13,10 @@ const facultyCalStyles = `
 
 .fcp-layout {
   display: flex;
-  gap: 1.2rem;
+  gap: calc(1.5rem + 10px);
   align-items: flex-start;
-  height: calc(100vh - 110px);
-  min-height: 480px;
+  width: fit-content;
+  margin: 0 auto;
 }
 .fcp-layout .sc-right { height: 100%; overflow-y: auto; }
 
@@ -562,6 +562,13 @@ const FacultyCalendarPage = ({ onTabChange }) => {
     ...requests.filter(r => r.status === 'Declined').slice(0,2).map(r => ({ id: `decl-${r.id}`, desc: `Declined ${r.name?.split('(')[0]?.trim() || 'student'} · ${r.day}, ${fmt12(r.startTime)}`, ts: r.date })),
   ].sort((a,b) => (b.ts||'').localeCompare(a.ts||'')).slice(0,10);
 
+  // Skeleton cells shown while data loads
+  const skeletonCells = Array.from({ length: 35 }, (_, i) => (
+    <div key={`sk-${i}`} className="sc-day-skel">
+      <div className="sc-skel sc-day-skel-num" />
+    </div>
+  ));
+
   // Build calendar cells using sc-* classes
   const cells = [];
   for (let i = 0; i < startDay; i++) {
@@ -674,7 +681,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
           selectedDate={selectedDate}
           statusFilter={statusFilter}
           filterOptions={['All', 'Approved', 'Pending']}
-          cells={cells}
+          cells={loading ? skeletonCells : cells}
           legendItems={[
             { color: '#3b82f6', label: 'Open slots' },
             { color: '#d97706', label: 'Has pending' },
@@ -929,7 +936,13 @@ const FacultyCalendarPage = ({ onTabChange }) => {
           <div className="sc-section">
             <div className="sc-section-title">Activity</div>
             {loading ? (
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.4rem 0' }}>Loading…</div>
+              Array.from({ length: 5 }, (_, i) => (
+                <div key={i} className="sc-skel-activity-row">
+                  <div className="sc-skel sc-skel-dot" />
+                  <div className="sc-skel sc-skel-label" />
+                  <div className="sc-skel sc-skel-badge" />
+                </div>
+              ))
             ) : (
               activityItems.map(({ label, key, dotColor, badgeBg, badgeColor, filter }) => (
                 <button key={key} className="sc-activity-card" onClick={() => onTabChange('Requests', filter)}>

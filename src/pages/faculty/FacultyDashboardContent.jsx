@@ -7,8 +7,21 @@ import { subscribeToRequests } from '../../supabase/realtime';
 import { toast, withMinDelay, prefetch, optimistic } from '../../supabase/ux';
 
 const S = `
-.fdc-wrap { display: flex; flex-direction: column; gap: 1.2rem; animation: fadeIn 0.3s ease; }
+.fdc-wrap { display: flex; flex-direction: column; gap: 1.2rem; animation: fadeIn 0.3s ease; max-width: 1120px; margin: 0 auto; }
 @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── Skeleton shimmer ── */
+@keyframes fdcShim { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.fdc-skel {
+  background: linear-gradient(90deg,#eef0f6 25%,#dde1ec 50%,#eef0f6 75%);
+  background-size: 200% 100%;
+  animation: fdcShim 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+.dark .fdc-skel {
+  background: linear-gradient(90deg,#1e2440 25%,#252d4a 50%,#1e2440 75%);
+  background-size: 200% 100%;
+}
 
 /* Warning banner */
 .fdc-banner {
@@ -322,18 +335,21 @@ const FacultyDashboardContent = ({ onTabChange }) => {
       <div className="fdc-metrics">
         <button className="fdc-metric" onClick={() => onTabChange('Requests', 'Pending')}>
           <span className="fdc-metric-label">Needs action</span>
-          <span className={`fdc-metric-num orange`}>{loading ? '—' : pendingCount}</span>
+          {loading ? <div className="fdc-skel" style={{ height: 36, width: 60, margin: '0.2rem 0' }} /> : <span className={`fdc-metric-num orange`}>{pendingCount}</span>}
           <span className="fdc-metric-sub">Pending requests</span>
         </button>
         <button className="fdc-metric" onClick={() => onTabChange('Requests', 'Approved')}>
           <span className="fdc-metric-label">Upcoming</span>
-          <span className="fdc-metric-num blue">{loading ? '—' : approvedCount}</span>
+          {loading ? <div className="fdc-skel" style={{ height: 36, width: 60, margin: '0.2rem 0' }} /> : <span className="fdc-metric-num blue">{approvedCount}</span>}
           <span className="fdc-metric-sub">Approved appointments</span>
         </button>
         <button className="fdc-metric" onClick={() => nextAppt && onTabChange('Calendar')}>
           <span className="fdc-metric-label">Next appointment</span>
           {loading ? (
-            <span className="fdc-metric-sub">Loading…</span>
+            <>
+              <div className="fdc-skel" style={{ height: 18, width: '70%', margin: '0.3rem 0 0.2rem' }} />
+              <div className="fdc-skel" style={{ height: 13, width: '90%' }} />
+            </>
           ) : nextAppt ? (
             <>
               <span className="fdc-metric-date">{nextDateLabel}</span>
@@ -352,7 +368,19 @@ const FacultyDashboardContent = ({ onTabChange }) => {
           <button className="fdc-view-btn" onClick={() => onTabChange('Requests', 'Pending')}>View all</button>
         </div>
         {loading ? (
-          <div className="fdc-empty"><span>Loading…</span></div>
+          Array.from({ length: 3 }, (_, i) => (
+            <div key={i} className="fdc-req-row" style={{ opacity: 1 - i * 0.15 }}>
+              <div className="fdc-skel" style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0 }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div className="fdc-skel" style={{ height: 14, width: '55%' }} />
+                <div className="fdc-skel" style={{ height: 11, width: '80%' }} />
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <div className="fdc-skel" style={{ height: 32, width: 72, borderRadius: 8 }} />
+                <div className="fdc-skel" style={{ height: 32, width: 72, borderRadius: 8 }} />
+              </div>
+            </div>
+          ))
         ) : pendingList.length === 0 ? (
           <div className="fdc-empty">
             <Inbox size={32} strokeWidth={1.5} />
@@ -389,7 +417,15 @@ const FacultyDashboardContent = ({ onTabChange }) => {
           <button className="fdc-view-btn" onClick={() => onTabChange('Calendar')}>Open calendar</button>
         </div>
         {loading ? (
-          <div className="fdc-empty"><span>Loading…</span></div>
+          Array.from({ length: 3 }, (_, i) => (
+            <div key={i} className="fdc-upcoming-row" style={{ opacity: 1 - i * 0.15 }}>
+              <div className="fdc-skel" style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0 }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div className="fdc-skel" style={{ height: 14, width: '50%' }} />
+                <div className="fdc-skel" style={{ height: 11, width: '75%' }} />
+              </div>
+            </div>
+          ))
         ) : upcomingList.length === 0 ? (
           <div className="fdc-empty">
             <Calendar size={32} strokeWidth={1.5} />

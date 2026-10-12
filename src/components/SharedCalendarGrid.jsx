@@ -32,14 +32,15 @@ export const calendarSharedStyles = `
 
 .sc-layout {
   display: flex;
-  gap: 1.2rem;
+  gap: calc(1.5rem + 10px);
   align-items: flex-start;
-  min-height: 480px;
+  width: fit-content;
+  margin: 0 auto;
 }
 
 /* ── Left panel ── */
 .sc-left {
-  flex: 1 1 0;
+  flex: 0 0 820px;
   min-width: 0;
   background: #ffffff;
   border: 2px solid #64748b;
@@ -48,7 +49,6 @@ export const calendarSharedStyles = `
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 16px rgba(26,45,90,0.12);
-  zoom: 0.75;
 }
 
 .sc-cal-header {
@@ -167,8 +167,7 @@ export const calendarSharedStyles = `
 .sc-weekday:last-child { border-right: none; }
 
 .sc-day {
-  aspect-ratio: 1 / 1;
-  min-height: 72px;
+  min-height: 90px;
   padding: 0.5rem 0.45rem 0.35rem;
   display: flex;
   flex-direction: column;
@@ -182,10 +181,14 @@ export const calendarSharedStyles = `
 }
 .sc-day:hover { background: #eef2fb; }
 .sc-day:focus-visible { outline: 2px solid #1a2d5a; outline-offset: -2px; }
+.sc-day-past { opacity: 0.38; pointer-events: none; }
+.sc-day-past .sc-day-num { color: #94a3b8; }
+.sc-day-past-history { opacity: 0.6; cursor: pointer; }
+.sc-day-past-history:hover { background: #f1f3f8; }
+.sc-day-past-history .sc-day-num { color: #64748b; }
 
 .sc-day-empty {
-  aspect-ratio: 1 / 1;
-  min-height: 72px;
+  min-height: 90px;
   background: #f1f3f8;
   cursor: default;
   border-right: 1.5px solid #94a3b8;
@@ -370,8 +373,8 @@ export const calendarSharedStyles = `
 
 /* ── Right panel ── */
 .sc-right {
-  width: 320px;
-  flex-shrink: 0;
+  flex: 0 0 280px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
@@ -786,6 +789,58 @@ export const calendarSharedStyles = `
   transition: opacity 0.15s, transform 0.1s;
 }
 .sc-popover-action:hover { opacity: 0.9; transform: translateY(-1px); }
+
+/* ── Skeleton shimmer ── */
+@keyframes sc-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.sc-skel {
+  background: linear-gradient(90deg, #eef0f6 25%, #dde1ec 50%, #eef0f6 75%);
+  background-size: 200% 100%;
+  animation: sc-shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+.dark .sc-skel {
+  background: linear-gradient(90deg, #1e2440 25%, #252d4a 50%, #1e2440 75%);
+  background-size: 200% 100%;
+}
+
+/* Calendar cell shimmer */
+.sc-day-skel {
+  min-height: 90px;
+  border-right: 1.5px solid #94a3b8;
+  border-bottom: 1.5px solid #94a3b8;
+  padding: 0.5rem 0.45rem;
+}
+.sc-day-skel-num {
+  width: 22px; height: 22px; border-radius: 50%;
+}
+
+/* Activity row shimmer */
+.sc-skel-activity-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.sc-skel-dot  { width: 8px;  height: 8px;  border-radius: 50%; flex-shrink: 0; }
+.sc-skel-label{ flex: 1;     height: 13px; }
+.sc-skel-badge{ width: 30px; height: 20px; border-radius: 20px; flex-shrink: 0; }
+
+/* Upcoming row shimmer */
+.sc-skel-upcoming-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.sc-skel-date  { width: 44px; height: 38px; border-radius: 8px; flex-shrink: 0; }
+.sc-skel-info  { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.sc-skel-name  { height: 13px; width: 80%; }
+.sc-skel-time  { height: 10px; width: 50%; }
 
 /* ── Responsive ── */
 /* Stack earlier so each square cell stays readable */

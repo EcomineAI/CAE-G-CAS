@@ -2,7 +2,7 @@ import React from 'react';
 import { Type, CheckCircle2 } from 'lucide-react';
 
 const styles = `
-.ss-wrap { display: flex; flex-direction: column; max-width: 700px; width: 100%; }
+.ss-wrap { display: flex; flex-direction: column; max-width: 700px; width: 100%; margin: 0 auto; }
 .ss-page-title { font-size: 1.3rem; font-weight: 800; color: var(--text-primary); margin: 0 0 0.15rem; }
 .ss-page-sub   { font-size: 0.8rem; color: var(--text-muted); margin: 0 0 1.2rem; }
 
@@ -130,6 +130,50 @@ const SharedSettingsContent = ({
         <p className="ss-page-sub">
           {isFaculty ? 'Your profile and display settings.' : 'Your profile and display settings.'}
         </p>
+
+        {/* Build info from last git commit */}
+        {(() => {
+          const raw  = typeof __BUILD_TIME__  !== 'undefined' ? __BUILD_TIME__  : null;
+          const hash = typeof __COMMIT_HASH__ !== 'undefined' ? __COMMIT_HASH__ : null;
+          if (!raw) return null;
+          const label = new Date(raw).toLocaleString('en-PH', {
+            month: 'long', day: 'numeric', year: 'numeric',
+            hour: 'numeric', minute: '2-digit', hour12: true,
+            timeZone: 'Asia/Manila',
+          });
+          return (
+            <div style={{
+              padding: '0.6rem 1rem',
+              background: 'var(--accent-light, rgba(79,70,229,0.06))',
+              borderRadius: 10,
+              border: '1px solid var(--border, #c7d2fe)',
+              fontSize: '0.78rem',
+              color: 'var(--muted, #6b7280)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              flexWrap: 'wrap',
+            }}>
+              <span style={{ fontWeight: 700, color: 'var(--accent, #4f46e5)' }}>Last commit</span>
+              <span>·</span>
+              <span>{label} (PHT)</span>
+              {hash && hash !== 'dev' && (
+                <>
+                  <span>·</span>
+                  <span style={{
+                    fontFamily: 'ui-monospace, monospace',
+                    background: 'var(--border, #c7d2fe)',
+                    color: 'var(--accent, #4f46e5)',
+                    padding: '1px 6px',
+                    borderRadius: 4,
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                  }}>{hash}</span>
+                </>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Profile */}
         <div className="ss-card">

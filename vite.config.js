@@ -1,8 +1,23 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { execSync } from 'child_process'
 
-export default defineConfig({
+let commitDate = new Date().toISOString();
+let commitHash = 'dev';
+
+try {
+  commitHash = execSync('git rev-parse --short HEAD').toString().trim();
+  commitDate = execSync('git log -1 --format=%cI').toString().trim();
+} catch {
+  // not in a git repo or git unavailable — fall back to current time
+}
+
+export default defineConfig(() => ({
+  define: {
+    __BUILD_TIME__: JSON.stringify(commitDate),
+    __COMMIT_HASH__: JSON.stringify(commitHash),
+  },
   plugins: [
     react(),
     VitePWA({
@@ -16,4 +31,4 @@ export default defineConfig({
   server: {
     allowedHosts: [".trycloudflare.com"]
   }
-})
+}))

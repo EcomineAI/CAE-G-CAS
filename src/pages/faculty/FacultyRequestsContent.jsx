@@ -4,13 +4,23 @@ import { useAuth } from '../../hooks/useAuth';
 import { AppointmentDetailsModal } from '../shared';
 import { getFacultyRequests, updateRequestStatus, deleteRequest } from '../../supabase/api';
 import { subscribeToRequests } from '../../supabase/realtime';
-import { RequestCardSkeleton, optimistic, withMinDelay, toast } from '../../supabase/ux';
+import { optimistic, withMinDelay, toast } from '../../supabase/ux';
 import { calculateStudentSlot, buildGcalUrl, fmt12 } from '../../utils/dateUtils';
 import { getToken, createCalendarEvent } from '../../utils/googleCalendar';
 
 const requestStyles = `
-.frc-wrap { animation: fadeIn 0.3s ease; }
+.frc-wrap { animation: fadeIn 0.3s ease; max-width: 1120px; margin: 0 auto; }
 @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+/* Skeleton */
+@keyframes frcShim { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.frc-skel {
+  background: linear-gradient(90deg,#eef0f6 25%,#dde1ec 50%,#eef0f6 75%);
+  background-size: 200% 100%;
+  animation: frcShim 1.4s ease-in-out infinite;
+  border-radius: 6px;
+  display: inline-block;
+}
 
 .frc-page-title { font-size: 1.55rem; font-weight: 800; color: var(--text-primary); margin: 0 0 0.15rem; }
 .frc-page-sub { font-size: 0.85rem; color: var(--text-muted); margin: 0 0 1.3rem; }
@@ -422,7 +432,27 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
 
       {/* List */}
       {loading ? (
-        <RequestCardSkeleton count={3} />
+        <div className="frc-list-card">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="frc-row" style={{ opacity: 1 - i * 0.15, pointerEvents: 'none' }}>
+              {/* Avatar */}
+              <div className="frc-skel" style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0 }} />
+              {/* Info */}
+              <div className="frc-info" style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div className="frc-skel" style={{ height: 14, width: 140 }} />
+                  <div className="frc-skel" style={{ height: 18, width: 52, borderRadius: 20 }} />
+                </div>
+                <div className="frc-skel" style={{ height: 11, width: '65%' }} />
+              </div>
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <div className="frc-skel" style={{ height: 32, width: 72, borderRadius: 8 }} />
+                <div className="frc-skel" style={{ height: 32, width: 72, borderRadius: 8 }} />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : filtered.length === 0 ? (
         <div className="frc-list-card">
           <div className="frc-empty">

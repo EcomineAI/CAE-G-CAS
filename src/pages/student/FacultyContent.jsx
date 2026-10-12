@@ -1200,7 +1200,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
   };
 
   return (
-    <>
+    <div style={{ maxWidth: 1120, margin: '0 auto', width: '100%' }}>
       <style>{facultyStyles}</style>
 
       {/* #44: Offline banner */}
@@ -1570,7 +1570,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
         </div>
       )}
 
-    </>
+    </div>
   );
 };
 
