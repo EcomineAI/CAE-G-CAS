@@ -168,13 +168,13 @@ const facultyDashStyles = `
 
 .faculty-dashboard-wrapper {
   position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
+  inset: 0;
   background: var(--main-bg, #f0f2f8);
   z-index: 50;
   display: flex;
   font-family: 'Outfit', 'Inter', sans-serif;
   color: var(--text-primary);
+  overflow: hidden;
 }
 
 .dashboard-bg-layer, .dashboard-overlay { display: none; }
@@ -316,6 +316,7 @@ const facultyDashStyles = `
   overflow: hidden;
   background: var(--main-bg, #f0f2f8);
   padding-left: 68px;
+  min-height: 0;
 }
 
 .fac-topbar {
@@ -367,7 +368,6 @@ const facultyDashStyles = `
   padding: 1.6rem 2rem;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  zoom: 1.18;
   background-image: linear-gradient(rgba(255,255,255,0.72), rgba(255,255,255,0.72)), url('/BG.jpg');
   background-size: cover;
   background-position: center;
@@ -744,10 +744,10 @@ const facultyDashStyles = `
 .drawer-link.active { background: rgba(255,255,255,0.1); color: #fff; }
 .mobile-profile-section { display: flex; align-items: center; gap: 0.8rem; padding: 1rem; background: rgba(255,255,255,0.07); border-radius: 12px; margin-bottom: 1.5rem; }
 
-.bottom-nav { display: none; flex-shrink: 0; margin: 0 12px calc(12px + env(safe-area-inset-bottom, 0px)) 12px; background: var(--card-bg, #fff); border: 1px solid var(--border-color); border-radius: 22px; padding: 0.5rem 1rem; justify-content: space-around; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
-.bottom-nav-item { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.4rem; flex: 1; transition: color 0.12s ease; font-family: 'Source Sans 3', sans-serif; }
-.bottom-nav-item.active { color: var(--accent-main); }
-.bottom-nav-text { font-size: 0.65rem; font-weight: 700; }
+.bottom-nav { display: none; flex-shrink: 0; margin: 0 12px calc(12px + env(safe-area-inset-bottom, 0px)) 12px; background: var(--card-bg, #fff); border: 1px solid var(--border-color, #e5e8f0); border-radius: 22px; padding: 0.4rem 0.5rem; justify-content: space-around; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
+.bottom-nav-item { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.4rem; flex: 1; transition: color 0.15s; font-family: 'Outfit', sans-serif; }
+.bottom-nav-item.active { color: var(--accent, #2e4a87); }
+.bottom-nav-text { font-size: 0.62rem; font-weight: 600; }
 
 /* iPad landscape + small laptops */
 @media (max-width: 1024px) {
@@ -762,12 +762,12 @@ const facultyDashStyles = `
   .fac-mobile-topbar { display: flex; }
   .mobile-menu-btn { display: flex; }
   .bottom-nav { display: flex; }
-  .faculty-main-content { padding: 1rem; zoom: 1; }
+  .faculty-main-content { padding: 1rem; }
 }
 
 /* iPhone */
 @media (max-width: 430px) {
-  .faculty-main-content { padding: 0.8rem 0.75rem; zoom: 1; }
+  .faculty-main-content { padding: 0.8rem 0.75rem; }
 }
 
 /* Large monitors */
