@@ -250,6 +250,8 @@ const DashboardContent = ({ onTabChange, realName }) => {
           border-radius: 12px;
           padding: 0.9rem 1rem 1rem 1rem;
           box-shadow: var(--card-shadow);
+          position: relative;
+          overflow: hidden;
         }
         .dc-sched-hd {
           display: flex; justify-content: space-between; align-items: flex-end;
@@ -275,6 +277,7 @@ const DashboardContent = ({ onTabChange, realName }) => {
         }
         .dc-day-col {
           display: flex; flex-direction: column;
+          flex: 0 0 82px;
           border: 1.5px solid #94a3b8 !important;
           border-radius: 8px;
           overflow: hidden;
@@ -381,6 +384,7 @@ const DashboardContent = ({ onTabChange, realName }) => {
           flex-shrink: 0;
           color: #fff; font-weight: 700; font-size: 1rem;
           overflow: hidden;
+          transition: background 0.2s;
         }
         .dc-avail-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
         .dc-avail-info { flex: 1; min-width: 0; }
@@ -419,6 +423,73 @@ const DashboardContent = ({ onTabChange, realName }) => {
           border-radius: 8px;
         }
         @keyframes dcShim { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+          .dc-wrap { gap: 0.8rem; }
+          .dc-stat-row { gap: 0.4rem; }
+          .dc-stat-card { padding: 0.55rem 0.6rem 0.45rem; }
+          .dc-stat-number { font-size: 1.35rem; }
+          .dc-stat-label { font-size: 0.66rem; }
+          .dc-stat-sub { font-size: 0.58rem; }
+          .dc-stat-icon { width: 26px; height: 26px; border-radius: 6px; }
+          .dc-week-grid {
+            display: flex; flex-direction: row; gap: 0.4rem;
+            overflow-x: auto; overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-x;
+            scrollbar-width: none;
+            padding-bottom: 2px;
+          }
+          .dc-week-grid::-webkit-scrollbar { display: none; }
+          .dc-sched-card::after {
+            content: '›';
+            position: absolute;
+            top: 0; right: 0; bottom: 0;
+            width: 72px;
+            background: linear-gradient(to right,
+              transparent 0%,
+              rgba(var(--card-bg-rgb, 255,255,255), 0.6) 45%,
+              rgba(var(--card-bg-rgb, 255,255,255), 0.92) 72%,
+              var(--card-bg, #fff) 100%
+            );
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #94a3b8;
+            line-height: 1;
+          }
+          .sd-root.dark .dc-sched-card::after {
+            background: linear-gradient(to right,
+              transparent 0%,
+              rgba(30,37,53, 0.6) 45%,
+              rgba(30,37,53, 0.92) 72%,
+              var(--card-bg, #1e2535) 100%
+            );
+            color: #475569;
+          }
+          .dc-avail-grid { grid-template-columns: repeat(2, 1fr); }
+          .dc-next-card { flex-direction: column; }
+        }
+        @media (max-width: 430px) {
+          .dc-stat-row { grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+          .dc-stat-card { padding: 0.6rem 0.65rem 0.5rem; }
+          .dc-stat-number { font-size: 1.4rem; }
+          .dc-stat-label { font-size: 0.65rem; }
+          .dc-stat-sub { font-size: 0.58rem; }
+          .dc-stat-icon { width: 24px; height: 24px; border-radius: 6px; }
+          .dc-day-col { flex: 0 0 76px; }
+          .dc-avail-grid { grid-template-columns: 1fr; }
+          .dc-sched-hd { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+        }
+        @media (min-width: 1440px) {
+          .dc-stat-row { gap: 1rem; }
+          .dc-avail-grid { grid-template-columns: repeat(4, 1fr); }
+        }
       `}</style>
 
       <div className="dc-wrap">
@@ -593,7 +664,7 @@ const DashboardContent = ({ onTabChange, realName }) => {
                     tabIndex={isUnavailable ? -1 : 0}
                     onKeyDown={e => e.key === 'Enter' && !isUnavailable && onTabChange('Faculty', 'All', f.id)}
                   >
-                    <div className="dc-avail-avatar">
+                    <div className="dc-avail-avatar" style={f.avatarColor ? { background: f.avatarColor } : {}}>
                       <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{getInitials(f.name)}</span>
                     </div>
                     <div className="dc-avail-info">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Type, CheckCircle2 } from 'lucide-react';
+import { Type, CheckCircle2, Archive, ChevronRight } from 'lucide-react';
 
 const styles = `
 .ss-wrap { display: flex; flex-direction: column; max-width: 700px; width: 100%; margin: 0 auto; }
@@ -108,9 +108,11 @@ const InfoRow = ({ label, value, badge }) => (
 const SharedSettingsContent = ({
   role = 'student',
   profileData,
+  userId,
   userEmail,
   textSize, setTextSize,
   accessibilityPrefs = {}, updateAccessibilityPref = () => {},
+  onTabChange,
 }) => {
   const isFaculty = role === 'faculty';
 
@@ -224,6 +226,24 @@ const SharedSettingsContent = ({
             checked={accessibilityPrefs.dyslexicFont || false}
             onChange={() => updateAccessibilityPref('dyslexicFont', !accessibilityPrefs.dyslexicFont)}
           />
+        </div>
+
+        {/* Archive */}
+        <div className="ss-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+          <div>
+            <p className="ss-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Archive size={15} /> Archived Records
+            </p>
+            <p className="ss-card-sub ss-card-sub-none">
+              Records you archived from your {isFaculty ? 'requests' : 'appointments'} list.
+            </p>
+          </div>
+          <button
+            onClick={() => onTabChange && onTabChange('Archive')}
+            style={{ flexShrink: 0, padding: '0.45rem 1.1rem', borderRadius: 8, border: '1.5px solid var(--border-color, #e5e8f0)', background: '#fff', color: 'var(--text-primary)', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
+          >
+            View Archive
+          </button>
         </div>
 
         {/* Privacy */}

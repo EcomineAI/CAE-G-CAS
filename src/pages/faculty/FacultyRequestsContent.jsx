@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, Search, Archive, Eye, Clock, Inbox, User } from 'lucide-react';
+import { Check, X, Search, Archive, Eye, Clock, Inbox, Ban, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { AppointmentDetailsModal } from '../shared';
 import { getFacultyRequests, updateRequestStatus, deleteRequest } from '../../supabase/api';
@@ -85,14 +85,38 @@ const requestStyles = `
   100%     { background: #eef2fb !important; }
 }
 
+/* Unread dot */
+.frc-unread-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #1a2d5a; flex-shrink: 0;
+}
+
 /* Avatar */
 .frc-avatar {
   width: 40px; height: 40px; border-radius: 50%;
-  background: #e5e7eb; flex-shrink: 0; overflow: hidden;
+  flex-shrink: 0; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
-  color: var(--text-muted); font-weight: 700; font-size: 1rem;
+  font-weight: 800; font-size: 0.88rem; color: #fff;
+  letter-spacing: 0.02em;
 }
 .frc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Urgency tag */
+.frc-urgency {
+  font-size: 0.62rem; font-weight: 800; padding: 1px 7px;
+  border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+/* Collapsible note toggle */
+.frc-note-toggle {
+  display: inline-flex; align-items: center; gap: 2px;
+  font-size: 0.7rem; font-weight: 700; color: var(--text-muted);
+  background: none; border: none; cursor: pointer;
+  font-family: inherit; padding: 0; margin-top: 0.15rem;
+  transition: color 0.12s;
+}
+.frc-note-toggle:hover { color: #1a2d5a; }
 
 /* Info block */
 .frc-info { flex: 1; min-width: 0; }
@@ -136,14 +160,14 @@ const requestStyles = `
   display: flex; align-items: center; gap: 0.3rem;
 }
 .frc-btn-approve {
-  background: #1a2d5a; color: #fff; border: 1.5px solid #1a2d5a;
+  background: #16a34a; color: #fff; border: 1.5px solid #16a34a;
 }
-.frc-btn-approve:hover { background: #152348; border-color: #152348; }
+.frc-btn-approve:hover { background: #15803d; border-color: #15803d; }
 .frc-btn-decline {
-  background: transparent; color: var(--text-secondary);
-  border: 1.5px solid var(--border-color, #d1d5db);
+  background: transparent; color: #ef4444;
+  border: 1.5px solid #fca5a5;
 }
-.frc-btn-decline:hover { border-color: #ef4444; color: #ef4444; }
+.frc-btn-decline:hover { background: #fee2e2; border-color: #ef4444; }
 .frc-btn-cancel {
   background: transparent; color: var(--text-secondary);
   border: 1.5px solid var(--border-color, #d1d5db);
@@ -220,11 +244,24 @@ const requestStyles = `
 .frc-modal-confirm:disabled { opacity: 0.45; cursor: not-allowed; }
 .frc-modal-confirm.danger { background: #ef4444; }
 
+/* iPad / large phone */
+@media (max-width: 768px) {
+  .frc-toolbar { flex-direction: column; align-items: stretch; }
+  .frc-search { max-width: 100%; min-width: unset; }
+}
+/* Small phones */
 @media (max-width: 640px) {
   .frc-row { flex-wrap: wrap; gap: 0.75rem; }
   .frc-actions { width: 100%; }
   .frc-btn { flex: 1; justify-content: center; }
-  .frc-search { max-width: 100%; }
+}
+/* iPhone */
+@media (max-width: 430px) {
+  .frc-wrap { padding: 0; }
+  .frc-row { padding: 0.75rem 1rem; }
+  .frc-chips { gap: 0.25rem; }
+  .frc-chip { padding: 0.28rem 0.75rem; font-size: 0.75rem; }
+  .frc-page-title { font-size: 1.25rem; }
 }
 `;
 
@@ -236,6 +273,24 @@ const STATUS_COLORS = {
   Completed: { bg: '#ede9fe', color: '#3730a3', border: '#c4b5fd' },
 };
 
+const AVATAR_COLORS = ['#2e4a87','#7c3aed','#0891b2','#0d9488','#d97706','#dc2626','#059669','#db2777'];
+const nameToAvatarColor = (name = '') => AVATAR_COLORS[(name.charCodeAt(0) || 0) % AVATAR_COLORS.length];
+const nameToInitials = (name = '') => {
+  const parts = name.trim().split(/\s+/);
+  return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : (parts[0]?.[0]?.toUpperCase() || '?');
+};
+
+const getUrgencyTag = (dateStr) => {
+  if (!dateStr) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const appt = new Date(dateStr + 'T00:00:00');
+  const diff = Math.round((appt - today) / 86400000);
+  if (diff === 0) return { label: 'Today', color: '#b91c1c', bg: '#fee2e2' };
+  if (diff === 1) return { label: 'Tomorrow', color: '#92400e', bg: '#fef3c7' };
+  if (diff >= 2 && diff <= 3) return { label: `In ${diff} days`, color: '#0369a1', bg: '#e0f2fe' };
+  return null;
+};
+
 const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, onFocusHandled }) => {
   const { user } = useAuth();
   const [filter, setFilter] = useState(initialFilter);
@@ -243,6 +298,8 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [highlightedId, setHighlightedId] = useState(null);
+  const [expandedNotes, setExpandedNotes] = useState(new Set());
+  const toggleNote = (id) => setExpandedNotes(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const [detailModal, setDetailModal] = useState(null);
 
   const [declineModal, setDeclineModal] = useState({ open: false, req: null, reason: '', note: '' });
@@ -469,25 +526,45 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
             const slotLabel = getSlotLabel(req);
             const metaParts = [req.subject, timeLabel, slotLabel].filter(Boolean);
 
+            const displayName = req.name?.split('(')[0]?.trim() || '—';
+            const initials = nameToInitials(displayName);
+            const avatarColor = req.avatarColor || nameToAvatarColor(displayName);
+            const urgency = getUrgencyTag(req.date);
+            const isUnread = req.status === 'Pending' && !req.facultySeen;
+            const noteExpanded = expandedNotes.has(req.id);
+            const hasNote = req.details || req.declineReason || (req.status === 'Cancelled' && req.cancel_reason);
+
             return (
               <div
                 key={req.id}
                 id={`frc-row-${req.id}`}
                 className={`frc-row${highlightedId === req.id ? ' frc-row-highlight' : ''}`}
+                style={{ alignItems: 'center' }}
               >
-                {/* Avatar */}
-                <div className="frc-avatar">
-                  <User size={18} />
+                {/* #4 Unread dot */}
+                {isUnread && <div className="frc-unread-dot" title="New request" />}
+
+                {/* #1 Avatar with initials */}
+                <div className="frc-avatar" style={{ background: avatarColor }}>
+                  {req.avatar
+                    ? <img src={req.avatar} alt={displayName} />
+                    : initials}
                 </div>
 
                 {/* Info */}
                 <div className="frc-info">
                   <div className="frc-name-row">
-                    <span className="frc-name">{req.name?.split('(')[0]?.trim() || '—'}</span>
+                    <span className="frc-name">{displayName}</span>
                     {section && <span className="frc-section-badge">{section}</span>}
                     {req.status !== 'Pending' && (
                       <span className="frc-status-badge" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
                         {req.status}
+                      </span>
+                    )}
+                    {/* #2 Urgency tag */}
+                    {urgency && (
+                      <span className="frc-urgency" style={{ background: urgency.bg, color: urgency.color }}>
+                        {urgency.label}
                       </span>
                     )}
                     {req.status === 'Pending' && req.facultySeen && (
@@ -497,26 +574,42 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
                     )}
                   </div>
                   <div className="frc-meta">{metaParts.join(' · ')}</div>
-                  {req.details && (
-                    <div className="frc-note">"{req.details}"</div>
-                  )}
-                  {req.declineReason && (
-                    <div className="frc-decline-reason">Declined: "{req.declineReason}"</div>
-                  )}
-                  {req.status === 'Cancelled' && req.cancel_reason && (
-                    <div className="frc-decline-reason">Cancelled: "{req.cancel_reason}"</div>
+
+                  {/* #5 Collapsible note + reason */}
+                  {hasNote && (
+                    <>
+                      <button className="frc-note-toggle" onClick={() => toggleNote(req.id)}>
+                        {noteExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                        {noteExpanded ? 'Hide note' : 'Show note'}
+                      </button>
+                      {noteExpanded && (
+                        <>
+                          {req.details && <div className="frc-note">"{req.details}"</div>}
+                          {req.declineReason && <div className="frc-decline-reason">Declined: "{req.declineReason}"</div>}
+                          {req.status === 'Cancelled' && req.cancel_reason && <div className="frc-decline-reason">Cancelled: "{req.cancel_reason}"</div>}
+                        </>
+                      )}
+                    </>
                   )}
                 </div>
 
-                {/* Actions */}
+                {/* #3 Icon action buttons */}
                 <div className="frc-actions">
                   {req.status === 'Pending' && (<>
-                    <button className="frc-btn frc-btn-decline" onClick={() => setDeclineModal({ open: true, req, reason: '', note: '' })}>Decline</button>
-                    <button className="frc-btn frc-btn-approve" onClick={() => setApproveModal({ open: true, reqId: req.id, note: '' })}>Approve</button>
+                    <button className="frc-btn frc-btn-decline" onClick={() => setDeclineModal({ open: true, req, reason: '', note: '' })}>
+                      <X size={13} /> Decline
+                    </button>
+                    <button className="frc-btn frc-btn-approve" onClick={() => setApproveModal({ open: true, reqId: req.id, note: '' })}>
+                      <Check size={13} /> Approve
+                    </button>
                   </>)}
                   {req.status === 'Approved' && (<>
-                    <button className="frc-btn frc-btn-cancel" onClick={() => setCancelModal({ open: true, req, reason: '', note: '' })}>Cancel</button>
-                    <button className="frc-btn frc-btn-complete" onClick={() => setConfirmModal({ open: true, reqId: req.id, newStatus: 'Completed', label: 'mark as completed' })}>Done</button>
+                    <button className="frc-btn frc-btn-cancel" onClick={() => setCancelModal({ open: true, req, reason: '', note: '' })}>
+                      <Ban size={13} /> Cancel
+                    </button>
+                    <button className="frc-btn frc-btn-complete" onClick={() => setConfirmModal({ open: true, reqId: req.id, newStatus: 'Completed', label: 'mark as completed' })}>
+                      <CheckCircle2 size={13} /> Done
+                    </button>
                   </>)}
                   {['Completed','Declined','Cancelled'].includes(req.status) && (
                     <button className="frc-btn frc-btn-archive" onClick={() => setDeleteModal({ open: true, reqId: req.id })}>

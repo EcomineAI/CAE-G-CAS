@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { User, Archive, ClipboardList, Calendar, Clock, MapPin, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { getStudentRequests, updateRequestDetails, updateRequestStatus, deleteRequest, getSchedulesForFaculty, submitRequest, isDateBlocked, checkActiveRequestForSlot } from '../../supabase/api';
@@ -127,6 +128,40 @@ const STYLES = `
 
 /* ── Filter chips ── */
 .ac-filter-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+
+@keyframes acInlineFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+/* Responsive */
+@media (max-width: 768px) {
+  .ac-split { flex-direction: column !important; }
+  .ac-list-col { flex: none !important; width: 100% !important; }
+  .ac-detail-col { display: none !important; }
+  .ac-inline-detail {
+    display: block !important;
+    animation: acInlineFade 0.18s ease;
+  }
+
+  /* Compact inline detail on mobile */
+  .ac-inline-detail .ac-detail { padding: 0.75rem 0.9rem; border-radius: 10px; }
+  .ac-inline-detail .ac-detail-ref { font-size: 0.62rem; margin-bottom: 0.28rem; }
+  .ac-inline-detail .ac-detail-subject { font-size: 0.95rem; margin-bottom: 0.06rem; }
+  .ac-inline-detail .ac-detail-faculty { font-size: 0.74rem; margin-bottom: 0.55rem; }
+  .ac-inline-detail .ac-detail-info { padding: 0.5rem 0.7rem; gap: 0.28rem; margin-bottom: 0.55rem; border-radius: 8px; }
+  .ac-inline-detail .ac-detail-info-row { font-size: 0.73rem; gap: 0.32rem; }
+  .ac-inline-detail .ac-detail-hint { font-size: 0.67rem; margin-bottom: 0.55rem; }
+  .ac-inline-detail .ac-detail-actions { gap: 0.3rem; }
+  .ac-inline-detail .ac-action-btn { padding: 0.5rem; font-size: 0.76rem; border-radius: 8px; }
+  .ac-inline-detail .ac-detail-note,
+  .ac-inline-detail .ac-detail-decline { padding: 0.42rem 0.65rem; font-size: 0.72rem; margin-bottom: 0.45rem; }
+}
+.ac-inline-detail { display: none; margin-top: 4px; margin-bottom: 2px; }
+@media (max-width: 430px) {
+  .ac-chip { padding: 0.32rem 0.8rem; font-size: 0.75rem; }
+  .ac-card { border-radius: 10px; }
+  .ac-detail { border-radius: 12px; }
+}
 .ac-chip {
   padding: 0.38rem 1rem; border-radius: 50px; border: 1.5px solid #d1d5db;
   background: #fff; color: #374151; font-size: 0.81rem; font-weight: 700;
@@ -188,6 +223,7 @@ const STYLES = `
 
 const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppointmentId = null, onFocusHandled }) => {
   const { user } = useAuth();
+  const [listParent] = useAutoAnimate();
   const [activeFilter, setActiveFilter] = useState(initialFilter);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -225,6 +261,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
     }
   }, [focusAppointmentId, requests]);
 
+
   const handleFilterClick = (f) => { setActiveFilter(f); setSelectedId(null); if (onResetFilter) onResetFilter(); };
 
   const getDividedTime = (app) =>
@@ -253,10 +290,6 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
   ].filter(g => g.items.length > 0);
 
   const selectedApp = requests.find(r => r.id === selectedId) || null;
-  const selectedIdx = requests.findIndex(r => r.id === selectedId);
-  const refId = selectedIdx >= 0 ? `REF${String(selectedIdx + 1).padStart(4, '0')}` : '';
-
-  const canAct = selectedApp && ['Pending','Approved'].includes(selectedApp.status);
 
   // ── Cancel ──
   const openCancel = (app) => { setCancelReason(''); setCancelDropOpen(false); setCancelModal({ app }); };
@@ -340,8 +373,43 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
   const dateCells = reschedModal ? buildReschedDates() : [];
   const selectedCell = dateCells[reschedDateIdx];
 
+  const renderDetailPanel = (app) => {
+    const idx = requests.findIndex(r => r.id === app.id);
+    const ref = idx >= 0 ? `REF${String(idx + 1).padStart(4, '0')}` : '';
+    const actable = ['Pending','Approved'].includes(app.status);
+    return (
+      <div className="ac-detail" key={app.id}>
+        <div className="ac-detail-ref">{ref}</div>
+        <p className="ac-detail-subject">{app.subject || 'Consultation'}</p>
+        <p className="ac-detail-faculty">with {app.name || app.facultyName}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: STATUS_BAR[app.status] || '#78909c', flexShrink: 0 }} />
+          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: STATUS_BAR[app.status] || '#78909c' }}>{app.status}</span>
+        </div>
+        <div className="ac-detail-info">
+          <div className="ac-detail-info-row"><Calendar size={14} style={{ color: '#1a2d5a', flexShrink: 0 }} /><span>{formatDate(app.date)}</span></div>
+          <div className="ac-detail-info-row"><Clock size={14} style={{ color: '#1a2d5a', flexShrink: 0 }} /><span>{getDividedTime(app)}</span></div>
+          {app.room && <div className="ac-detail-info-row"><MapPin size={14} style={{ color: '#1a2d5a', flexShrink: 0 }} /><span>Room {app.room}</span></div>}
+          {app.day  && <div className="ac-detail-info-row"><User size={14} style={{ color: '#1a2d5a', flexShrink: 0 }} /><span>{app.day}</span></div>}
+        </div>
+        {app.faculty_note && <div className="ac-detail-note"><strong>Faculty Note:</strong> "{app.faculty_note}"</div>}
+        {app.status === 'Declined' && app.declineReason && <div className="ac-detail-decline"><strong>Decline Reason:</strong> "{app.declineReason}"</div>}
+        <p className="ac-detail-hint">You can reschedule or cancel as long as it has not started yet.</p>
+        <div className="ac-detail-actions">
+          {actable && <button className="ac-action-btn" onClick={() => openCancel(app)} style={{ border: '1.5px solid #fca5a5', background: '#fff5f5', color: '#ef4444' }}>Cancel Request</button>}
+          {actable && <button className="ac-action-btn" onClick={() => openResched(app)} style={{ border: 'none', background: '#1a2d5a', color: '#fff' }}>Reschedule</button>}
+          {['Completed','Cancelled','Declined'].includes(app.status) && (
+            <button className="ac-action-btn" onClick={() => setDeleteModal(app)} style={{ border: '1.5px solid #e5e8f0', background: '#fff', color: '#9ca3af', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+              <Archive size={14} /> Archive Record
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+    <div style={{ maxWidth: 1120, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
       <style>{STYLES}</style>
 
       {/* Filter chips */}
@@ -358,10 +426,10 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
       </div>
 
       {/* Split layout */}
-      <div style={{ display: 'flex', gap: '1.2rem', alignItems: 'flex-start' }}>
+      <div className="ac-split" style={{ display: 'flex', gap: '1.2rem', alignItems: 'flex-start' }}>
 
         {/* ── LEFT: Card list ── */}
-        <div style={{ flex: '0 0 400px', display: 'flex', flexDirection: 'column' }}>
+        <div className="ac-list-col" style={{ flex: '0 0 400px', display: 'flex', flexDirection: 'column' }}>
           {loading ? (
             Array.from({ length: 4 }, (_, i) => (
               <div key={i} className="ac-card" style={{ marginBottom: 8, opacity: 1 - i * 0.18, pointerEvents: 'none' }}>
@@ -394,27 +462,34 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
                     const bdg = STATUS_BADGE[app.status] || STATUS_BADGE.Cancelled;
                     const isSelected = selectedId === app.id;
                     return (
-                      <div
-                        key={app.id}
-                        className={`ac-card${isSelected ? ' selected' : ''}`}
-                        onClick={() => setSelectedId(isSelected ? null : app.id)}
-                      >
-                        <div className="ac-bar" style={{ background: bar }} />
-                        <div className="ac-body">
-                          <div className="ac-head">
-                            <span className="ac-name">{app.name?.split('(')[0]?.trim() || '—'}</span>
-                            <span className="ac-badge" style={{ background: bdg.bg, color: bdg.color }}>{app.status}</span>
+                      <React.Fragment key={app.id}>
+                        <div
+                          id={`ac-card-${app.id}`}
+                          className={`ac-card${isSelected ? ' selected' : ''}`}
+                          onClick={() => setSelectedId(isSelected ? null : app.id)}
+                        >
+                          <div className="ac-bar" style={{ background: bar }} />
+                          <div className="ac-body">
+                            <div className="ac-head">
+                              <span className="ac-name">{app.name?.split('(')[0]?.trim() || '—'}</span>
+                              <span className="ac-badge" style={{ background: bdg.bg, color: bdg.color }}>{app.status}</span>
+                            </div>
+                            <div className="ac-meta">
+                              <Calendar size={11} />
+                              <span>{formatDate(app.date)}</span>
+                              <Clock size={11} style={{ marginLeft: 2 }} />
+                              <span>{getDividedTime(app)}</span>
+                            </div>
+                            {app.subject && <div className="ac-subject">{app.subject}</div>}
                           </div>
-                          <div className="ac-meta">
-                            <Calendar size={11} />
-                            <span>{formatDate(app.date)}</span>
-                            <Clock size={11} style={{ marginLeft: 2 }} />
-                            <span>{getDividedTime(app)}</span>
-                          </div>
-                          {app.subject && <div className="ac-subject">{app.subject}</div>}
+                          <div className="ac-chevron"><ChevronRight size={16} /></div>
                         </div>
-                        <div className="ac-chevron"><ChevronRight size={16} /></div>
-                      </div>
+                        {isSelected && (
+                          <div className="ac-inline-detail">
+                            {renderDetailPanel(app)}
+                          </div>
+                        )}
+                      </React.Fragment>
                     );
                   })}
                 </div>
@@ -423,85 +498,15 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
           )}
         </div>
 
-        {/* ── RIGHT: Detail panel ── */}
-        <div style={{ flex: 1, position: 'sticky', top: '1rem' }}>
+        {/* ── RIGHT: Detail panel (desktop only) ── */}
+        <div className="ac-detail-col" style={{ flex: 1, position: 'sticky', top: '1rem' }}>
           {!selectedApp ? (
             <div className="ac-empty-panel">
               <ClipboardList size={36} strokeWidth={1.3} />
               <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600 }}>Select an appointment</p>
               <p style={{ margin: 0, fontSize: '0.78rem' }}>Tap any card on the left to see the details here.</p>
             </div>
-          ) : (
-            <div className="ac-detail" key={selectedApp.id}>
-              <div className="ac-detail-ref">{refId}</div>
-              <p className="ac-detail-subject">{selectedApp.subject || 'Consultation'}</p>
-              <p className="ac-detail-faculty">with {selectedApp.name || selectedApp.facultyName}</p>
-
-              {/* Status bar */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: STATUS_BAR[selectedApp.status] || '#78909c', flexShrink: 0 }} />
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: STATUS_BAR[selectedApp.status] || '#78909c' }}>{selectedApp.status}</span>
-              </div>
-
-              {/* Info block */}
-              <div className="ac-detail-info">
-                <div className="ac-detail-info-row">
-                  <Calendar size={14} style={{ color: '#1a2d5a', flexShrink: 0 }} />
-                  <span>{formatDate(selectedApp.date)}</span>
-                </div>
-                <div className="ac-detail-info-row">
-                  <Clock size={14} style={{ color: '#1a2d5a', flexShrink: 0 }} />
-                  <span>{getDividedTime(selectedApp)}</span>
-                </div>
-                {selectedApp.room && (
-                  <div className="ac-detail-info-row">
-                    <MapPin size={14} style={{ color: '#1a2d5a', flexShrink: 0 }} />
-                    <span>Room {selectedApp.room}</span>
-                  </div>
-                )}
-                {selectedApp.day && (
-                  <div className="ac-detail-info-row">
-                    <User size={14} style={{ color: '#1a2d5a', flexShrink: 0 }} />
-                    <span>{selectedApp.day}</span>
-                  </div>
-                )}
-              </div>
-
-              {selectedApp.faculty_note && (
-                <div className="ac-detail-note">
-                  <strong>Faculty Note:</strong> "{selectedApp.faculty_note}"
-                </div>
-              )}
-              {selectedApp.status === 'Declined' && selectedApp.declineReason && (
-                <div className="ac-detail-decline">
-                  <strong>Decline Reason:</strong> "{selectedApp.declineReason}"
-                </div>
-              )}
-
-              <p className="ac-detail-hint">You can reschedule or cancel as long as it has not started yet.</p>
-
-              <div className="ac-detail-actions">
-                {canAct && (
-                  <button className="ac-action-btn" onClick={() => openCancel(selectedApp)}
-                    style={{ border: '1.5px solid #fca5a5', background: '#fff5f5', color: '#ef4444' }}>
-                    Cancel Request
-                  </button>
-                )}
-                {canAct && (
-                  <button className="ac-action-btn" onClick={() => openResched(selectedApp)}
-                    style={{ border: 'none', background: '#1a2d5a', color: '#fff' }}>
-                    Reschedule
-                  </button>
-                )}
-                {['Completed','Cancelled','Declined'].includes(selectedApp.status) && (
-                  <button className="ac-action-btn" onClick={() => setDeleteModal(selectedApp)}
-                    style={{ border: '1.5px solid #e5e8f0', background: '#fff', color: '#9ca3af', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
-                    <Archive size={14} /> Archive Record
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+          ) : renderDetailPanel(selectedApp)}
         </div>
       </div>
 

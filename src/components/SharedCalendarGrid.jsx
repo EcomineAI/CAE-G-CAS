@@ -452,6 +452,16 @@ export const calendarSharedStyles = `
 }
 .sc-activity-loading { font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 0.5rem 0; }
 
+@media (max-width: 768px) {
+  .sc-section { border-radius: 10px; padding: 0.65rem 0.75rem; }
+  .sc-section-title { font-size: 0.6rem; margin-bottom: 0.4rem; }
+  .sc-activity-card { padding: 0.3rem 0.4rem; margin-bottom: 0.15rem; border-radius: 6px; }
+  .sc-activity-label { gap: 0.4rem; font-size: 0.7rem; }
+  .sc-activity-dot { width: 6px; height: 6px; }
+  .sc-count-badge { font-size: 0.65rem; padding: 1px 7px; border-radius: 8px; min-width: 22px; }
+  .sc-activity-loading { font-size: 0.7rem; }
+}
+
 /* Upcoming */
 .sc-upcoming-item {
   display: flex;
@@ -816,6 +826,14 @@ export const calendarSharedStyles = `
 .sc-day-skel-num {
   width: 22px; height: 22px; border-radius: 50%;
 }
+@media (max-width: 600px) {
+  .sc-day-skel { min-height: 46px; padding: 0.25rem 0.2rem; }
+  .sc-day-skel-num { width: 16px; height: 16px; }
+}
+@media (max-width: 430px) {
+  .sc-day-skel { min-height: 38px; padding: 0.2rem 0.15rem; }
+  .sc-day-skel-num { width: 14px; height: 14px; }
+}
 
 /* Activity row shimmer */
 .sc-skel-activity-row {
@@ -843,30 +861,63 @@ export const calendarSharedStyles = `
 .sc-skel-time  { height: 10px; width: 50%; }
 
 /* ── Responsive ── */
-/* Stack earlier so each square cell stays readable */
+
+/* iPad landscape: stack calendar + panel */
 @media (max-width: 1100px) {
-  .sc-layout { flex-direction: column; height: auto; }
-  .sc-left { height: auto; width: 100%; }
-  .sc-right { width: 100%; height: auto; overflow-y: visible; }
+  .sc-layout { flex-direction: column; height: auto; width: 100%; }
+  .sc-left  { flex: none !important; width: 100% !important; height: auto; }
+  .sc-right { flex: none !important; width: 100% !important; height: auto; overflow-y: visible; }
 }
+
+/* iPad portrait */
 @media (max-width: 900px) {
-  .sc-day { padding: 0.3rem 0.25rem; }
+  .sc-day { padding: 0.3rem 0.25rem; min-height: 70px; }
+  .sc-day-empty { min-height: 70px; }
   .sc-weekday { padding: 0.35rem 0; font-size: 0.58rem; }
   .sc-pill { font-size: 0.52rem; padding: 2px 5px; }
 }
+
+/* Large phones / small tablets */
 @media (max-width: 600px) {
+  .sc-multi-label { display: none; }
+  .sc-layout { gap: 0.8rem; }
+  .sc-cal-header { padding: 0.6rem 0.9rem; gap: 0.4rem; }
   .sc-month-label { font-size: 0.92rem; }
-  .sc-filter-bar { padding: 0.5rem 0.8rem; }
+  .sc-today-btn { font-size: 0.7rem; padding: 0.22rem 0.55rem; }
+  .sc-nav-btn { width: 24px; height: 24px; }
+  .sc-filter-bar { padding: 0.45rem 0.9rem; gap: 0.3rem; }
+  .sc-filter-chip { padding: 0.24rem 0.65rem; font-size: 0.7rem; }
+  .sc-day { padding: 0.25rem 0.2rem; min-height: 54px; }
+  .sc-day-empty { min-height: 54px; }
+  .sc-day-num { width: 20px; height: 20px; font-size: 0.72rem; }
   .sc-popover {
     position: fixed;
-    left: 1rem !important;
-    right: 1rem !important;
-    bottom: 1rem !important;
-    top: auto !important;
-    max-width: unset;
-    width: auto;
-    border-radius: 18px;
+    left: 0.75rem !important; right: 0.75rem !important;
+    bottom: 5.5rem !important; top: auto !important;
+    max-width: unset; width: auto; border-radius: 18px;
   }
+}
+
+/* iPhone (375–430px) */
+@media (max-width: 430px) {
+  .sc-cal-header { padding: 0.5rem 0.75rem; }
+  .sc-month-label { font-size: 0.85rem; }
+  .sc-today-btn { font-size: 0.65rem; padding: 0.18rem 0.45rem; }
+  .sc-nav-btn { width: 22px; height: 22px; }
+  .sc-filter-bar { padding: 0.4rem 0.75rem; }
+  .sc-filter-chip { padding: 0.2rem 0.55rem; font-size: 0.65rem; }
+  .sc-day { min-height: 46px; padding: 0.2rem 0.15rem; }
+  .sc-day-empty { min-height: 46px; }
+  .sc-day-num { width: 18px; height: 18px; font-size: 0.65rem; }
+  .sc-weekday { font-size: 0.52rem; }
+  .sc-pill { font-size: 0.48rem; padding: 1px 4px; }
+  .sc-legend { gap: 0.5rem; padding: 0.5rem 0.75rem; }
+  .sc-legend-item { font-size: 0.68rem; }
+}
+
+/* Large monitors: give calendar more breathing room */
+@media (min-width: 1440px) {
+  .sc-layout { gap: 2rem; }
 }
 `;
 

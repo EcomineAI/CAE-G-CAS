@@ -9,6 +9,7 @@ import FacultyDashboardContent from './FacultyDashboardContent';
 
 import FacultyRequestsContent from './FacultyRequestsContent';
 import FacultyAboutContent from './FacultyAboutContent';
+import ArchiveContent from '../shared/components/ArchiveContent';
 import FacultyCalendarPage from './FacultyCalendarPage';
 import AdminContent from '../admin/AdminContent';
 import TermsModal from '../../components/TermsModal';
@@ -361,11 +362,16 @@ const facultyDashStyles = `
 
 .faculty-main-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 1.6rem 2rem;
   scrollbar-width: none;
   -ms-overflow-style: none;
   zoom: 1.18;
+  background-image: linear-gradient(rgba(255,255,255,0.72), rgba(255,255,255,0.72)), url('/BG.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
 }
 .faculty-main-content::-webkit-scrollbar { display: none; }
 
@@ -474,15 +480,18 @@ const facultyDashStyles = `
 .prof-avatar {
   width: 34px;
   height: 34px;
-  background: transparent;
-  border: 2px solid var(--border-color);
+  background: var(--prof-avatar-color, #2e4a87);
+  border: 2px solid rgba(255,255,255,0.35);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.78rem;
   transition: border-color 0.3s ease;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 .prof-avatar.available { border-color: #00c853; animation: pulse-available 2s infinite; }
@@ -608,51 +617,10 @@ const facultyDashStyles = `
   .nav-logout-btn { display: none; }
   
   .faculty-main-content {
-    padding: 1.5rem 1rem 5rem 1rem; /* Extra padding at bottom for nav */
+    padding: 1rem;
   }
 }
 
-.bottom-nav {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--card-bg, #fff);
-  border-top: 1px solid var(--border-color);
-  padding: 0.5rem 1rem;
-  z-index: 1000;
-  justify-content: space-around;
-  align-items: center;
-  backdrop-filter: blur(10px);
-}
-
-@media (max-width: 768px) {
-  .bottom-nav { display: flex; }
-}
-
-.bottom-nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 0.4rem;
-  flex: 1;
-  transition: all 0.2s;
-}
-
-.bottom-nav-item.active {
-  color: var(--accent, #2e4a87);
-}
-
-.bottom-nav-text {
-  font-size: 0.65rem;
-  font-weight: 600;
-}
 
 .mobile-menu-btn {
   display: none;
@@ -728,13 +696,14 @@ const facultyDashStyles = `
 /* ── prof-avatar (shared) ── */
 .prof-avatar {
   width: 36px; height: 36px;
-  background: transparent;
-  border: 2px solid var(--border-color);
+  background: var(--prof-avatar-color, #2e4a87);
+  border: 2px solid rgba(255,255,255,0.35);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  color: var(--text-secondary);
+  color: #fff; font-weight: 800; font-size: 0.78rem;
   transition: border-color 0.3s ease;
   overflow: hidden; flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 .prof-avatar.available { border-color: #00c853; animation: pulse-available 2s infinite; }
 .prof-avatar.busy { border-color: #ff1744; animation: pulse-busy 2s infinite; }
@@ -750,32 +719,60 @@ const facultyDashStyles = `
   display: none;
   align-items: center;
   justify-content: space-between;
-  padding: 0.65rem 1rem;
+  padding: 0.18rem 0.75rem;
   background: var(--nav-bg);
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
 }
-.mobile-menu-btn { display: none; background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 0.4rem; align-items: center; justify-content: center; }
-.mobile-drawer { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-primary, #f0f2f8); z-index: 1001; display: flex; flex-direction: column; padding: 2rem; animation: drawerInFac 0.25s ease; }
-@keyframes drawerInFac { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-.drawer-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.5rem; }
-.drawer-links { display: flex; flex-direction: column; gap: 1.25rem; }
-.drawer-link { font-family: 'Source Sans 3', sans-serif; font-size: 1.35rem; font-weight: 700; color: var(--text-primary); background: none; border: none; text-align: left; padding: 0.4rem 0; cursor: pointer; transition: color 0.12s ease; }
-.drawer-link.active { color: var(--accent-main); }
-.mobile-profile-section { display: flex; align-items: center; gap: 1rem; padding: 1.25rem; background: var(--card-bg, #fff); border-radius: 12px; margin-bottom: 1.75rem; border: 1px solid var(--border-color); }
+.mobile-menu-btn { display: none; background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 0.2rem; align-items: center; justify-content: center; }
+@media (max-width: 768px) {
+  .fac-topbar-icon-btn { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; }
+}
+@keyframes facOverlayIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes drawerInFac   { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes drawerOutFac  { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+.mobile-drawer-overlay.closing { animation: facOverlayOut 0.28s ease forwards; }
+.mobile-drawer.closing { animation: drawerOutFac 0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
+@keyframes facOverlayOut { from { opacity: 1; } to { opacity: 0; } }
+.mobile-drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(3px); z-index: 1000; animation: facOverlayIn 0.2s ease; }
+.mobile-drawer { position: fixed; top: 0; left: 0; bottom: 0; width: 300px; max-width: 82vw; background: #00004e; z-index: 1001; display: flex; flex-direction: column; padding: 1.5rem; overflow-y: auto; scrollbar-width: none; animation: drawerInFac 0.28s cubic-bezier(0.4,0,0.2,1); box-shadow: 4px 0 24px rgba(0,0,0,0.35); }
+.mobile-drawer::-webkit-scrollbar { display: none; }
+.drawer-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
+.drawer-links { display: flex; flex-direction: column; gap: 0; }
+.drawer-link { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 600; color: rgba(255,255,255,0.6); background: none; border: none; text-align: left; padding: 0.75rem 0.8rem; border-radius: 10px; cursor: pointer; transition: background 0.12s, color 0.12s; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 1rem; width: 100%; }
+.drawer-link:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.drawer-link.active { background: rgba(255,255,255,0.1); color: #fff; }
+.mobile-profile-section { display: flex; align-items: center; gap: 0.8rem; padding: 1rem; background: rgba(255,255,255,0.07); border-radius: 12px; margin-bottom: 1.5rem; }
 
-.bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--nav-bg); border-top: 1px solid var(--border-color); padding: 0.5rem 1rem; z-index: 1000; justify-content: space-around; align-items: center; }
+.bottom-nav { display: none; flex-shrink: 0; margin: 0 12px calc(12px + env(safe-area-inset-bottom, 0px)) 12px; background: var(--card-bg, #fff); border: 1px solid var(--border-color); border-radius: 22px; padding: 0.5rem 1rem; justify-content: space-around; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
 .bottom-nav-item { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.4rem; flex: 1; transition: color 0.12s ease; font-family: 'Source Sans 3', sans-serif; }
 .bottom-nav-item.active { color: var(--accent-main); }
 .bottom-nav-text { font-size: 0.65rem; font-weight: 700; }
 
+/* iPad landscape + small laptops */
+@media (max-width: 1024px) {
+  .faculty-main-content { padding: 1.2rem 1.5rem; }
+}
+
+/* iPad portrait + mobile */
 @media (max-width: 768px) {
   .fac-sidebar { display: none !important; }
   .fac-topbar { display: none !important; }
+  .fac-main-area { padding-left: 0 !important; }
   .fac-mobile-topbar { display: flex; }
   .mobile-menu-btn { display: flex; }
   .bottom-nav { display: flex; }
-  .faculty-main-content { padding: 1.2rem 1rem 5rem 1rem; }
+  .faculty-main-content { padding: 1rem; zoom: 1; }
+}
+
+/* iPhone */
+@media (max-width: 430px) {
+  .faculty-main-content { padding: 0.8rem 0.75rem; zoom: 1; }
+}
+
+/* Large monitors */
+@media (min-width: 1440px) {
+  .faculty-main-content { padding: 2rem 2.5rem; }
 }
 `;
 
@@ -789,8 +786,18 @@ const FacultyDashboard = () => {
   const [textSize, setTextSize] = useState(() => localStorage.getItem('gcas_faculty_text_size') || 'medium');
   const [accessibilityPrefs, setAccessibilityPrefs] = useState({ reducedMotion: false, dyslexicFont: false });
   const [requestFilter, setRequestFilter] = useState('Pending');
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [profileName, setProfileName] = useState('');
   const [profileAvatar, setProfileAvatar] = useState('');
+
+  const FAC_AVATAR_PALETTE = ['#2e4a87','#7c3aed','#0891b2','#0d9488','#d97706','#db2777','#059669','#dc2626'];
+  const [facAvatarColorState, setFacAvatarColorState] = useState(() => {
+    if (!user?.id) return null;
+    return localStorage.getItem(`askademic_avatar_color_${user.id}`) || null;
+  });
+  const facAvatarColor = facAvatarColorState || FAC_AVATAR_PALETTE[(profileName.charCodeAt(0) || 0) % FAC_AVATAR_PALETTE.length];
   const [profileDept, setProfileDept] = useState('');
   const [profileStatus, setProfileStatus] = useState('Available');
   const [isStatusOpen, setIsStatusOpen] = useState(false);
@@ -801,6 +808,8 @@ const FacultyDashboard = () => {
   const [profileSuffix, setProfileSuffix] = useState('');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDrawerClosing, setIsDrawerClosing] = useState(false);
+  const [isDrawerAdvOpen, setIsDrawerAdvOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [focusRequestId, setFocusRequestId] = useState(null);
@@ -823,9 +832,6 @@ const FacultyDashboard = () => {
   useEffect(() => {
     localStorage.removeItem('gcas_faculty_high_contrast');
   }, []);
-
-  const { user } = useAuth();
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (user?.id === 'admin-bypass') setActiveTab('Admin');
@@ -850,6 +856,10 @@ const FacultyDashboard = () => {
         setProfilePrefix(p.name_prefix || '');
         setProfileSuffix(p.name_suffix || '');
         setProfileData(p);
+        if (p.avatar_color) {
+          setFacAvatarColorState(p.avatar_color);
+          localStorage.setItem(`askademic_avatar_color_${user.id}`, p.avatar_color);
+        }
 
         // #51: Load accessibility prefs
         if (p.accessibility_prefs) {
@@ -896,6 +906,10 @@ const FacultyDashboard = () => {
     setProfileSuffix(saved.name_suffix || '');
     setProfileDept(saved.department || profileDept);
     setProfileData(prev => ({ ...prev, ...saved }));
+    if (saved.avatar_color) {
+      setFacAvatarColorState(saved.avatar_color);
+      if (user?.id) localStorage.setItem(`askademic_avatar_color_${user.id}`, saved.avatar_color);
+    }
     setShowProfileModal(false);
   };
 
@@ -908,6 +922,11 @@ const FacultyDashboard = () => {
     await updateProfile(user.id, {
       accessibility_prefs: newPrefs
     });
+  };
+
+  const closeDrawer = () => {
+    setIsDrawerClosing(true);
+    setTimeout(() => { setIsMobileMenuOpen(false); setIsDrawerClosing(false); }, 280);
   };
 
   const handleLogout = () => setShowLogoutConfirm(true);
@@ -943,6 +962,8 @@ const FacultyDashboard = () => {
         />;
       case 'About':
         return <FacultyAboutContent />;
+      case 'Archive':
+        return <ArchiveContent role="faculty" />;
       case 'Settings':
         return (
           <SharedSettingsContent
@@ -953,6 +974,7 @@ const FacultyDashboard = () => {
             textSize={textSize} setTextSize={setTextSize}
             accessibilityPrefs={accessibilityPrefs} updateAccessibilityPref={updateAccessibilityPref}
             onProfileSaved={handleProfileSaved}
+            onTabChange={handleActiveTabSet}
           />
         );
       case 'Admin':
@@ -1149,8 +1171,8 @@ const FacultyDashboard = () => {
                   <p className="fac-profile-name">{profilePrefix ? `${profilePrefix} ` : ''}{profileName || 'Faculty'}{profileSuffix ? `, ${profileSuffix}` : ''}</p>
                   <p className="fac-profile-role">{profileDept}</p>
                 </div>
-                <div className={`prof-avatar ${profileStatus?.toLowerCase().replace(/\s+/g,'-')}`}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)' }}>{getInitials(profileName)}</span>
+                <div className={`prof-avatar ${profileStatus?.toLowerCase().replace(/\s+/g,'-')}`} style={{ '--prof-avatar-color': facAvatarColor }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fff' }}>{getInitials(profileName)}</span>
                 </div>
               </div>
             )}
@@ -1159,14 +1181,14 @@ const FacultyDashboard = () => {
 
         {/* Mobile topbar */}
         <div className="fac-mobile-topbar">
-          <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)} style={{ display: 'flex' }}>
-            <Menu size={24} />
+          <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)} style={{ display: 'flex', padding: '0.2rem' }}>
+            <Menu size={18} />
           </button>
-          <span style={{ fontWeight: 900, fontSize: '1.1rem', color: 'var(--accent, #2e4a87)' }}>Askademic</span>
-          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+          <span style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--accent, #2e4a87)' }}>Askademic</span>
+          <div style={{ display: 'flex', gap: '0.2rem', alignItems: 'center' }}>
             <button className="fac-topbar-icon-btn" onClick={() => setIsNotifOpen(!isNotifOpen)} style={{ position: 'relative' }}>
-              <Bell size={24} />
-              {unreadCount > 0 && <span style={{ position: 'absolute', top: 2, right: 2, background: '#ef4444', color: 'white', fontSize: '0.55rem', padding: '1px 4px', borderRadius: '50%', fontWeight: 700 }}>{unreadCount}</span>}
+              <Bell size={16} />
+              {unreadCount > 0 && <span style={{ position: 'absolute', top: 0, right: 0, background: '#ef4444', color: 'white', fontSize: '0.5rem', padding: '1px 3px', borderRadius: '50%', fontWeight: 700 }}>{unreadCount}</span>}
             </button>
           </div>
         </div>
@@ -1177,19 +1199,19 @@ const FacultyDashboard = () => {
             {renderContent()}
           </ErrorBoundary>
         </main>
-      </div>
 
-      {/* Mobile bottom nav — hidden for admin-bypass */}
-      {!isAdminBypass && (
-        <div className="bottom-nav">
+        {/* Mobile bottom nav — hidden for admin-bypass */}
+        {!isAdminBypass && (
+          <div className="bottom-nav">
           {[{ id: 'Dashboard', icon: Layout }, { id: 'Calendar', icon: CalendarDays }, { id: 'Requests', icon: Clock }].map((item) => (
             <button key={item.id} className={`bottom-nav-item ${activeTab === item.id ? 'active' : ''}`} onClick={() => handleActiveTabSet(item.id)}>
               <item.icon size={20} />
               <span className="bottom-nav-text">{item.id}</span>
             </button>
           ))}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       <NotificationCenter
         userId={user?.id}
@@ -1238,57 +1260,123 @@ const FacultyDashboard = () => {
         />
       )}
 
-      {isMobileMenuOpen && (
-        <div className="mobile-drawer">
-          <div className="drawer-header">
-            <span style={{ fontWeight: 900, fontSize: '1.2rem', color: 'var(--accent, #2e4a87)' }}>Askademic</span>
-            <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }} onClick={() => setIsMobileMenuOpen(false)}>
-              <CloseIcon size={28} />
-            </button>
-          </div>
-          <div className="mobile-profile-section">
-            <div className={`prof-avatar ${profileStatus?.toLowerCase().replace(/\s+/g,'-')}`} style={{ width: '52px', height: '52px' }}>
-              <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-secondary)' }}>{getInitials(profileName)}</span>
-            </div>
-            <div>
-              <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>{profileName}</p>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>{profileDept}</p>
-            </div>
-          </div>
-          <div className="drawer-links">
-            {navItems.map(({ id, icon: Icon }) => (
-              <button key={id} className={`drawer-link ${activeTab === id ? 'active' : ''}`} onClick={() => { handleActiveTabSet(id); setIsMobileMenuOpen(false); }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Icon size={22} /><span>{id}</span></div>
+      {(isMobileMenuOpen || isDrawerClosing) && (
+        <>
+          <div className={`mobile-drawer-overlay${isDrawerClosing ? ' closing' : ''}`} onClick={closeDrawer} />
+          <div className={`mobile-drawer${isDrawerClosing ? ' closing' : ''}`} onClick={e => e.stopPropagation()}>
+            <div className="drawer-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <img src={logo} alt="Askademic" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+                <span style={{ fontWeight: 900, fontSize: '1.2rem', color: '#fff' }}>Askademic</span>
+              </div>
+              <button onClick={closeDrawer} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>
+                <CloseIcon size={26} />
               </button>
-            ))}
-            <button className="drawer-link" onClick={() => { handleActiveTabSet('Settings'); setIsMobileMenuOpen(false); }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Settings size={22} /><span>Settings</span></div>
-            </button>
-            <button className="drawer-link" onClick={() => { openProfileModal(); setIsMobileMenuOpen(false); }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><User size={22} /><span>Edit Profile</span></div>
-            </button>
-            <button className="drawer-link" onClick={() => { setTermsReadOnly(true); setShowTerms(true); setIsMobileMenuOpen(false); }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><FileText size={22} /><span>Terms &amp; Policy</span></div>
-            </button>
+            </div>
+            <div className="mobile-profile-section">
+              <div style={{ width: 50, height: 50, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', overflow: 'hidden', background: facAvatarColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '1.2rem', flexShrink: 0 }}>
+                {getInitials(profileName)}
+              </div>
+              <div>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: '#fff' }}>{profileName}</p>
+                <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)' }}>{profileDept}</p>
+              </div>
+            </div>
+            {/* Availability status picker */}
+            <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 12, padding: '0.75rem 1rem', marginBottom: '1.25rem' }}>
+              <p style={{ margin: '0 0 0.5rem', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>Availability</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                {[
+                  { label: 'Available',     color: '#00c853' },
+                  { label: 'Busy',          color: '#ff1744' },
+                  { label: 'In a meeting',  color: '#ff9800' },
+                  { label: 'Out of office', color: '#616161' },
+                ].map(opt => (
+                  <button key={opt.label}
+                    onClick={() => { setProfileStatus(opt.label); saveStatusDebounced(user?.id, opt.label); toast.success(`Status set to ${opt.label}`); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', background: profileStatus === opt.label ? 'rgba(255,255,255,0.12)' : 'none', border: 'none', borderRadius: 8, padding: '0.45rem 0.5rem', cursor: 'pointer', width: '100%', fontFamily: 'Outfit, sans-serif' }}
+                  >
+                    <span style={{ width: 9, height: 9, borderRadius: '50%', background: opt.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.88rem', fontWeight: 600, color: profileStatus === opt.label ? '#fff' : 'rgba(255,255,255,0.6)', flex: 1, textAlign: 'left' }}>{opt.label}</span>
+                    {profileStatus === opt.label && <span style={{ fontSize: '0.75rem', color: opt.color, fontWeight: 700 }}>✓</span>}
+                  </button>
+                ))}
+              </div>
+
+              {/* Advanced settings toggle */}
+              <button
+                onClick={() => setIsDrawerAdvOpen(v => !v)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid rgba(255,255,255,0.1)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+              >
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.04em' }}>Advanced settings</span>
+                <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', transition: 'transform 0.2s', display: 'inline-block', transform: isDrawerAdvOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
+              </button>
+
+              {isDrawerAdvOpen && (
+                <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {/* Reset timer */}
+                  <div>
+                    <p style={{ margin: '0 0 0.4rem', fontSize: '0.7rem', color: 'rgba(255,255,255,0.45)', fontWeight: 600 }}>Reset to available after</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.35rem' }}>
+                      {['End of day', '30 min', '1 hour', '2 hours'].map(t => (
+                        <button key={t} onClick={() => setResetTimer(resetTimer === t ? null : t)}
+                          style={{ padding: '0.45rem 0.3rem', borderRadius: 8, border: '1.5px solid rgba(255,255,255,0.15)', fontFamily: 'Outfit, sans-serif', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', background: resetTimer === t ? 'rgba(255,255,255,0.18)' : 'transparent', color: resetTimer === t ? '#fff' : 'rgba(255,255,255,0.5)' }}
+                        >{t}</button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Out of office */}
+                  <div>
+                    <p style={{ margin: '0 0 0.4rem', fontSize: '0.7rem', color: 'rgba(255,255,255,0.45)', fontWeight: 600 }}>Out of office through</p>
+                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                      <input type="date" value={oooDate} onChange={e => setOooDate(e.target.value)}
+                        style={{ flex: 1, padding: '0.45rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(255,255,255,0.15)', fontFamily: 'Outfit, sans-serif', fontSize: '0.78rem', color: '#fff', background: 'rgba(255,255,255,0.08)', outline: 'none', colorScheme: 'dark' }}
+                      />
+                      <button onClick={async () => {
+                          if (!oooDate || !user?.id) return;
+                          const today2 = new Date();
+                          const fromDate = `${today2.getFullYear()}-${String(today2.getMonth()+1).padStart(2,'0')}-${String(today2.getDate()).padStart(2,'0')}`;
+                          const name = [profilePrefix, profileName, profileSuffix].filter(Boolean).join(' ') || 'Faculty';
+                          const result = await setOutOfOffice(user.id, fromDate, oooDate, name);
+                          setProfileStatus('Out of office');
+                          if (result?.cancelledCount > 0) {
+                            toast.success(`Out of office set. ${result.cancelledCount} appointment${result.cancelledCount !== 1 ? 's' : ''} cancelled and students notified.`);
+                          } else {
+                            toast.success('Out of office set. No appointments were affected.');
+                          }
+                          setOooDate('');
+                        }}
+                        style={{ padding: '0.45rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.12)', fontFamily: 'Outfit, sans-serif', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', color: '#fff' }}
+                      >Set</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="drawer-links">
+              {navItems.map(({ id, icon: Icon }) => (
+                <button key={id} className={`drawer-link ${activeTab === id ? 'active' : ''}`} onClick={() => { handleActiveTabSet(id); closeDrawer(); }}>
+                  <Icon size={20} /> <span>{id}</span>
+                </button>
+              ))}
+              <button className="drawer-link" onClick={() => { handleActiveTabSet('Settings'); closeDrawer(); }}>
+                <Settings size={20} /> <span>Settings</span>
+              </button>
+              <button className="drawer-link" onClick={() => { openProfileModal(); closeDrawer(); }}>
+                <User size={20} /> <span>Edit Profile</span>
+              </button>
+              <button className="drawer-link" onClick={() => { setTermsReadOnly(true); setShowTerms(true); closeDrawer(); }}>
+                <FileText size={20} /> <span>Terms &amp; Policy</span>
+              </button>
+            </div>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '1rem', paddingTop: '1rem' }}>
+              <button onClick={handleLogout}
+                style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%', background: 'none', border: '1px solid rgba(239,68,68,0.4)', color: '#f87171', padding: '0.75rem 0.8rem', borderRadius: '10px', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, fontFamily: 'Outfit, sans-serif', marginTop: '0.5rem' }}>
+                <LogOut size={20} /> Log Out
+              </button>
+            </div>
           </div>
-          <div style={{ marginTop: 'auto', padding: '2rem 0', borderTop: '1px solid var(--border-color)' }}>
-            <button onClick={handleLogout}
-              style={{
-                width: '100%',
-                padding: '1rem',
-                borderRadius: '12px',
-                border: '1px solid #ef4444',
-                background: 'transparent',
-                color: '#ef4444',
-                fontSize: '1rem',
-                fontWeight: 700,
-                cursor: 'pointer'
-              }}
-            >
-              Log Out
-            </button>
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

@@ -28,6 +28,7 @@ cloudflared.exe
 # Agentic and Local Metadata
 .agents/
 .gemini/
+.mcp.json
 .env
 .env.local
 

@@ -456,28 +456,31 @@ const pemStyles = `
   font-weight: 700;
 }
 
+/* ── Mobile keyboard fix ── */
 /* ── Mobile ── */
 @media (max-width: 580px) {
-  .pem-card { max-width: 100%; border-radius: 18px; min-height: unset; max-height: 95vh; }
+  .pem-overlay { align-items: flex-end; padding: 0; }
+  .pem-card { max-width: 100%; min-height: unset; max-height: 88vh; border-radius: 22px 22px 0 0; }
   .pem-body { flex-direction: column; }
   .pem-sidebar {
     width: 100%;
     flex-direction: row;
     flex-wrap: nowrap;
     overflow-x: auto;
-    padding: 0.55rem 0.75rem;
+    padding: 0.45rem 0.75rem;
     border-right: none;
     border-bottom: 1px solid var(--border-color);
     gap: 0.3rem;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
   .pem-sidebar::-webkit-scrollbar { display: none; }
   .pem-sidebar-group { display: contents; }
   .pem-sidebar-label { display: none; }
   .pem-sidebar-divider { display: none; }
   .pem-sidebar-spacer { display: none; }
-  .pem-sidebar-item { width: auto; flex-shrink: 0; padding: 0.38rem 0.65rem; font-size: 0.76rem; border-radius: 20px; }
-  .pem-sidebar-item .pem-nav-icon { width: 20px; height: 20px; }
+  .pem-sidebar-item { width: auto; flex-shrink: 0; white-space: nowrap; padding: 0.35rem 0.7rem; font-size: 0.74rem; border-radius: 20px; gap: 0.35rem; }
+  .pem-sidebar-item .pem-nav-icon { width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0; }
   .pem-sidebar-item .pem-nav-chevron { display: none; }
   .pem-sidebar-item.active { background: var(--accent, #2e4a87); color: #fff; }
   .pem-sidebar-item.active .pem-nav-icon { background: rgba(255,255,255,0.2); border-color: transparent; color: #fff; }
@@ -490,13 +493,14 @@ const pemStyles = `
     display: flex !important;
     position: sticky;
     bottom: 0;
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 1rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
     background: var(--card-bg, #fff);
     border-top: 1px solid var(--border-color);
     gap: 0.5rem;
   }
   .pem-mobile-save button { flex: 1; padding: 0.65rem; border-radius: 10px; font-family: inherit; font-weight: 700; font-size: 0.85rem; cursor: pointer; border: none; }
   .pem-mobile-save .save-btn { background: var(--accent, #2e4a87); color: #fff; }
+  .pem-mobile-save .save-btn:disabled { background: var(--border-color, #e5e8f0); color: var(--text-muted, #9ca3af); cursor: not-allowed; }
   .pem-mobile-save .cancel-btn { background: var(--bg-primary, #f0f2f8); border: 1px solid var(--border-color) !important; color: var(--text-secondary); }
 }
 .pem-mobile-save { display: none; }
@@ -534,42 +538,82 @@ export default function ProfileEditModal({
   const [title, setTitle]           = useState('');
   const [avatarUrl, setAvatarUrl]   = useState('');
 
+  const [origValues, setOrigValues] = useState(null);
+
+  const COLOR_PALETTE = [
+    '#2e4a87','#7c3aed','#0891b2','#0d9488',
+    '#d97706','#db2777','#059669','#dc2626',
+    '#64748b','#0ea5e9','#7c2d12','#4f46e5',
+  ];
+  const storageKey = userId ? `askademic_avatar_color_${userId}` : null;
+  const [avatarColor, setAvatarColor] = useState(() => {
+    if (storageKey) return localStorage.getItem(storageKey) || null;
+    return null;
+  });
+  const handleColorPick = (color) => {
+    setAvatarColor(color);
+    if (storageKey) localStorage.setItem(storageKey, color);
+    if (userId) updateProfile(userId, { avatar_color: color });
+  };
+
   useEffect(() => {
     if (!isOpen || !initialData) return;
     setActiveSection('profile');
     setSaved(false);
-    setPrefix(initialData.name_prefix || '');
-    setSuffix(initialData.name_suffix || '');
-    setAvatarUrl(initialData.avatar_url || '');
 
+    const p = initialData.name_prefix || '';
+    const s = initialData.name_suffix || '';
+    const av = initialData.avatar_url || '';
+    setPrefix(p);
+    setSuffix(s);
+    setAvatarUrl(av);
+
+    let fn = '', mn = '', ln = '', full = '', dp = '', ti = '';
     if (isFaculty) {
-      setFullName(initialData.full_name || '');
-      setDept(initialData.department || '');
-      setTitle(initialData.title || '');
+      full = initialData.full_name || '';
+      dp   = initialData.department || '';
+      ti   = initialData.title || '';
+      setFullName(full); setDept(dp); setTitle(ti);
     } else {
       const name = initialData.full_name || '';
       const parts = name.split(' ').filter(Boolean);
       if (parts.length >= 3) {
-        setFirstName(parts.slice(0, -2).join(' '));
-        setMiddleName(parts[parts.length - 2]);
-        setLastName(parts[parts.length - 1]);
+        fn = parts.slice(0, -2).join(' ');
+        mn = parts[parts.length - 2];
+        ln = parts[parts.length - 1];
       } else if (parts.length === 2) {
-        setFirstName(parts[0]);
-        setMiddleName('');
-        setLastName(parts[1]);
+        fn = parts[0]; mn = ''; ln = parts[1];
       } else {
-        setFirstName(name);
-        setMiddleName('');
-        setLastName('');
+        fn = name; mn = ''; ln = '';
       }
+      setFirstName(fn); setMiddleName(mn); setLastName(ln);
     }
+
+    setOrigValues({ prefix: p, suffix: s, avatarUrl: av, fullName: full, dept: dp, title: ti, firstName: fn, middleName: mn, lastName: ln });
   }, [isOpen, initialData, isFaculty]);
+
+  const isDirty = origValues ? (
+    prefix !== origValues.prefix ||
+    suffix !== origValues.suffix ||
+    (isFaculty
+      ? fullName !== origValues.fullName || dept !== origValues.dept || title !== origValues.title
+      : firstName !== origValues.firstName || middleName !== origValues.middleName || lastName !== origValues.lastName)
+  ) : false;
 
   const computedName = isFaculty
     ? fullName.trim()
     : `${firstName.trim()} ${middleName.trim()} ${lastName.trim()}`.replace(/\s+/g, ' ').trim();
 
   const displayName = [prefix, computedName, suffix].filter(Boolean).join(' ');
+
+  const AVATAR_PALETTE = ['#2e4a87','#7c3aed','#0891b2','#0d9488','#d97706','#db2777','#059669','#dc2626'];
+  const avatarBgColor = AVATAR_PALETTE[(computedName.charCodeAt(0) || 0) % AVATAR_PALETTE.length];
+
+  const handleInputFocus = (e) => {
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 320);
+  };
 
   const handleSave = async () => {
     if (!isFaculty && (!firstName.trim() || !lastName.trim())) {
@@ -627,7 +671,7 @@ export default function ProfileEditModal({
 
             <div className="pem-avatar-card">
               <div className="pem-avatar-wrap">
-                <div className="pem-avatar-circle">
+                <div className="pem-avatar-circle" style={{ background: avatarColor || avatarBgColor, color: '#fff', borderColor: avatarColor || avatarBgColor }}>
                   {getInitials(computedName) || <User size={26} strokeWidth={1.5} />}
                 </div>
                 <div className="pem-avatar-badge">
@@ -639,12 +683,33 @@ export default function ProfileEditModal({
               <div className="pem-avatar-details">
                 <p className="pem-avatar-name">{displayName || 'Your Name'}</p>
                 <p className="pem-avatar-meta">{isFaculty ? (dept || 'No department set') : 'Student'}</p>
-                <span className="pem-avatar-sync">
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 2v6h-6M3 12a9 9 0 0115-6.7L21 8M3 22v-6h6M21 12a9 9 0 01-15 6.7L3 16"/>
-                  </svg>
-                  Synced from Google
-                </span>
+              </div>
+            </div>
+
+            {/* Avatar color picker */}
+            <div style={{ marginTop: '0.8rem' }}>
+              <p style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.5rem' }}>
+                Avatar Color
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {COLOR_PALETTE.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => handleColorPick(color)}
+                    title={color}
+                    style={{
+                      width: 28, height: 28,
+                      borderRadius: '50%',
+                      background: color,
+                      border: (avatarColor || avatarBgColor) === color ? '3px solid var(--text-primary)' : '2px solid transparent',
+                      cursor: 'pointer',
+                      outline: (avatarColor || avatarBgColor) === color ? '2px solid #fff' : 'none',
+                      outlineOffset: '-4px',
+                      transition: 'transform 0.12s, border 0.12s',
+                      transform: (avatarColor || avatarBgColor) === color ? 'scale(1.15)' : 'scale(1)',
+                    }}
+                  />
+                ))}
               </div>
             </div>
 
@@ -697,7 +762,7 @@ export default function ProfileEditModal({
                     Prefix
                     {prefix && <span className="pem-label-hint" style={{ color: 'var(--accent, #2e4a87)' }}>{prefix}</span>}
                   </label>
-                  <select className="pem-select" value={prefix} onChange={e => setPrefix(e.target.value)}>
+                  <select className="pem-select" value={prefix} onChange={e => setPrefix(e.target.value)} onFocus={handleInputFocus}>
                     <option value="">None</option>
                     {Object.entries(PH_PREFIXES).map(([group, list]) => (
                       <optgroup key={group} label={group}>
@@ -713,7 +778,7 @@ export default function ProfileEditModal({
                   {suffix && <span className="pem-label-hint" style={{ color: 'var(--accent, #2e4a87)' }}>{suffix}</span>}
                 </label>
                 {isFaculty ? (
-                  <select className="pem-select" value={suffix} onChange={e => setSuffix(e.target.value)}>
+                  <select className="pem-select" value={suffix} onChange={e => setSuffix(e.target.value)} onFocus={handleInputFocus}>
                     <option value="">None</option>
                     {Object.entries(PH_SUFFIXES).map(([group, list]) => (
                       <optgroup key={group} label={group}>
@@ -722,7 +787,7 @@ export default function ProfileEditModal({
                     ))}
                   </select>
                 ) : (
-                  <select className="pem-select" value={suffix} onChange={e => setSuffix(e.target.value)}>
+                  <select className="pem-select" value={suffix} onChange={e => setSuffix(e.target.value)} onFocus={handleInputFocus}>
                     <option value="">None</option>
                     {STUDENT_SUFFIXES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -739,6 +804,7 @@ export default function ProfileEditModal({
                   className="pem-input"
                   value={fullName}
                   onChange={e => setFullName(e.target.value)}
+                  onFocus={handleInputFocus}
                   placeholder="e.g. Juan Dela Cruz"
                 />
                 <span className="pem-input-hint">This is shown on all appointments and the faculty directory.</span>
@@ -748,18 +814,18 @@ export default function ProfileEditModal({
                 <div className="pem-three-col">
                   <div className="pem-field" style={{ marginBottom: 0 }}>
                     <label className="pem-label">First</label>
-                    <input type="text" className="pem-input" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Juan" />
+                    <input type="text" className="pem-input" value={firstName} onChange={e => setFirstName(e.target.value)} onFocus={handleInputFocus} placeholder="Juan" />
                   </div>
                   <div className="pem-field" style={{ marginBottom: 0 }}>
                     <label className="pem-label">
                       Middle
                       <span className="pem-label-hint">optional</span>
                     </label>
-                    <input type="text" className="pem-input" value={middleName} onChange={e => setMiddleName(e.target.value)} placeholder="M." />
+                    <input type="text" className="pem-input" value={middleName} onChange={e => setMiddleName(e.target.value)} onFocus={handleInputFocus} placeholder="M." />
                   </div>
                   <div className="pem-field" style={{ marginBottom: 0 }}>
                     <label className="pem-label">Last</label>
-                    <input type="text" className="pem-input" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Dela Cruz" />
+                    <input type="text" className="pem-input" value={lastName} onChange={e => setLastName(e.target.value)} onFocus={handleInputFocus} placeholder="Dela Cruz" />
                   </div>
                 </div>
               </>
@@ -778,7 +844,7 @@ export default function ProfileEditModal({
             <div className="pem-divider"><span>Academic Role</span></div>
             <div className="pem-field">
               <label className="pem-label">Professional Title</label>
-              <select className="pem-select" value={title} onChange={e => setTitle(e.target.value)}>
+              <select className="pem-select" value={title} onChange={e => setTitle(e.target.value)} onFocus={handleInputFocus}>
                 <option value="">None / Not set</option>
                 {Object.entries(FACULTY_TITLES).map(([group, list]) => (
                   <optgroup key={group} label={group}>
@@ -797,6 +863,7 @@ export default function ProfileEditModal({
                 className="pem-input"
                 value={dept}
                 onChange={e => setDept(e.target.value)}
+                onFocus={handleInputFocus}
                 placeholder="e.g. College of Computing"
               />
               <span className="pem-input-hint">Students see this when browsing the faculty directory.</span>
@@ -863,7 +930,7 @@ export default function ProfileEditModal({
               <button
                 className={`pem-sidebar-save ${saved ? 'saved' : ''}`}
                 onClick={handleSave}
-                disabled={saving}
+                disabled={saving || !isDirty}
               >
                 {saving ? (
                   <>
@@ -890,7 +957,7 @@ export default function ProfileEditModal({
 
           <div className="pem-mobile-save">
             <button className="cancel-btn" onClick={onClose} style={{ display: forceComplete ? 'none' : undefined }}>Cancel</button>
-            <button className="save-btn" onClick={handleSave} disabled={saving}>
+            <button className="save-btn" onClick={handleSave} disabled={saving || !isDirty}>
               {saving ? 'Saving…' : saved ? 'Saved!' : 'Save Changes'}
             </button>
           </div>

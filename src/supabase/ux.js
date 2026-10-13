@@ -1,8 +1,9 @@
 import React from 'react';
+import { toast as sonnerToast } from 'sonner';
 
 // =============================================
 // 1. TOAST NOTIFICATION SYSTEM
-// Lightweight, no-dependency toast notifications
+// Delegates to Sonner for polished animated toasts
 // =============================================
 
 const TOAST_CONTAINER_ID = 'gcas-toast-container';
@@ -110,10 +111,10 @@ const showToast = (message, type, durationMs) => {
 };
 
 export const toast = {
-  success: (msg) => showToast(msg, 'success', 3000),
-  error: (msg) => showToast(msg, 'error', 5000),
-  warning: (msg) => showToast(msg, 'warning', 4000),
-  loading: (msg) => showToast(msg, 'loading', 0), // returns dismiss fn
+  success: (msg) => sonnerToast.success(msg),
+  error:   (msg) => sonnerToast.error(msg),
+  warning: (msg) => sonnerToast.warning(msg),
+  loading: (msg) => sonnerToast.loading(msg),
 };
 
 

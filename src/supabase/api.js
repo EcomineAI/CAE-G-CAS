@@ -162,7 +162,7 @@ export const getFacultyRequests = async (facultyId) => {
     .from('requests')
     .select(`
       *,
-      student:profiles!requests_student_id_fkey(full_name, avatar_url, email, name_prefix, name_suffix),
+      student:profiles!requests_student_id_fkey(full_name, avatar_url, avatar_color, email, name_prefix, name_suffix),
       schedule:schedules(day, start_time, end_time, max_slots, room)
     `)
     .eq('faculty_id', facultyId)
@@ -188,6 +188,7 @@ export const getFacultyRequests = async (facultyId) => {
       namePrefix: req.student?.name_prefix || '',
       nameSuffix: req.student?.name_suffix || '',
       avatar: req.student?.avatar_url || null,
+      avatarColor: req.student?.avatar_color || null,
       avatarSeed: req.student_id,
       day: req.schedule?.day || 'TBD',
       startTime: req.schedule?.start_time || null,
@@ -570,7 +571,7 @@ export const getAllRequestsAdmin = async () => {
 export const getAllFaculty = async () => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, avatar_url, status, department, name_prefix, name_suffix')
+    .select('id, full_name, avatar_url, avatar_color, status, department, name_prefix, name_suffix')
     .eq('role', 'faculty')
     .neq('full_name', 'Admin')
     .order('full_name', { ascending: true });
@@ -592,6 +593,7 @@ export const getAllFaculty = async () => {
       namePrefix: prefix,
       nameSuffix: suffix,
       avatar: f.avatar_url || null,
+      avatarColor: f.avatar_color || null,
       status: f.status || 'Available',
       dept: f.department || 'Faculty'
     };
@@ -646,6 +648,51 @@ export const deleteRequest = async (id, role = 'student') => {
     return false;
   }
   return true;
+};
+
+/**
+ * Restore a soft-deleted request (un-archive).
+ */
+export const restoreRequest = async (id, role = 'student') => {
+  const column = role === 'faculty' ? 'is_faculty_deleted' : 'is_student_deleted';
+  const { error } = await supabase
+    .from('requests')
+    .update({ [column]: false, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) { logError('Error restoring request:', error); return false; }
+  return true;
+};
+
+/**
+ * Get archived (soft-deleted) requests for a student or faculty member.
+ */
+export const getArchivedRequests = async (userId, role = 'student') => {
+  const isStudent = role === 'student';
+  const col = isStudent ? 'student_id' : 'faculty_id';
+  const deletedCol = isStudent ? 'is_student_deleted' : 'is_faculty_deleted';
+  const joinCol = isStudent
+    ? 'faculty:profiles!requests_faculty_id_fkey(full_name, name_prefix, name_suffix)'
+    : 'student:profiles!requests_student_id_fkey(full_name)';
+
+  const { data, error } = await supabase
+    .from('requests')
+    .select(`id, status, subject, request_date, updated_at, ${joinCol}`)
+    .eq(col, userId)
+    .eq(deletedCol, true)
+    .order('updated_at', { ascending: false });
+
+  if (error) { logError('Error fetching archived requests:', error); return []; }
+
+  return (data || []).map(r => ({
+    id: r.id,
+    status: r.status,
+    subject: r.subject || '—',
+    date: r.request_date,
+    updatedAt: r.updated_at,
+    otherParty: isStudent
+      ? [r.faculty?.name_prefix, r.faculty?.full_name, r.faculty?.name_suffix].filter(Boolean).join(' ')
+      : (r.student?.full_name || '—'),
+  }));
 };
 
 /**

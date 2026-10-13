@@ -20,6 +20,17 @@ const facultyCalStyles = `
 }
 .fcp-layout .sc-right { height: 100%; overflow-y: auto; }
 
+/* Stack right panel below calendar when viewport is too narrow */
+@media (max-width: 1200px) {
+  .fcp-layout {
+    flex-direction: column;
+    width: 100%;
+    gap: 1rem;
+  }
+  .fcp-layout .sc-left  { flex: none !important; width: 100% !important; }
+  .fcp-layout .sc-right { flex: none !important; width: 100% !important; height: auto !important; overflow-y: visible !important; }
+}
+
 /* Action buttons passed into calendar header */
 .fcp-actions { display: flex; gap: 0.4rem; margin-left: auto; }
 .fcp-action-btn {
@@ -832,7 +843,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
                             const st = STATUS_STYLES[r.status] || STATUS_STYLES.Cancelled;
                             return (
                               <div key={r.id || ri} className="fcp-student-row">
-                                <div className="fcp-student-avatar">
+                                <div className="fcp-student-avatar" style={r.avatarColor ? { background: r.avatarColor, color: '#fff' } : {}}>
                                   <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>{getInitials(r.name || r.studentName)}</span>
                                 </div>
                                 <span className="fcp-student-name">{r.name || r.studentName || '—'}</span>
@@ -849,7 +860,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
                         const st = STATUS_STYLES[r.status] || STATUS_STYLES.Cancelled;
                         return (
                           <div key={r.id || idx} className="fcp-student-row" style={{ paddingLeft: '1rem' }}>
-                            <div className="fcp-student-avatar">
+                            <div className="fcp-student-avatar" style={r.avatarColor ? { background: r.avatarColor, color: '#fff' } : {}}>
                               <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>{getInitials(r.name || r.studentName)}</span>
                             </div>
                             <span className="fcp-student-name">{r.name || r.studentName || '—'}</span>

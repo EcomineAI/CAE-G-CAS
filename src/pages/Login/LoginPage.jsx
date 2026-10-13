@@ -414,6 +414,26 @@ const LoginPage = () => {
           margin-top: 0.7rem; font-weight: 500;
           letter-spacing: 0.04em;
         }
+
+        /* ── Mobile compact ── */
+        @media (max-width: 600px) {
+          .lp-shell { align-items: flex-start; padding: 0.75rem; padding-top: 8vh; }
+          .lp-card { padding: 1.6rem 1.4rem 1.4rem; border-radius: 20px; max-width: 340px; }
+          .lp-logo-wrap { width: 56px; height: 56px; margin-bottom: 0.6rem; }
+          .lp-logo-wrap img { width: 56px; height: 56px; }
+          .lp-logo-glint { width: 56px; height: 56px; -webkit-mask-size: 56px 56px; mask-size: 56px 56px; }
+          .lp-title { font-size: 1.55rem; margin-bottom: 0.15rem; }
+          .lp-sub { font-size: 0.72rem; }
+          .lp-brand { margin-bottom: 1rem; }
+          .lp-role-hint { font-size: 0.67rem; padding: 3px 10px; margin-bottom: 0.75rem; }
+          .lp-label { font-size: 0.78rem; margin-bottom: 0.28rem; }
+          .lp-input { padding: 0.58rem 0.9rem 0.58rem 2.4rem; font-size: 0.85rem; border-radius: 9px; }
+          .lp-field { margin-bottom: 0.75rem; }
+          .lp-btn { padding: 0.68rem; font-size: 0.95rem; border-radius: 9px; margin-top: 0.25rem; }
+          .lp-terms-btn { font-size: 0.74rem; margin-top: 0.65rem; }
+          .lp-footer { font-size: 0.63rem; margin-top: 0.4rem; }
+          .lp-error { padding: 0.5rem 0.75rem; font-size: 0.78rem; margin-bottom: 0.7rem; border-radius: 9px; }
+        }
       `}</style>
 
       <div className="lp-shell">

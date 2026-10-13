@@ -68,16 +68,28 @@ const facultyStyles = `
 .faculty-grid.mode-grid    { grid-template-columns: repeat(2, 1fr); gap: 0.85rem; }
 .faculty-grid.mode-compact { grid-template-columns: repeat(4, 1fr); gap: 0.6rem; }
 
-/* List mode — wider cards */
-.faculty-grid.mode-list .faculty-card { padding: 1rem 1.4rem; }
+/* List mode — ticket layout, no extra card padding */
+.faculty-grid.mode-list .faculty-card { padding: 0; }
+.faculty-grid.mode-list .faculty-ticket-stub { width: 90px; padding: 1.1rem 0; }
+.faculty-grid.mode-list .faculty-ticket-sep::before,
+.faculty-grid.mode-list .faculty-ticket-sep::after { display: none; }
 .faculty-grid.mode-list .faculty-avatar { width: 58px; height: 58px; font-size: 1.3rem; }
 .faculty-grid.mode-list .faculty-name  { font-size: 1rem; }
 .faculty-grid.mode-list .faculty-dept  { font-size: 0.78rem; }
 
-/* Compact mode — small tiles */
+/* Compact mode — vertical card, hide sep (collapses in column layout) */
 .faculty-grid.mode-compact .faculty-card {
-  flex-direction: column; align-items: center;
-  text-align: center; padding: 1rem 0.6rem; gap: 0.45rem;
+  flex-direction: column; align-items: stretch;
+  text-align: center; padding: 0; gap: 0;
+}
+.faculty-grid.mode-compact .faculty-ticket-sep { display: none; }
+.faculty-grid.mode-compact .faculty-ticket-stub {
+  width: 100%; flex-direction: row; justify-content: center;
+  padding: 0.9rem 0 0.7rem; gap: 0.5rem;
+  border-radius: 0;
+}
+.faculty-grid.mode-compact .faculty-ticket-main {
+  align-items: center; padding: 0.4rem 0.6rem 0.8rem;
 }
 .faculty-grid.mode-compact .faculty-avatar { width: 46px; height: 46px; font-size: 1rem; }
 .faculty-grid.mode-compact .faculty-name   { font-size: 0.76rem; white-space: normal; text-align: center; }
@@ -107,23 +119,99 @@ const facultyStyles = `
 .fc-layout-btn.active { background: #1a2d5a; color: #fff; }
 
 @media (max-width: 600px) {
+  .fc-layout-btn-grid-only { display: none; }
+}
+
+@media (max-width: 600px) {
   .faculty-grid.mode-compact { grid-template-columns: repeat(2, 1fr); }
 }
 
+@media (max-width: 768px) {
+  .faculty-header { border-radius: 12px; padding: 0.6rem 0.9rem; margin-bottom: 0.75rem; }
+  .faculty-header p.subtitle { font-size: 0.7rem; }
+  .search-box-faculty { margin-bottom: 0.75rem; }
+  .search-icon-faculty { left: 0.75rem; }
+  .search-box-faculty input { padding: 0.45rem 0.75rem 0.45rem 2.1rem; font-size: 0.75rem; border-radius: 8px; }
+  .fc-layout-bar { margin-bottom: 0.5rem; }
+  .fc-layout-count { font-size: 0.68rem; }
+  .fc-layout-btns { padding: 2px; border-radius: 7px; }
+  .fc-layout-btn { width: 26px; height: 22px; border-radius: 5px; }
+  .faculty-grid.mode-list { gap: 0.4rem; }
+  .faculty-ticket-stub { width: 68px; padding: 0.7rem 0; gap: 0.3rem; }
+  .faculty-ticket-main { padding: 0.6rem 0.75rem; gap: 0.22rem; }
+  .faculty-avatar { width: 42px; height: 42px; }
+  .faculty-name { font-size: 0.78rem; margin-bottom: 0.05rem; }
+  .faculty-dept { font-size: 0.63rem; margin-bottom: 0.2rem; }
+  .faculty-next-slot { font-size: 0.62rem; gap: 0.25rem; }
+  .faculty-status-row { font-size: 0.62rem; gap: 0.25rem; margin-bottom: 0.1rem; }
+  .faculty-status-dot { width: 6px; height: 6px; }
+  .request-btn { padding: 0.28rem 0.75rem; font-size: 0.68rem; border-radius: 7px; }
+  .faculty-grid.mode-list .faculty-ticket-stub { width: 72px; padding: 0.75rem 0; }
+  .faculty-grid.mode-list .faculty-avatar { width: 44px; height: 44px; font-size: 1rem; }
+  .faculty-grid.mode-list .faculty-name { font-size: 0.82rem; }
+}
+
+/* ── Ticket-shaped faculty card ── */
 .faculty-card {
   background: var(--card-bg, #fff);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-color, #e5e8f0);
   border-radius: 14px;
-  padding: 1rem 1.1rem;
   display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  box-shadow: var(--shadow);
+  align-items: stretch;
+  overflow: hidden;
+  box-shadow: var(--shadow, 0 1px 6px rgba(0,0,0,0.06));
   transition: box-shadow 0.15s, border-color 0.15s;
+  position: relative;
 }
 .faculty-card:hover {
   box-shadow: 0 4px 18px rgba(0,0,0,0.1);
   border-color: var(--accent, #2e4a87);
+}
+
+/* Stub (left section) */
+.faculty-ticket-stub {
+  width: 82px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 1rem 0;
+  background: var(--accent-light, #eef1fa);
+}
+
+/* Dashed separator with semicircle notches */
+.faculty-ticket-sep {
+  width: 1px;
+  flex-shrink: 0;
+  background: none;
+  border-left: 2px dashed var(--border-color, #c7d2fe);
+  position: relative;
+}
+.faculty-ticket-sep::before,
+.faculty-ticket-sep::after {
+  content: '';
+  position: absolute;
+  left: 50%; transform: translateX(-50%);
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--bg, #f0f2f8);
+  border: 1px solid var(--border-color, #e5e8f0);
+  z-index: 2;
+}
+.faculty-ticket-sep::before { top: -9px; }
+.faculty-ticket-sep::after  { bottom: -9px; }
+
+/* Main content (right section) */
+.faculty-ticket-main {
+  flex: 1;
+  min-width: 0;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.35rem;
 }
 
 .faculty-avatar {
@@ -1240,7 +1328,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
                   <button
                     key={mode}
                     title={label}
-                    className={`fc-layout-btn${layoutMode === mode ? ' active' : ''}`}
+                    className={`fc-layout-btn${layoutMode === mode ? ' active' : ''}${mode === 'grid' ? ' fc-layout-btn-grid-only' : ''}`}
                     onClick={() => { setLayoutMode(mode); localStorage.setItem('gcas_faculty_layout', mode); }}
                   >
                     <Icon size={14} />
@@ -1296,46 +1384,48 @@ const FacultyContent = ({ initialFacultyId = null }) => {
 
               return (
                 <div className="faculty-card" key={idx}>
-                  <div className="faculty-avatar">
-                    <span style={{ color: '#fff', fontWeight: 700, fontSize: '1rem', letterSpacing: '0.02em' }}>
-                      {getInitials(faculty.name)}
-                    </span>
+                  {/* Stub: avatar + status dot */}
+                  <div className="faculty-ticket-stub">
+                    <div className="faculty-avatar" style={faculty.avatarColor ? { background: faculty.avatarColor } : {}}>
+                      <span style={{ color: '#fff', fontWeight: 700, fontSize: '1rem' }}>
+                        {getInitials(faculty.name)}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.62rem', fontWeight: 700, color: statusColor || '#00c853' }}>
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor || '#00c853', flexShrink: 0, display: 'inline-block' }} />
+                      {isOoo ? 'OOO' : isUnavailable ? 'N/A' : isBusy ? 'Busy' : 'Available'}
+                    </div>
                   </div>
 
-                  <div className="faculty-info">
-                    <p className="faculty-name">{faculty.name}</p>
-                    <p className="faculty-dept">{faculty.dept}</p>
-                    {statusLabel ? (
-                      <div className="faculty-status-row" style={{ color: statusColor }}>
-                        <XCircle size={12} color={statusColor} />
-                        {statusLabel}
-                      </div>
-                    ) : null}
-                    {faculty.nextSlot ? (
-                      <div className="faculty-next-slot">
-                        <Clock size={11} />
-                        Next: {faculty.nextSlot}
-                      </div>
-                    ) : !statusLabel ? (
-                      <div className="faculty-next-slot" style={{ color: 'var(--text-muted)' }}>
-                        <Clock size={11} />
-                        No schedule set
-                      </div>
-                    ) : (
-                      <div className="faculty-next-slot" style={{ color: 'var(--text-muted)' }}>
-                        No schedule set
-                      </div>
-                    )}
-                  </div>
+                  {/* Dashed separator with notches */}
+                  <div className="faculty-ticket-sep" />
 
-                  <button
-                    className="request-btn"
-                    onClick={() => handleRequestAppointment(faculty)}
-                    disabled={isUnavailable}
-                    aria-label={isUnavailable ? `${faculty.name} is currently unavailable` : `Book appointment with ${faculty.name}`}
-                  >
-                    Book
-                  </button>
+                  {/* Main: name, dept, slot, button */}
+                  <div className="faculty-ticket-main">
+                    <div className="faculty-info">
+                      <p className="faculty-name">{faculty.name}</p>
+                      <p className="faculty-dept">{faculty.dept}</p>
+                      {faculty.nextSlot ? (
+                        <div className="faculty-next-slot">
+                          <Clock size={11} />
+                          Next: {faculty.nextSlot}
+                        </div>
+                      ) : (
+                        <div className="faculty-next-slot" style={{ color: 'var(--text-muted)' }}>
+                          <Clock size={11} />
+                          No schedule set
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      className="request-btn"
+                      onClick={() => handleRequestAppointment(faculty)}
+                      disabled={isUnavailable}
+                      style={{ alignSelf: 'flex-start', marginTop: '0.1rem' }}
+                    >
+                      Book
+                    </button>
+                  </div>
                 </div>
               );
             })}

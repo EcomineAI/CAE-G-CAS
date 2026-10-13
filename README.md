@@ -59,7 +59,18 @@ Create a centralized management system that reduces uncertainty by providing rea
 
 ---
 
-## 📈 Latest Updates (v0.9.0) — October 7, 2026 — **FACS Rebrand & Unified Experience**
+## 📈 Latest Updates (v0.15.0) — October 13, 2026 — **Mobile UX Polish & Avatar Color Sync**
+
+- **📱 Mobile Stat Cards:** Smaller, tighter stat cards on mobile for both student and faculty dashboards. Next appointment card spans full width on mobile.
+- **🟢 Faculty Mobile Topbar:** Replaced "Askademic" text with logo image. Added live availability dot + label button in the mobile topbar.
+- **🎨 Dark Mobile Drawer:** Faculty mobile sidebar redesigned to match student's navy `#00004e` dark drawer, with availability status section and Advanced settings (reset timer + OOO date picker).
+- **🔔 Toast & Notification Position:** Toast notifications moved to `top-center`. NotificationCenter popup repositioned to top of screen on mobile.
+- **👤 ProfileEditModal Fixes:** Tab chips no longer cut off (horizontal scroll). Bottom sheet layout on mobile. Keyboard avoidance via `scrollIntoView`. Home indicator safe area padding. Save button only activates when a field is actually changed (`isDirty` pattern).
+- **🔗 Edit Profile & Terms in Student Drawer:** Added Edit Profile and Terms & Policy buttons to the student mobile sidebar.
+- **🎨 Avatar Color Sync (Supabase):** Avatar color now stored in `profiles.avatar_color` (Supabase DB) and synced across all platforms and devices — no longer localStorage-only. Color propagates to: student/faculty sidebar avatars, faculty directory cards, Live Availability section, Faculty Requests list, Faculty Calendar student rows.
+- **🖼️ Rebrand: G-CAS → Askademic:** App name updated to "Askademic" across UI.
+
+### Previous: v0.9.0 — October 7, 2026 — **FACS Rebrand & Unified Experience**
 
 - **🔀 Rebrand: G-CAS → FACS** — *Faculty Appointment & Consultation System*. New navy "F" book logo across the entire app.
 - **🔑 Unified Login (#login):** Removed the separate student/faculty login screens. One login page for everyone. Role is now fetched from `profiles.role` instead of being derived from the email pattern.

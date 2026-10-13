@@ -132,67 +132,43 @@ const NotificationCenter = ({ userId, isOpen, onClose, role = 'Student', onNotif
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'transparent', zIndex: 1500 }} onClick={onClose}>
       <style>{`
-        .nc-panel {
-          position: fixed;
-          top: 72px;
-          right: 22px;
-          width: 380px;
-          max-height: 560px;
-          background: var(--card-bg, #fff);
-          border: 1px solid var(--border-color, #e5e8f0);
-          border-radius: 18px;
-          box-shadow: 0 8px 40px rgba(0,0,0,0.18);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          animation: ncSlideIn 0.2s ease;
-          font-family: 'Outfit', sans-serif;
-        }
         @keyframes ncSlideIn {
           from { transform: translateY(-8px); opacity: 0; }
           to   { transform: translateY(0);    opacity: 1; }
         }
 
-        /* Header */
-        .nc-header {
-          padding: 1.1rem 1.2rem 0 1.2rem;
+        /* ── Panel (mobile-first) ── */
+        .nc-panel {
+          position: fixed;
+          top: 58px; right: 10px;
+          width: 260px; max-height: 310px;
           background: var(--card-bg, #fff);
+          border: 1px solid var(--border-color, #e5e8f0);
+          border-radius: 14px;
+          box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+          display: flex; flex-direction: column;
+          overflow: hidden;
+          animation: ncSlideIn 0.2s ease;
+          font-family: 'Outfit', sans-serif;
         }
-        .nc-title {
-          font-size: 1.15rem; font-weight: 800;
-          color: var(--text-primary, #1a2d5a);
-          margin: 0 0 0.8rem 0;
-        }
-        .nc-tabs {
-          display: flex; gap: 0.5rem;
-          padding-bottom: 0.85rem;
-          border-bottom: 1px solid var(--border-color, #e5e8f0);
-        }
-        .nc-tab {
-          padding: 0.3rem 1.1rem; border-radius: 20px;
-          font-size: 0.82rem; font-weight: 700;
-          cursor: pointer; border: 1.5px solid transparent;
-          font-family: inherit; transition: all 0.15s;
-        }
-        .nc-tab.active {
-          background: #1a2d5a; color: #fff; border-color: #1a2d5a;
-        }
-        .nc-tab.inactive {
-          background: transparent; color: var(--text-primary, #1a2d5a);
-          border-color: var(--border-color, #d1d5db);
-        }
+
+        /* Header */
+        .nc-header { padding: 0.55rem 0.75rem 0 0.75rem; background: var(--card-bg, #fff); }
+        .nc-title { font-size: 0.75rem; font-weight: 800; color: var(--text-primary, #1a2d5a); margin: 0 0 0.3rem 0; }
+        .nc-tabs { display: flex; gap: 0.3rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border-color, #e5e8f0); }
+        .nc-tab { padding: 0.12rem 0.55rem; border-radius: 20px; font-size: 0.62rem; font-weight: 700; cursor: pointer; border: 1.5px solid transparent; font-family: inherit; transition: all 0.15s; }
+        .nc-tab.active { background: #1a2d5a; color: #fff; border-color: #1a2d5a; }
+        .nc-tab.inactive { background: transparent; color: var(--text-primary, #1a2d5a); border-color: var(--border-color, #d1d5db); }
         .nc-tab.inactive:hover { border-color: #1a2d5a; }
 
         /* List */
         .nc-list { flex: 1; overflow-y: auto; scrollbar-width: none; }
         .nc-list::-webkit-scrollbar { display: none; }
-
         .nc-item {
-          display: flex; align-items: flex-start; gap: 0.85rem;
-          padding: 0.9rem 1.2rem;
+          display: flex; align-items: center; gap: 0.5rem;
+          padding: 0.45rem 0.75rem;
           border-bottom: 1px solid var(--border-color, #e5e8f0);
           cursor: pointer; transition: background 0.15s;
-          position: relative;
           background: var(--card-bg, #fff);
         }
         .nc-item:last-child { border-bottom: none; }
@@ -201,67 +177,52 @@ const NotificationCenter = ({ userId, isOpen, onClose, role = 'Student', onNotif
         .dark .nc-item.unread { background: rgba(91,128,196,0.12); }
 
         /* Avatar */
-        .nc-avatar {
-          width: 46px; height: 46px; border-radius: 50%;
-          background: #b2e0e0;
-          flex-shrink: 0; position: relative;
-          display: flex; align-items: center; justify-content: center;
-        }
-        .nc-avatar-icon {
-          width: 20px; height: 20px; border-radius: 50%;
-          position: absolute; bottom: 0; right: 0;
-          display: flex; align-items: center; justify-content: center;
-          border: 2px solid var(--card-bg, #fff);
-        }
+        .nc-avatar { width: 28px; height: 28px; border-radius: 50%; background: #b2e0e0; flex-shrink: 0; position: relative; display: flex; align-items: center; justify-content: center; }
+        .nc-avatar-icon { width: 12px; height: 12px; border-radius: 50%; position: absolute; bottom: 0; right: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-bg, #fff); }
 
         /* Content */
         .nc-body { flex: 1; min-width: 0; }
-        .nc-label {
-          font-size: 0.88rem; font-weight: 700;
-          color: var(--text-primary, #1a2d5a);
-          margin: 0 0 0.2rem 0;
-        }
-        .nc-msg {
-          font-size: 0.78rem; color: var(--text-secondary, #4b5563);
-          line-height: 1.45; margin: 0 0 0.25rem 0;
-        }
-        .nc-time {
-          font-size: 0.7rem; color: var(--text-muted, #9ca3af); margin: 0;
-        }
+        .nc-label { font-size: 0.65rem; font-weight: 700; color: var(--text-primary, #1a2d5a); margin: 0 0 0.08rem 0; }
+        .nc-msg { font-size: 0.58rem; color: var(--text-secondary, #4b5563); line-height: 1.25; margin: 0 0 0.08rem 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .nc-time { font-size: 0.54rem; color: var(--text-muted, #9ca3af); margin: 0; }
 
         /* Unread dot */
-        .nc-dot {
-          width: 10px; height: 10px; border-radius: 50%;
-          background: #1a2d5a; flex-shrink: 0; margin-top: 4px;
-        }
+        .nc-dot { width: 6px; height: 6px; border-radius: 50%; background: #1a2d5a; flex-shrink: 0; }
         .dark .nc-dot { background: #7ba4e0; }
 
         /* Footer */
         .nc-footer {
-          padding: 0.9rem;
+          padding: 0.5rem;
           border-top: 1px solid var(--border-color, #e5e8f0);
           background: var(--card-bg, #fff);
           display: flex; align-items: center; justify-content: center;
           gap: 1rem;
         }
-        .nc-view-all {
-          font-size: 0.9rem; font-weight: 700;
-          color: #1a2d5a; background: none; border: none;
-          cursor: pointer; font-family: inherit;
-          text-decoration: none;
-        }
+        .nc-view-all { font-size: 0.62rem; font-weight: 700; color: #1a2d5a; background: none; border: none; cursor: pointer; font-family: inherit; text-decoration: none; }
         .dark .nc-view-all { color: #7ba4e0; }
         .nc-view-all:hover { text-decoration: underline; }
-        .nc-mark-all {
-          font-size: 0.78rem; font-weight: 600;
-          color: var(--text-muted, #9ca3af); background: none; border: none;
-          cursor: pointer; font-family: inherit;
-        }
+        .nc-mark-all { font-size: 0.6rem; font-weight: 600; color: var(--text-muted, #9ca3af); background: none; border: none; cursor: pointer; font-family: inherit; }
         .nc-mark-all:hover { color: var(--text-primary, #1a2d5a); }
+        .nc-empty { padding: 1.5rem 1rem; text-align: center; color: var(--text-muted, #9ca3af); font-size: 0.65rem; }
 
-        .nc-empty {
-          padding: 3rem 1rem; text-align: center;
-          color: var(--text-muted, #9ca3af); font-size: 0.85rem;
+        /* ── Desktop overrides ── */
+        @media (min-width: 769px) {
+          .nc-panel { top: 72px; right: 22px; width: 380px; max-height: 560px; border-radius: 18px; }
+          .nc-header { padding: 1.1rem 1.2rem 0 1.2rem; }
+          .nc-title { font-size: 1.15rem; margin-bottom: 0.8rem; }
+          .nc-tabs { padding-bottom: 0.85rem; gap: 0.5rem; }
+          .nc-tab { padding: 0.3rem 1.1rem; font-size: 0.82rem; }
+          .nc-item { padding: 0.9rem 1.2rem; gap: 0.85rem; align-items: flex-start; }
+          .nc-avatar { width: 46px; height: 46px; }
+          .nc-avatar-icon { width: 20px; height: 20px; border-width: 2px; }
+          .nc-label { font-size: 0.88rem; margin-bottom: 0.2rem; }
+          .nc-msg { font-size: 0.78rem; line-height: 1.45; white-space: normal; }
+          .nc-time { font-size: 0.7rem; }
+          .nc-dot { width: 10px; height: 10px; margin-top: 4px; }
+          .nc-footer { padding: 0.9rem; }
+          .nc-view-all { font-size: 0.9rem; }
+          .nc-mark-all { font-size: 0.78rem; }
+          .nc-empty { padding: 3rem 1rem; font-size: 0.85rem; }
         }
       `}</style>
 

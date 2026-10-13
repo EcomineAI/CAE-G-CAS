@@ -142,10 +142,35 @@ const S = `
   display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
 }
 
+/* iPad portrait */
+@media (max-width: 768px) {
+  .fdc-wrap { gap: 0.9rem; }
+  .fdc-metrics { gap: 0.5rem; }
+  .fdc-metric { padding: 0.75rem 0.9rem; gap: 0.1rem; }
+  .fdc-metric-num { font-size: 1.5rem; }
+  .fdc-metric-label { font-size: 0.7rem; }
+  .fdc-metric-sub { font-size: 0.67rem; }
+  .fdc-metric-date { font-size: 1rem; }
+  .fdc-metric-who { font-size: 0.67rem; }
+  .fdc-metric--next { grid-column: 1 / -1; padding-top: calc(0.75rem + 15px); padding-bottom: calc(0.75rem + 15px); }
+}
+/* Large phones */
 @media (max-width: 700px) {
   .fdc-metrics { grid-template-columns: 1fr 1fr; }
   .fdc-req-row, .fdc-upcoming-row { flex-wrap: wrap; }
   .fdc-req-actions { width: 100%; justify-content: flex-end; }
+}
+/* iPhone */
+@media (max-width: 430px) {
+  .fdc-metrics { grid-template-columns: 1fr 1fr; }
+  .fdc-metric { padding: 0.65rem 0.75rem; }
+  .fdc-metric-num { font-size: 1.35rem; }
+  .fdc-section { padding: 1rem 1rem; }
+  .fdc-req-row, .fdc-upcoming-row { padding: 0.8rem 1rem; }
+}
+/* Large monitors */
+@media (min-width: 1440px) {
+  .fdc-metrics { gap: 1.2rem; }
 }
 
 /* Decline modal */
@@ -343,7 +368,7 @@ const FacultyDashboardContent = ({ onTabChange }) => {
           {loading ? <div className="fdc-skel" style={{ height: 36, width: 60, margin: '0.2rem 0' }} /> : <span className="fdc-metric-num blue">{approvedCount}</span>}
           <span className="fdc-metric-sub">Approved appointments</span>
         </button>
-        <button className="fdc-metric" onClick={() => nextAppt && onTabChange('Calendar')}>
+        <button className="fdc-metric fdc-metric--next" onClick={() => nextAppt && onTabChange('Calendar')}>
           <span className="fdc-metric-label">Next appointment</span>
           {loading ? (
             <>

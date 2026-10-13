@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import LoginPage from './pages/Login/LoginPage';
 import StudentDashboard from './pages/student/StudentDashboard';
 import StudentRequest from './pages/student/StudentRequest';
@@ -253,6 +254,7 @@ function App() {
   return (
     <>
       <style>{appStyles}</style>
+      <Toaster position="top-center" richColors closeButton toastOptions={{ style: { fontFamily: 'Outfit, system-ui, sans-serif' } }} />
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/login" element={<LoginPage />} />
