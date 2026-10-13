@@ -373,6 +373,9 @@ const facultyDashStyles = `
   background-position: center;
   background-attachment: fixed;
 }
+@media (min-width: 769px) {
+  .faculty-main-content { zoom: 1.18; }
+}
 .faculty-main-content::-webkit-scrollbar { display: none; }
 
 /* ── Legacy classes (kept for child component compatibility) ── */
