@@ -633,7 +633,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
   }
 
   const activityItems = [
-    { label: 'Approved',  key: 'Approved',  dotColor: '#3b82f6', badgeBg: '#dbeafe', badgeColor: '#1e3a8a', filter: 'Approved' },
+    { label: 'Approved',  key: 'Approved',  dotColor: '#00c853', badgeBg: '#dcfce7', badgeColor: '#14532d', filter: 'Approved' },
     { label: 'Pending',   key: 'Pending',   dotColor: '#d97706', badgeBg: '#fef3c7', badgeColor: '#7c5200', filter: 'Pending' },
     { label: 'Declined',  key: 'Declined',  dotColor: '#f87171', badgeBg: '#fee2e2', badgeColor: '#b91c1c', filter: 'History' },
     { label: 'Cancelled', key: 'Cancelled', dotColor: '#9ca3af', badgeBg: '#f3f4f6', badgeColor: '#374151', filter: 'History' },

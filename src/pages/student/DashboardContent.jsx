@@ -217,7 +217,7 @@ const DashboardContent = ({ onTabChange, realName }) => {
           font-size: 0.72rem; color: rgba(255,255,255,0.75);
         }
         .dc-next-badge {
-          background: #22c55e; color: #fff;
+          background: #00c853; color: #fff;
           font-size: 0.54rem; font-weight: 800; letter-spacing: 0.1em;
           padding: 0.18rem 0.55rem; border-radius: 20px; text-transform: uppercase;
           white-space: nowrap;

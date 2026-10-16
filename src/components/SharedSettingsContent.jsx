@@ -119,10 +119,11 @@ const SharedSettingsContent = ({
   const name     = profileData?.full_name || '—';
   const email    = userEmail || profileData?.email || '';
   const idFromEmail = email ? email.split('@')[0] : '—';
-  const program  = profileData?.program || '—';
+  const programRaw = profileData?.program || '';
+  const programAbbr = programRaw ? ((programRaw.match(/\(([^)]+)\)/) || [])[1] || programRaw) : '—';
   const section  = profileData?.section || '—';
   const department = profileData?.department || '—';
-  const programSection = [program, section].filter(Boolean).filter(v => v !== '—').join(' ') || '—';
+  const programSection = [programAbbr !== '—' ? programAbbr : null, section !== '—' ? section : null].filter(Boolean).join(' · ') || '—';
 
   return (
     <>

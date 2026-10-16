@@ -1031,10 +1031,12 @@ const FacultyDashboard = () => {
         ))}
 
         <div className="fac-sidebar-bottom">
-          <button data-label="Terms & Policy" className="fac-nav-item" onClick={() => { setTermsReadOnly(true); setShowTerms(true); }}>
-            <span className="fac-nav-icon"><FileText size={18} /></span>
-            <span className="fac-nav-label">Terms &amp; Policy</span>
-          </button>
+          {!isAdminBypass && (
+            <button data-label="Terms & Policy" className="fac-nav-item" onClick={() => { setTermsReadOnly(true); setShowTerms(true); }}>
+              <span className="fac-nav-icon"><FileText size={18} /></span>
+              <span className="fac-nav-label">Terms &amp; Policy</span>
+            </button>
+          )}
           <button data-label="Settings" className={`fac-nav-item ${activeTab === 'Settings' ? 'active' : ''}`} onClick={() => handleActiveTabSet('Settings')}>
             <span className="fac-nav-icon"><Settings size={18} /></span>
             <span className="fac-nav-label">Settings</span>
@@ -1056,12 +1058,14 @@ const FacultyDashboard = () => {
             {activeTab === 'Terms' ? 'Terms & Policy' : activeTab}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <button className="fac-topbar-icon-btn" onClick={() => setIsNotifOpen(!isNotifOpen)} title="Notifications" style={{ position: 'relative' }}>
-              <Bell size={24} />
-              {unreadCount > 0 && (
-                <span style={{ position: 'absolute', top: 2, right: 2, background: '#ef4444', color: 'white', fontSize: '0.55rem', padding: '1px 4px', borderRadius: '50%', fontWeight: 700 }}>{unreadCount}</span>
-              )}
-            </button>
+            {!isAdminBypass && (
+              <button className="fac-topbar-icon-btn" onClick={() => setIsNotifOpen(!isNotifOpen)} title="Notifications" style={{ position: 'relative' }}>
+                <Bell size={24} />
+                {unreadCount > 0 && (
+                  <span style={{ position: 'absolute', top: 2, right: 2, background: '#ef4444', color: 'white', fontSize: '0.55rem', padding: '1px 4px', borderRadius: '50%', fontWeight: 700 }}>{unreadCount}</span>
+                )}
+              </button>
+            )}
             {/* Status pill in topbar — hidden for admin */}
             {!isAdminBypass && <div style={{ position: 'relative' }}>
               <button
@@ -1189,10 +1193,12 @@ const FacultyDashboard = () => {
           </button>
           <span style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--accent, #2e4a87)' }}>Askademic</span>
           <div style={{ display: 'flex', gap: '0.2rem', alignItems: 'center' }}>
-            <button className="fac-topbar-icon-btn" onClick={() => setIsNotifOpen(!isNotifOpen)} style={{ position: 'relative' }}>
-              <Bell size={16} />
-              {unreadCount > 0 && <span style={{ position: 'absolute', top: 0, right: 0, background: '#ef4444', color: 'white', fontSize: '0.5rem', padding: '1px 3px', borderRadius: '50%', fontWeight: 700 }}>{unreadCount}</span>}
-            </button>
+            {!isAdminBypass && (
+              <button className="fac-topbar-icon-btn" onClick={() => setIsNotifOpen(!isNotifOpen)} style={{ position: 'relative' }}>
+                <Bell size={16} />
+                {unreadCount > 0 && <span style={{ position: 'absolute', top: 0, right: 0, background: '#ef4444', color: 'white', fontSize: '0.5rem', padding: '1px 3px', borderRadius: '50%', fontWeight: 700 }}>{unreadCount}</span>}
+              </button>
+            )}
           </div>
         </div>
 
@@ -1216,18 +1222,20 @@ const FacultyDashboard = () => {
         )}
       </div>
 
-      <NotificationCenter
-        userId={user?.id}
-        isOpen={isNotifOpen}
-        onClose={() => setIsNotifOpen(false)}
-        role="Faculty"
-        onNotificationClick={(notif) => {
-          if (notif.request_id) {
-            setFocusRequestId(notif.request_id);
-            handleActiveTabSet('Requests');
-          }
-        }}
-      />
+      {!isAdminBypass && (
+        <NotificationCenter
+          userId={user?.id}
+          isOpen={isNotifOpen}
+          onClose={() => setIsNotifOpen(false)}
+          role="Faculty"
+          onNotificationClick={(notif) => {
+            if (notif.request_id) {
+              setFocusRequestId(notif.request_id);
+              handleActiveTabSet('Requests');
+            }
+          }}
+        />
+      )}
 
       <ProfileEditModal
         isOpen={showProfileModal}
@@ -1239,7 +1247,7 @@ const FacultyDashboard = () => {
         forceComplete={false}
       />
 
-      {showTerms && user?.id && (
+      {!isAdminBypass && showTerms && user?.id && (
         <TermsModal
           userId={isAdminBypass ? null : user.id}
           readOnly={isAdminBypass ? true : termsReadOnly}
@@ -1368,9 +1376,11 @@ const FacultyDashboard = () => {
               <button className="drawer-link" onClick={() => { openProfileModal(); closeDrawer(); }}>
                 <User size={20} /> <span>Edit Profile</span>
               </button>
-              <button className="drawer-link" onClick={() => { setTermsReadOnly(true); setShowTerms(true); closeDrawer(); }}>
-                <FileText size={20} /> <span>Terms &amp; Policy</span>
-              </button>
+              {!isAdminBypass && (
+                <button className="drawer-link" onClick={() => { setTermsReadOnly(true); setShowTerms(true); closeDrawer(); }}>
+                  <FileText size={20} /> <span>Terms &amp; Policy</span>
+                </button>
+              )}
             </div>
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '1rem', paddingTop: '1rem' }}>
               <button onClick={handleLogout}

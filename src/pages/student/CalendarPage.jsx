@@ -21,6 +21,8 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
   const [statusFilter, setStatusFilter] = useState('All');
   const [highlightedApptId, setHighlightedApptId] = useState(null);
   const [popover, setPopover] = useState(null);
+  const [detailsGlow, setDetailsGlow] = useState(false);
+  const pendingGlowRef = useRef(false);
   const detailsRef = useRef(null);
 
   // Deep-link from Dashboard week card → jump to that specific date
@@ -29,11 +31,20 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
     const [y, m] = focusDate.split('-').map(Number);
     setCurrentDate(new Date(y, m - 1, 1));
     setSelectedDate(focusDate);
+    pendingGlowRef.current = true;
     if (onFocusHandled) onFocusHandled();
-    setTimeout(() => {
-      if (detailsRef.current) detailsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 120);
   }, [focusDate]);
+
+  // Fire glow only after data has loaded (not on skeleton)
+  useEffect(() => {
+    if (loading || !pendingGlowRef.current) return;
+    pendingGlowRef.current = false;
+    const scroll = setTimeout(() => {
+      if (detailsRef.current) detailsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setDetailsGlow(true);
+    }, 80);
+    return () => clearTimeout(scroll);
+  }, [loading]);
 
   // Deep-link from a notification click → jump to that appointment's date
   useEffect(() => {
@@ -51,7 +62,7 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
       const row = document.getElementById(`cal-appt-${target.id}`);
       if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 120);
-    const t = setTimeout(() => setHighlightedApptId(null), 3000);
+    const t = setTimeout(() => setHighlightedApptId(null), 3400);
     return () => clearTimeout(t);
   }, [focusAppointmentId, requests]);
 
@@ -116,12 +127,8 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
       })()
     : '';
 
-  const upcomingAppts = requests
-    .filter(r => ['Approved', 'Pending'].includes(r.status) && r.date >= todayStr)
-    .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime || '').localeCompare(b.startTime || ''))
-    .slice(0, 5);
-
   const handleDayClick = (dateStr) => {
+    setDetailsGlow(false);
     setSelectedDate(prev => {
       const next = prev === dateStr ? null : dateStr;
       if (next && window.innerWidth < 900) {
@@ -129,15 +136,6 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
       }
       return next;
     });
-  };
-
-  const handleUpcomingClick = (r) => {
-    const [y, mo, d] = r.date.split('-').map(Number);
-    setCurrentDate(new Date(y, mo - 1, d));
-    setSelectedDate(r.date);
-    if (window.innerWidth < 900) {
-      setTimeout(() => detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
-    }
   };
 
   const getApptFilter = (status) => {
@@ -228,7 +226,7 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
   }
 
   const activityItems = [
-    { label: 'Approved',  key: 'Approved',  dotColor: '#3b82f6', badgeBg: '#dbeafe', badgeColor: '#1e3a8a', filter: 'Approved' },
+    { label: 'Approved',  key: 'Approved',  dotColor: '#00c853', badgeBg: '#dcfce7', badgeColor: '#14532d', filter: 'Approved' },
     { label: 'Pending',   key: 'Pending',   dotColor: '#d97706', badgeBg: '#fef3c7', badgeColor: '#7c5200', filter: 'Pending' },
     { label: 'Declined',  key: 'Declined',  dotColor: '#f87171', badgeBg: '#fee2e2', badgeColor: '#b91c1c', filter: 'History' },
     { label: 'Completed', key: 'Completed', dotColor: '#38bdf8', badgeBg: '#e0f2fe', badgeColor: '#0369a1', filter: 'History' },
@@ -246,6 +244,24 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
   return (
     <div className="sc-wrapper">
       <style>{calendarSharedStyles}</style>
+      <style>{`
+        @keyframes detailsGlowPulse {
+          0%   { box-shadow: 0 0 0 2px #1a2d5a, 0 4px 20px rgba(26,45,90,0.18); }
+          50%  { box-shadow: 0 0 0 4px #1a2d5a, 0 6px 28px rgba(26,45,90,0.32); }
+          100% { box-shadow: 0 0 0 2px #1a2d5a, 0 4px 20px rgba(26,45,90,0.18); }
+        }
+        @keyframes detailsGlowFade {
+          from { box-shadow: 0 0 0 2px #1a2d5a, 0 4px 20px rgba(26,45,90,0.18); border-color: #1a2d5a; }
+          to   { box-shadow: none; border-color: #c5d0f0; }
+        }
+        .sc-details-glow {
+          border-color: #1a2d5a !important;
+          animation: detailsGlowPulse 0.9s ease-in-out 3, detailsGlowFade 0.5s ease 2.7s forwards;
+        }
+        .sc-details-section {
+          border-color: #c5d0f0 !important;
+        }
+      `}</style>
       <div className="sc-layout">
 
         {/* ── Left: Calendar grid (shared component) ── */}
@@ -333,51 +349,12 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
             )}
           </div>
 
-          {/* Upcoming skeleton */}
-          {loading && (
-            <div className="sc-section">
-              <div className="sc-section-title">Upcoming</div>
-              {Array.from({ length: 3 }, (_, i) => (
-                <div key={i} className="sc-skel-upcoming-row">
-                  <div className="sc-skel sc-skel-date" />
-                  <div className="sc-skel-info">
-                    <div className="sc-skel sc-skel-name" />
-                    <div className="sc-skel sc-skel-time" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Upcoming agenda */}
-          {!loading && upcomingAppts.length > 0 && (
-            <div className="sc-section">
-              <div className="sc-section-title">Upcoming</div>
-              {upcomingAppts.map((r, idx) => {
-                const st = STATUS_STYLES[r.status] || STATUS_STYLES.Cancelled;
-                const [y, mo, d] = r.date.split('-').map(Number);
-                const dateLabel = new Date(y, mo - 1, d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
-                return (
-                  <div
-                    key={r.id || idx}
-                    className="sc-upcoming-item"
-                    onClick={() => handleUpcomingClick(r)}
-                  >
-                    <div className="sc-upcoming-date-badge">{dateLabel}</div>
-                    <div className="sc-upcoming-info">
-                      <div className="sc-upcoming-name">{r.name}</div>
-                      <div className="sc-upcoming-time">{fmt12(r.startTime) || r.time || 'TBD'}</div>
-                    </div>
-                    <span className="sc-upcoming-dot" style={{ background: st.border }} />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
           {/* Day detail */}
           {selectedDate && (
-            <div className="sc-section sc-details-section" ref={detailsRef}>
+            <div
+              className={`sc-section sc-details-section${detailsGlow ? ' sc-details-glow' : ''}`}
+              ref={detailsRef}
+            >
               <div className="sc-section-title">{selectedDayLabel}</div>
               {selectedDayRequests.length === 0 ? (
                 <div className="sc-detail-empty">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, X, UserCircle, Briefcase, Tag, CheckCircle2, ChevronRight } from 'lucide-react';
+import { User, X, UserCircle, Briefcase, Tag, CheckCircle2, ChevronRight, GraduationCap } from 'lucide-react';
 import { PH_PREFIXES, PH_SUFFIXES, FACULTY_TITLES } from '../utils/constants';
 import { updateProfile } from '../supabase/api';
 
@@ -537,6 +537,8 @@ export default function ProfileEditModal({
   const [dept, setDept]             = useState('');
   const [title, setTitle]           = useState('');
   const [avatarUrl, setAvatarUrl]   = useState('');
+  const [program, setProgram]       = useState('');
+  const [section, setSection]       = useState('');
 
   const [origValues, setOrigValues] = useState(null);
 
@@ -568,7 +570,7 @@ export default function ProfileEditModal({
     setSuffix(s);
     setAvatarUrl(av);
 
-    let fn = '', mn = '', ln = '', full = '', dp = '', ti = '';
+    let fn = '', mn = '', ln = '', full = '', dp = '', ti = '', pg = '', sec = '';
     if (isFaculty) {
       full = initialData.full_name || '';
       dp   = initialData.department || '';
@@ -586,10 +588,13 @@ export default function ProfileEditModal({
       } else {
         fn = name; mn = ''; ln = '';
       }
+      pg  = initialData.program || '';
+      sec = initialData.section || '';
       setFirstName(fn); setMiddleName(mn); setLastName(ln);
+      setProgram(pg); setSection(sec);
     }
 
-    setOrigValues({ prefix: p, suffix: s, avatarUrl: av, fullName: full, dept: dp, title: ti, firstName: fn, middleName: mn, lastName: ln });
+    setOrigValues({ prefix: p, suffix: s, avatarUrl: av, fullName: full, dept: dp, title: ti, firstName: fn, middleName: mn, lastName: ln, program: pg, section: sec });
   }, [isOpen, initialData, isFaculty]);
 
   const isDirty = origValues ? (
@@ -597,7 +602,8 @@ export default function ProfileEditModal({
     suffix !== origValues.suffix ||
     (isFaculty
       ? fullName !== origValues.fullName || dept !== origValues.dept || title !== origValues.title
-      : firstName !== origValues.firstName || middleName !== origValues.middleName || lastName !== origValues.lastName)
+      : firstName !== origValues.firstName || middleName !== origValues.middleName || lastName !== origValues.lastName ||
+        program !== origValues.program || section !== origValues.section)
   ) : false;
 
   const computedName = isFaculty
@@ -627,6 +633,7 @@ export default function ProfileEditModal({
       name_suffix: suffix,
       avatar_url: avatarUrl,
       ...(isFaculty && { department: dept, title }),
+      ...(!isFaculty && { program, section }),
     };
     const updated = await updateProfile(userId, payload);
     setSaving(false);
@@ -655,7 +662,12 @@ export default function ProfileEditModal({
       items: [
         { id: 'professional', label: 'Professional', icon: Briefcase },
       ],
-    }] : []),
+    }] : [{
+      group: 'ACADEMICS',
+      items: [
+        { id: 'academic', label: 'Academic', icon: GraduationCap },
+      ],
+    }]),
   ];
 
   const renderContent = () => {
@@ -882,6 +894,106 @@ export default function ProfileEditModal({
             )}
           </>
         );
+
+      case 'academic': {
+        const PROGRAMS = {
+          'CAHS — College of Allied Health Sciences': [
+            'Bachelor of Science in Nursing (BSN)',
+            'Bachelor of Science in Midwifery (BSM)',
+          ],
+          'CBA — College of Business Administration': [
+            'Bachelor of Science in Accountancy (BSA)',
+            'Bachelor of Science in Business Administration major in Financial Management (BSBA-FM)',
+            'Bachelor of Science in Business Administration major in Human Resource Management (BSBA-HRM)',
+            'Bachelor of Science in Business Administration major in Marketing Management (BSBA-MM)',
+            'Bachelor of Science in Customs Administration (BSCA)',
+          ],
+          'CCS — College of Computer Studies': [
+            'Bachelor of Science in Computer Science (BSCS)',
+            'Bachelor of Science in Entertainment and Multimedia Computing (BSEMC)',
+            'Bachelor of Science in Information Technology (BSIT)',
+            'Associate in Computer Technology (ACT)',
+          ],
+          'CEAS — College of Education, Arts and Sciences': [
+            'Bachelor of Arts in Communication (BACOMM)',
+            'Bachelor of Early Childhood Education (BECEd)',
+            'Bachelor of Culture and Arts Education (BCAEd)',
+            'Bachelor of Physical Education (BPEd)',
+            'Bachelor of Elementary Education (BEEd)',
+            'Bachelor of Secondary Education major in English (BSEd-English)',
+            'Bachelor of Secondary Education major in Filipino (BSEd-Filipino)',
+            'Bachelor of Secondary Education major in Mathematics (BSEd-Math)',
+            'Bachelor of Secondary Education major in Social Studies (BSEd-SocStud)',
+            'Bachelor of Secondary Education major in Science (BSEd-Science)',
+            'Teacher Certificate Program (TCP)',
+          ],
+          'CHTM — College of Hospitality and Tourism Management': [
+            'Bachelor of Science in Hospitality Management (BSHM)',
+            'Bachelor of Science in Tourism Management (BSTM)',
+          ],
+          'IGS — Institute of Graduate Studies': [
+            'Master of Arts in Nursing (MAN)',
+            'Master of Arts in Education (MAEd)',
+            'Master of Business Management (MBM)',
+            'Master of Public Administration (MPA)',
+          ],
+        };
+
+        const abbr = program ? (program.match(/\(([^)]+)\)/) || [])[1] || program : '';
+
+        return (
+          <>
+            <div className="pem-content-header">
+              <p className="pem-content-title">Academic</p>
+              <p className="pem-content-sub">Your program and section</p>
+            </div>
+
+            <div className="pem-divider"><span>Program</span></div>
+            <div className="pem-field">
+              <label className="pem-label">Program / Course</label>
+              <select className="pem-select" value={program} onChange={e => setProgram(e.target.value)} onFocus={handleInputFocus}>
+                <option value="">— Select your program —</option>
+                {Object.entries(PROGRAMS).map(([college, list]) => (
+                  <optgroup key={college} label={college}>
+                    {list.map(p => <option key={p} value={p}>{p}</option>)}
+                  </optgroup>
+                ))}
+              </select>
+              {abbr && (
+                <span className="pem-input-hint">
+                  Will display as <strong style={{ color: 'var(--accent, #2e4a87)' }}>{abbr}</strong> on your profile.
+                </span>
+              )}
+            </div>
+
+            <div className="pem-divider"><span>Section</span></div>
+            <div className="pem-field">
+              <label className="pem-label">Section</label>
+              <input
+                type="text"
+                className="pem-input"
+                value={section}
+                onChange={e => setSection(e.target.value)}
+                onFocus={handleInputFocus}
+                placeholder="e.g. 3A, 2B, 1C"
+              />
+              <span className="pem-input-hint">Your class section as assigned by the registrar.</span>
+            </div>
+
+            {(abbr || section) && (
+              <>
+                <div className="pem-divider"><span>Preview</span></div>
+                <div className="pem-info-row">
+                  <span className="pem-info-row-label">Will appear as</span>
+                  <span className="pem-info-row-value" style={{ color: 'var(--accent, #2e4a87)' }}>
+                    {[abbr, section].filter(Boolean).join(' · ') || '—'}
+                  </span>
+                </div>
+              </>
+            )}
+          </>
+        );
+      }
 
       default:
         return null;

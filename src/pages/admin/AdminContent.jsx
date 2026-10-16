@@ -302,13 +302,21 @@ const AdminContent = () => {
                       const dotColor = STATUS_DOT_COLOR[p.status] || '#9ca3af';
                       const isSelected = selectedUser?.id === p.id;
                       const reqCount = getUserReqCount(p.id, p.role);
+                      const avatarBg = p.avatar_color || nameToColor(p.full_name || '');
                       return (
                         <tr
                           key={p.id}
                           className={`clickable${isSelected ? ' row-selected' : ''}`}
                           onClick={() => handleRowClick(p)}
                         >
-                          <td style={{ fontWeight: 600 }}>{p.full_name || '—'}</td>
+                          <td style={{ fontWeight: 600 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                              <div style={{ width: 30, height: 30, borderRadius: '50%', background: avatarBg, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 800, flexShrink: 0 }}>
+                                {getInitials(p.full_name)}
+                              </div>
+                              {p.full_name || '—'}
+                            </div>
+                          </td>
                           <td style={{ color: 'var(--text-muted)' }}>{p.department || '—'}</td>
                           <td>
                             <span className="admin-status-dot" style={{ background: dotColor }} />
@@ -341,7 +349,7 @@ const AdminContent = () => {
               <div className="admin-detail-head">
                 <div
                   className="admin-detail-avatar"
-                  style={{ background: nameToColor(selectedUser.full_name || '') }}
+                  style={{ background: selectedUser.avatar_color || nameToColor(selectedUser.full_name || '') }}
                 >
                   {getInitials(selectedUser.full_name)}
                 </div>

@@ -5,7 +5,7 @@ import { fmt12 } from '../utils/dateUtils';
 export { fmt12 };
 
 export const STATUS_STYLES = {
-  Approved:  { bg: '#dbeafe', color: '#1e3a8a', border: '#3b82f6' },
+  Approved:  { bg: '#dcfce7', color: '#14532d', border: '#00c853' },
   Pending:   { bg: '#fef3c7', color: '#7c5200', border: '#d97706' },
   Declined:  { bg: '#fee2e2', color: '#b91c1c', border: '#f87171' },
   Cancelled: { bg: '#f3f4f6', color: '#374151', border: '#9ca3af' },
@@ -377,7 +377,7 @@ export const calendarSharedStyles = `
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 0.6rem;
   scrollbar-width: none;
 }
 .sc-right::-webkit-scrollbar { display: none; }
@@ -403,7 +403,7 @@ export const calendarSharedStyles = `
   background: var(--card-bg, #fff);
   border: 1px solid var(--card-border);
   border-radius: 12px;
-  padding: 1rem 1.1rem;
+  padding: 0.75rem 1rem;
   box-shadow: var(--shadow);
 }
 .sc-section-title {
@@ -412,7 +412,7 @@ export const calendarSharedStyles = `
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
-  margin-bottom: 0.7rem;
+  margin-bottom: 0.45rem;
 }
 
 /* Activity */
@@ -420,11 +420,11 @@ export const calendarSharedStyles = `
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.55rem 0.6rem;
-  border-radius: 8px;
+  padding: 0.32rem 0.5rem;
+  border-radius: 7px;
   cursor: pointer;
   transition: background 0.12s;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.1rem;
   width: 100%;
   border: none;
   background: transparent;
@@ -436,8 +436,8 @@ export const calendarSharedStyles = `
 .sc-activity-label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.82rem;
+  gap: 0.45rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -527,12 +527,16 @@ export const calendarSharedStyles = `
 .sc-appt-card-highlight {
   background: #eef2fb !important;
   border-color: #1a2d5a !important;
-  box-shadow: 0 0 0 2px rgba(26,45,90,0.25), 0 6px 18px rgba(26,45,90,0.18);
-  animation: scHighlightFlash 2.4s ease-out;
+  animation: scHighlightPulse 0.9s ease-in-out 3, scHighlightFade 0.5s ease 2.7s forwards;
 }
-@keyframes scHighlightFlash {
-  0%, 10%  { background: #d9e2f5 !important; }
-  100%     { background: #eef2fb !important; }
+@keyframes scHighlightPulse {
+  0%   { box-shadow: 0 0 0 2px #1a2d5a, 0 4px 16px rgba(26,45,90,0.18); }
+  50%  { box-shadow: 0 0 0 4px #1a2d5a, 0 6px 24px rgba(26,45,90,0.32); }
+  100% { box-shadow: 0 0 0 2px #1a2d5a, 0 4px 16px rgba(26,45,90,0.18); }
+}
+@keyframes scHighlightFade {
+  from { box-shadow: 0 0 0 2px #1a2d5a, 0 4px 16px rgba(26,45,90,0.18); border-color: #1a2d5a; }
+  to   { box-shadow: none; border-color: var(--border-color); }
 }
 .sc-appt-card-header {
   display: flex;

@@ -303,7 +303,7 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
   const [detailModal, setDetailModal] = useState(null);
 
   const [declineModal, setDeclineModal] = useState({ open: false, req: null, reason: '', note: '' });
-  const [approveModal, setApproveModal] = useState({ open: false, reqId: null, note: '' });
+  const [approveModal, setApproveModal] = useState({ open: false, reqId: null, note: '', room: '' });
   const [cancelModal,  setCancelModal]  = useState({ open: false, req: null, reason: '', note: '' });
   const [confirmModal, setConfirmModal] = useState({ open: false, reqId: null, newStatus: null, label: '' });
   const [deleteModal, setDeleteModal]   = useState({ open: false, reqId: null });
@@ -376,13 +376,15 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
 
   // ── Actions ──
   const executeApprove = async () => {
-    const { reqId, note } = approveModal;
+    const { reqId, note, room } = approveModal;
     const req = requests.find(r => r.id === reqId);
-    setApproveModal({ open: false, reqId: null, note: '' });
+    const cleanRoom = room.trim().replace(/^room\s*/i, '').trim();
+    const resolvedRoom = cleanRoom || req?.room || null;
+    setApproveModal({ open: false, reqId: null, note: '', room: '' });
     await optimistic(
       setRequests, requests,
-      requests.map(r => r.id === reqId ? { ...r, status: 'Approved', faculty_note: note } : r),
-      () => updateRequestStatus(reqId, 'Approved', null, null, note, req ? { studentId: req.avatarSeed, facultyName: user?.user_metadata?.full_name || 'Faculty' } : null),
+      requests.map(r => r.id === reqId ? { ...r, status: 'Approved', faculty_note: note, room: resolvedRoom } : r),
+      () => updateRequestStatus(reqId, 'Approved', null, null, note, req ? { studentId: req.avatarSeed, facultyName: user?.user_metadata?.full_name || 'Faculty' } : null, resolvedRoom || null),
       { success: 'Request approved!', error: 'Failed to approve' }
     );
     if (req) {
@@ -574,6 +576,11 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
                     )}
                   </div>
                   <div className="frc-meta">{metaParts.join(' · ')}</div>
+                  {req.room && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.25rem', padding: '0.18rem 0.6rem', borderRadius: 6, background: '#eef2fb', border: '1px solid #c5d0f0', fontSize: '0.72rem', fontWeight: 700, color: '#1a2d5a' }}>
+                      Room {req.room}
+                    </div>
+                  )}
 
                   {/* #5 Collapsible note + reason */}
                   {hasNote && (
@@ -599,7 +606,7 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
                     <button className="frc-btn frc-btn-decline" onClick={() => setDeclineModal({ open: true, req, reason: '', note: '' })}>
                       <X size={13} /> Decline
                     </button>
-                    <button className="frc-btn frc-btn-approve" onClick={() => setApproveModal({ open: true, reqId: req.id, note: '' })}>
+                    <button className="frc-btn frc-btn-approve" onClick={() => setApproveModal({ open: true, reqId: req.id, note: '', room: req.room || '' })}>
                       <Check size={13} /> Approve
                     </button>
                   </>)}
@@ -683,26 +690,39 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
       })()}
 
       {/* ── Approve modal ── */}
-      {approveModal.open && (
-        <div className="frc-modal-overlay" onClick={() => setApproveModal({ open: false, reqId: null, note: '' })}>
-          <div className="frc-modal" onClick={e => e.stopPropagation()}>
-            <p className="frc-modal-title">Approve request</p>
-            <p className="frc-modal-sub">Add an optional note for the student.</p>
-            <label className="frc-modal-label">Note (optional)</label>
-            <textarea
-              className="frc-modal-textarea"
-              rows={3}
-              placeholder="e.g. Please bring your student ID."
-              value={approveModal.note}
-              onChange={e => setApproveModal(a => ({ ...a, note: e.target.value }))}
-            />
-            <div className="frc-modal-footer">
-              <button className="frc-modal-cancel" onClick={() => setApproveModal({ open: false, reqId: null, note: '' })}>Cancel</button>
-              <button className="frc-modal-confirm" onClick={executeApprove}>Approve now</button>
+      {approveModal.open && (() => {
+        const approveReq = requests.find(r => r.id === approveModal.reqId);
+        const scheduleHasRoom = !!(approveReq?.room);
+        return (
+          <div className="frc-modal-overlay" onClick={() => setApproveModal({ open: false, reqId: null, note: '', room: '' })}>
+            <div className="frc-modal" onClick={e => e.stopPropagation()}>
+              <p className="frc-modal-title">Approve request</p>
+              <p className="frc-modal-sub">Add a room and an optional note for the student.</p>
+              <label className="frc-modal-label">ROOM</label>
+              <input
+                type="text"
+                className="frc-modal-textarea"
+                style={{ resize: 'none', padding: '0.65rem 0.9rem', marginBottom: '1rem', display: 'block', borderRadius: 9 }}
+                placeholder={scheduleHasRoom ? `Schedule room: ${approveReq.room}` : 'e.g. 510 or TBA'}
+                value={approveModal.room}
+                onChange={e => setApproveModal(a => ({ ...a, room: e.target.value }))}
+              />
+              <label className="frc-modal-label">Note (optional)</label>
+              <textarea
+                className="frc-modal-textarea"
+                rows={3}
+                placeholder="e.g. Please bring your student ID."
+                value={approveModal.note}
+                onChange={e => setApproveModal(a => ({ ...a, note: e.target.value }))}
+              />
+              <div className="frc-modal-footer">
+                <button className="frc-modal-cancel" onClick={() => setApproveModal({ open: false, reqId: null, note: '', room: '' })}>Cancel</button>
+                <button className="frc-modal-confirm" onClick={executeApprove}>Approve now</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Cancel appointment modal ── */}
       {cancelModal.open && (() => {

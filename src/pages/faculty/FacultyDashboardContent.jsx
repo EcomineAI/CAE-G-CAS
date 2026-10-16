@@ -258,6 +258,9 @@ const FacultyDashboardContent = ({ onTabChange }) => {
   const [declineReason, setDeclineReason] = useState('');
   const [declineNote, setDeclineNote] = useState('');
   const [declining, setDeclining] = useState(false);
+  const [approveTarget, setApproveTarget] = useState(null);
+  const [approveRoom, setApproveRoom] = useState('');
+  const [approveNote, setApproveNote] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -278,15 +281,26 @@ const FacultyDashboardContent = ({ onTabChange }) => {
     return () => { unsubReqs(); };
   }, [user]);
 
-  const handleApprove = async (req) => {
+  const openApproveModal = (req) => {
+    setApproveTarget(req);
+    setApproveRoom(req.room || '');
+    setApproveNote('');
+  };
+
+  const handleApproveConfirm = async () => {
+    if (!approveTarget) return;
+    const req = approveTarget;
+    const cleanRoom = approveRoom.trim().replace(/^room\s*/i, '').trim();
+    const resolvedRoom = cleanRoom || req.room || null;
+    setApproveTarget(null); setApproveRoom(''); setApproveNote('');
     const notifCtx = {
       studentId: req.avatarSeed,
       facultyName: user?.displayName || user?.user_metadata?.full_name || 'Faculty',
     };
     await optimistic(
       setRequests, requests,
-      requests.map(r => r.id === req.id ? { ...r, status: 'Approved' } : r),
-      () => updateRequestStatus(req.id, 'Approved', null, null, null, notifCtx),
+      requests.map(r => r.id === req.id ? { ...r, status: 'Approved', room: resolvedRoom } : r),
+      () => updateRequestStatus(req.id, 'Approved', null, null, approveNote.trim() || null, notifCtx, resolvedRoom),
       { success: 'Request approved', error: 'Failed to approve' }
     );
   };
@@ -429,7 +443,7 @@ const FacultyDashboardContent = ({ onTabChange }) => {
             </div>
             <div className="fdc-req-actions">
               <button className="fdc-decline-btn" onClick={() => openDeclineModal(req)}>Decline</button>
-              <button className="fdc-approve-btn" onClick={() => handleApprove(req)}>Approve</button>
+              <button className="fdc-approve-btn" onClick={() => openApproveModal(req)}>Approve</button>
             </div>
           </div>
         ))}
@@ -478,6 +492,40 @@ const FacultyDashboardContent = ({ onTabChange }) => {
           </div>
         ))}
       </div>
+
+      {/* Approve modal */}
+      {approveTarget && (
+        <div className="fdc-modal-overlay" onClick={() => { setApproveTarget(null); setApproveRoom(''); setApproveNote(''); }}>
+          <div className="fdc-modal" onClick={e => e.stopPropagation()}>
+            <button className="fdc-modal-close" onClick={() => { setApproveTarget(null); setApproveRoom(''); setApproveNote(''); }}>✕</button>
+            <h3>Approve request</h3>
+            <p className="fdc-modal-sub">
+              {approveTarget.name} · {approveTarget.day}{approveTarget.date ? `, ${fmt(approveTarget.date)}` : ''}{approveTarget.time ? ` · ${approveTarget.time}` : ''}
+            </p>
+            <p className="fdc-modal-label">ROOM</p>
+            <input
+              type="text"
+              style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1.5px solid #e5e8f0', borderRadius: 10, background: '#f9fafb', color: '#1a2d5a', fontFamily: 'inherit', fontSize: '0.88rem', outline: 'none', boxSizing: 'border-box', marginBottom: '1rem', transition: 'border-color 0.15s' }}
+              placeholder={approveTarget.room ? `Schedule room: ${approveTarget.room}` : 'e.g. 510 or TBA'}
+              value={approveRoom}
+              onChange={e => setApproveRoom(e.target.value)}
+              onFocus={e => e.target.style.borderColor = '#1a2d5a'}
+              onBlur={e => e.target.style.borderColor = '#e5e8f0'}
+            />
+            <p className="fdc-modal-label">Note (optional)</p>
+            <textarea
+              className="fdc-modal-textarea"
+              placeholder="e.g. Please bring your student ID."
+              value={approveNote}
+              onChange={e => setApproveNote(e.target.value)}
+            />
+            <div className="fdc-modal-footer">
+              <button className="fdc-modal-keep" onClick={() => { setApproveTarget(null); setApproveRoom(''); setApproveNote(''); }}>Cancel</button>
+              <button className="fdc-modal-confirm" onClick={handleApproveConfirm}>Approve now</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Decline modal */}
       {declineTarget && (

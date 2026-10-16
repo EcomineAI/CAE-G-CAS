@@ -1298,20 +1298,20 @@ const FacultyContent = ({ initialFacultyId = null }) => {
         </div>
       )}
 
-      <div className="faculty-header">
-        <p className="subtitle">View real-time availability and book a consultation slot</p>
-      </div>
-
       {facultyView === 'list' && (
         <>
+          <p style={{ fontSize: '0.83rem', color: 'var(--text-muted)', margin: '0 0 0.6rem', fontWeight: 500 }}>
+            View real-time availability and book a consultation slot
+          </p>
           <div className="search-box-faculty">
-            <Search size={16} className="search-icon-faculty" />
+            <Search size={17} className="search-icon-faculty" />
             <input
               type="text"
               placeholder="Search instructor..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               aria-label="Search faculty"
+              style={{ padding: '0.8rem 1rem 0.8rem 2.8rem', fontSize: '0.92rem', borderRadius: 12 }}
             />
           </div>
 
@@ -1420,8 +1420,9 @@ const FacultyContent = ({ initialFacultyId = null }) => {
                     <button
                       className="request-btn"
                       onClick={() => handleRequestAppointment(faculty)}
-                      disabled={isUnavailable}
-                      style={{ alignSelf: 'flex-start', marginTop: '0.1rem' }}
+                      disabled={isUnavailable || !faculty.nextSlot}
+                      title={!faculty.nextSlot ? 'No schedule set' : undefined}
+                      style={{ alignSelf: 'flex-start', marginTop: '0.1rem', ...(!faculty.nextSlot ? { background: '#e5e7eb', color: '#9ca3af', borderColor: '#e5e7eb', cursor: 'not-allowed' } : {}) }}
                     >
                       Book
                     </button>

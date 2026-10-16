@@ -268,7 +268,7 @@ const LoginPage = () => {
         }
 
         .lp-title {
-          font-size: 2.5rem; font-weight: 900; color: #1a2d5a;
+          font-size: 2.5rem; font-weight: 600; color: #1a2d5a;
           letter-spacing: -0.5px; margin: 0 0 0.25rem;
         }
         .lp-sub {

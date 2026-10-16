@@ -225,6 +225,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
   const { user } = useAuth();
   const [listParent] = useAutoAnimate();
   const [activeFilter, setActiveFilter] = useState(initialFilter);
+  useEffect(() => { setActiveFilter(initialFilter); }, [initialFilter]);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
@@ -237,6 +238,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
   const [reschedDateIdx, setReschedDateIdx] = useState(0);
   const [reschedSlotIdx, setReschedSlotIdx] = useState(null);
   const [reschedLoading, setReschedLoading] = useState(false);
+  const [reschedBlockedDates, setReschedBlockedDates] = useState(new Set());
   const [deleteModal, setDeleteModal] = useState(null);
 
   useEffect(() => {
@@ -273,21 +275,22 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
     return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   };
 
+  const HISTORY_STATUSES = ['Completed','Declined','Cancelled'];
   const filteredData = requests.filter(app => {
     if (activeFilter === 'All') return true;
-    if (activeFilter === 'Declined') return ['Declined','Cancelled'].includes(app.status);
-    if (activeFilter === 'History') return ['Completed','Declined','Cancelled'].includes(app.status);
+    if (activeFilter === 'History') return HISTORY_STATUSES.includes(app.status);
     return app.status === activeFilter;
   });
 
   // Group by date proximity
   const todayStr = new Date().toISOString().split('T')[0];
-  const weekEnd = (() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; })();
 
-  const groups = [
-    { key: 'upcoming', label: 'This Week & Upcoming', items: filteredData.filter(a => a.date >= todayStr) },
-    { key: 'past',     label: 'Past',                 items: filteredData.filter(a => a.date < todayStr) },
-  ].filter(g => g.items.length > 0);
+  const groups = activeFilter === 'History'
+    ? [{ key: 'history', label: 'History', items: filteredData }].filter(g => g.items.length > 0)
+    : [
+        { key: 'upcoming', label: 'This Week & Upcoming', items: filteredData.filter(a => a.date >= todayStr) },
+        { key: 'past',     label: 'Past',                 items: filteredData.filter(a => a.date < todayStr) },
+      ].filter(g => g.items.length > 0);
 
   const selectedApp = requests.find(r => r.id === selectedId) || null;
 
@@ -306,10 +309,20 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
 
   // ── Reschedule ──
   const openResched = async (app) => {
-    setReschedDateIdx(0); setReschedSlotIdx(null);
+    setReschedDateIdx(0); setReschedSlotIdx(null); setReschedBlockedDates(new Set());
     setReschedLoading(true); setReschedModal({ app });
-    const schedules = await getSchedulesForFaculty(app.faculty_id || app.avatarSeed);
-    setReschedSchedules(schedules); setReschedLoading(false);
+    const facultyId = app.faculty_id || app.avatarSeed;
+    const [schedules] = await Promise.all([getSchedulesForFaculty(facultyId)]);
+    setReschedSchedules(schedules);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const dateStrings = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today); d.setDate(today.getDate() + i);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    });
+    const blockChecks = await Promise.all(dateStrings.map(ds => isDateBlocked(facultyId, ds)));
+    const blocked = new Set(dateStrings.filter((_, i) => blockChecks[i]));
+    setReschedBlockedDates(blocked);
+    setReschedLoading(false);
   };
   const buildReschedDates = () => {
     const today = new Date(); today.setHours(0,0,0,0);
@@ -321,7 +334,8 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
       const oneTime  = reschedSchedules.filter(s => s.schedule_type === 'one-time' && s.specific_date === dateStr);
       const allSlots = [...daySlots, ...oneTime];
       const totalLeft = allSlots.reduce((sum, s) => sum + Math.max(0, s.max_slots - (s.filled || 0)), 0);
-      return { d, dayName, dateStr, allSlots, totalLeft, hasSlots: allSlots.length > 0, isToday: i === 0 };
+      const isBlocked = reschedBlockedDates.has(dateStr);
+      return { d, dayName, dateStr, allSlots, totalLeft, hasSlots: allSlots.length > 0, isToday: i === 0, isBlocked };
     });
   };
   const executeResched = async () => {
@@ -376,7 +390,8 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
   const renderDetailPanel = (app) => {
     const idx = requests.findIndex(r => r.id === app.id);
     const ref = idx >= 0 ? `REF${String(idx + 1).padStart(4, '0')}` : '';
-    const actable = ['Pending','Approved'].includes(app.status);
+    const canCancel = ['Pending','Approved'].includes(app.status);
+    const canResched = app.status === 'Pending';
     return (
       <div className="ac-detail" key={app.id}>
         <div className="ac-detail-ref">{ref}</div>
@@ -394,10 +409,10 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
         </div>
         {app.faculty_note && <div className="ac-detail-note"><strong>Faculty Note:</strong> "{app.faculty_note}"</div>}
         {app.status === 'Declined' && app.declineReason && <div className="ac-detail-decline"><strong>Decline Reason:</strong> "{app.declineReason}"</div>}
-        <p className="ac-detail-hint">You can reschedule or cancel as long as it has not started yet.</p>
+        <p className="ac-detail-hint">{canResched ? 'You can reschedule or cancel pending requests. Approved appointments can only be cancelled.' : 'You can cancel this appointment at any time before it starts.'}</p>
         <div className="ac-detail-actions">
-          {actable && <button className="ac-action-btn" onClick={() => openCancel(app)} style={{ border: '1.5px solid #fca5a5', background: '#fff5f5', color: '#ef4444' }}>Cancel Request</button>}
-          {actable && <button className="ac-action-btn" onClick={() => openResched(app)} style={{ border: 'none', background: '#1a2d5a', color: '#fff' }}>Reschedule</button>}
+          {canCancel && <button className="ac-action-btn" onClick={() => openCancel(app)} style={{ border: '1.5px solid #fca5a5', background: '#fff5f5', color: '#ef4444' }}>Cancel Request</button>}
+          {canResched && <button className="ac-action-btn" onClick={() => openResched(app)} style={{ border: 'none', background: '#1a2d5a', color: '#fff' }}>Reschedule</button>}
           {['Completed','Cancelled','Declined'].includes(app.status) && (
             <button className="ac-action-btn" onClick={() => setDeleteModal(app)} style={{ border: '1.5px solid #e5e8f0', background: '#fff', color: '#9ca3af', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
               <Archive size={14} /> Archive Record
@@ -418,8 +433,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
           { key: 'All', label: 'All' },
           { key: 'Pending', label: 'Pending' },
           { key: 'Approved', label: 'Approved' },
-          { key: 'Completed', label: 'Completed' },
-          { key: 'Declined', label: 'Declined / Cancelled' },
+          { key: 'History', label: 'History' },
         ].map(({ key, label }) => (
           <button key={key} className={`ac-chip${activeFilter === key ? ' active' : ''}`} onClick={() => handleFilterClick(key)}>{label}</button>
         ))}
@@ -565,10 +579,11 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
                   <>
                     <div className="rs-date-strip">
                       {dateCells.map((cell, i) => {
-                        const sub = !cell.hasSlots ? 'No Hours' : cell.totalLeft === 0 ? 'Full' : `${cell.totalLeft} Left`;
+                        const unavailable = !cell.hasSlots || cell.isBlocked;
+                        const sub = cell.isBlocked ? 'Blocked' : !cell.hasSlots ? 'No Hours' : cell.totalLeft === 0 ? 'Full' : `${cell.totalLeft} Left`;
                         return (
-                          <button key={i} className={`rs-date-cell${i === reschedDateIdx ? ' sel' : ''}${!cell.hasSlots ? ' nohours' : ''}`}
-                            onClick={() => { setReschedDateIdx(i); setReschedSlotIdx(null); }}>
+                          <button key={i} className={`rs-date-cell${i === reschedDateIdx ? ' sel' : ''}${unavailable ? ' nohours' : ''}`}
+                            onClick={() => { if (!unavailable) { setReschedDateIdx(i); setReschedSlotIdx(null); } }}>
                             <span style={{ fontSize: '0.58rem', fontWeight: 600, opacity: 0.75 }}>{cell.isToday ? 'Today' : cell.dayName.slice(0,3)}</span>
                             <span style={{ fontSize: '1rem', fontWeight: 800, lineHeight: 1 }}>{cell.d.getDate()}</span>
                             <span style={{ fontSize: '0.56rem', fontWeight: 700, opacity: 0.75 }}>{sub}</span>

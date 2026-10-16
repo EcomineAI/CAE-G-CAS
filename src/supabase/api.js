@@ -210,7 +210,7 @@ export const getFacultyRequests = async (facultyId) => {
       messages: req.messages || [],
       facultyNote: req.faculty_note || null,
       max_slots: req.schedule?.max_slots || 1,
-      room: req.schedule?.room || ''
+      room: req.room || req.schedule?.room || null
     };
   });
 };
@@ -218,11 +218,12 @@ export const getFacultyRequests = async (facultyId) => {
 /**
  * Update request status. Accepts optional cancelReason, declineReason, or facultyNote.
  */
-export const updateRequestStatus = async (requestId, newStatus, cancelReason = null, declineReason = null, facultyNote = null, notifContext = null) => {
+export const updateRequestStatus = async (requestId, newStatus, cancelReason = null, declineReason = null, facultyNote = null, notifContext = null, room = null) => {
   const updates = { status: newStatus, updated_at: new Date().toISOString() };
   if (cancelReason !== null) updates.cancel_reason = cancelReason;
   if (declineReason !== null) updates.decline_reason = declineReason;
   if (facultyNote !== null) updates.faculty_note = facultyNote;
+  if (room !== null) updates.room = room;
 
   const { error } = await supabase
     .from('requests')
@@ -333,7 +334,7 @@ export const getStudentRequests = async (studentId) => {
     facultyDeleted: req.is_faculty_deleted ?? false,
     schedule_id: req.schedule_id,
     max_slots: req.schedule?.max_slots || 1,
-    room: req.schedule?.room || ''
+    room: req.room || req.schedule?.room || null
     };
   });
 };
@@ -410,7 +411,7 @@ export const markRequestSeen = async (requestId) => {
 export const getAllProfiles = async () => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, email, role, department, status, avatar_url, created_at')
+    .select('id, full_name, email, role, department, status, avatar_url, avatar_color, created_at')
     .neq('full_name', 'Admin')
     .order('role', { ascending: true })
     .order('full_name', { ascending: true });
