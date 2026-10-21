@@ -63,11 +63,6 @@ const aboutStyles = `
 .ab-project-card p { margin: 0 0 0.5rem; }
 .ab-project-card p:last-child { margin-bottom: 0; }
 
-.ab-contact-title {
-  font-size: 0.9rem; font-weight: 800;
-  color: var(--text-primary); margin: 0.9rem 0 0.4rem;
-}
-
 @media (max-width: 600px) {
   .ab-two-col { grid-template-columns: 1fr; gap: 1rem; }
 }
@@ -125,18 +120,9 @@ const FacultyAboutContent = () => (
       </ol>
     </div>
 
-    {/* About the project */}
+    {/* Contact */}
     <div className="ab-project-card">
-      <p className="ab-project-title">About the project</p>
-      <p>
-        Askademic was built as a final course project at the Gordon College College of Computer Studies, Olongapo City.
-      </p>
-      <ul className="ab-ul" style={{ marginBottom: '0.6rem' }}>
-        <li><span className="ab-bold">Team:</span> Ctrl Alt Elite (CAE)</li>
-        <li><span className="ab-bold">Members:</span> June Vic M. Abello, Erica Mae D. Camintoy, Ma. Erica Monton</li>
-        <li><span className="ab-bold">Version:</span> 0.10.0 &nbsp;|&nbsp; Year: 2026</li>
-      </ul>
-      <p className="ab-contact-title">Contact</p>
+      <p className="ab-project-title">Contact</p>
       <p>
         For questions or problems, contact the College of Computer Studies at{' '}
         <span className="ab-bold">info.ccs@gordoncollege.edu.ph</span> or <span className="ab-bold">(047) 222-4080 loc. 319</span>.

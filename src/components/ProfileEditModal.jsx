@@ -897,55 +897,28 @@ export default function ProfileEditModal({
 
       case 'academic': {
         const PROGRAMS = {
-          'CAHS — College of Allied Health Sciences': [
-            'Bachelor of Science in Nursing (BSN)',
-            'Bachelor of Science in Midwifery (BSM)',
-          ],
-          'CBA — College of Business Administration': [
-            'Bachelor of Science in Accountancy (BSA)',
-            'Bachelor of Science in Business Administration major in Financial Management (BSBA-FM)',
-            'Bachelor of Science in Business Administration major in Human Resource Management (BSBA-HRM)',
-            'Bachelor of Science in Business Administration major in Marketing Management (BSBA-MM)',
-            'Bachelor of Science in Customs Administration (BSCA)',
-          ],
           'CCS — College of Computer Studies': [
             'Bachelor of Science in Computer Science (BSCS)',
             'Bachelor of Science in Entertainment and Multimedia Computing (BSEMC)',
             'Bachelor of Science in Information Technology (BSIT)',
-            'Associate in Computer Technology (ACT)',
-          ],
-          'CEAS — College of Education, Arts and Sciences': [
-            'Bachelor of Arts in Communication (BACOMM)',
-            'Bachelor of Early Childhood Education (BECEd)',
-            'Bachelor of Culture and Arts Education (BCAEd)',
-            'Bachelor of Physical Education (BPEd)',
-            'Bachelor of Elementary Education (BEEd)',
-            'Bachelor of Secondary Education major in English (BSEd-English)',
-            'Bachelor of Secondary Education major in Filipino (BSEd-Filipino)',
-            'Bachelor of Secondary Education major in Mathematics (BSEd-Math)',
-            'Bachelor of Secondary Education major in Social Studies (BSEd-SocStud)',
-            'Bachelor of Secondary Education major in Science (BSEd-Science)',
-            'Teacher Certificate Program (TCP)',
-          ],
-          'CHTM — College of Hospitality and Tourism Management': [
-            'Bachelor of Science in Hospitality Management (BSHM)',
-            'Bachelor of Science in Tourism Management (BSTM)',
-          ],
-          'IGS — Institute of Graduate Studies': [
-            'Master of Arts in Nursing (MAN)',
-            'Master of Arts in Education (MAEd)',
-            'Master of Business Management (MBM)',
-            'Master of Public Administration (MPA)',
           ],
         };
 
         const abbr = program ? (program.match(/\(([^)]+)\)/) || [])[1] || program : '';
 
+        const yearLevel = section ? section.charAt(0) : '';
+        const BLOCKS = {
+          '1': ['1A','1B','1C','1D','1E'],
+          '2': ['2A','2B','2C','2D','2E'],
+          '3': ['3A','3B','3C','3D','3E'],
+          '4': ['4A','4B','4C','4D','4E'],
+        };
+
         return (
           <>
             <div className="pem-content-header">
               <p className="pem-content-title">Academic</p>
-              <p className="pem-content-sub">Your program and section</p>
+              <p className="pem-content-sub">Your program and block</p>
             </div>
 
             <div className="pem-divider"><span>Program</span></div>
@@ -966,18 +939,33 @@ export default function ProfileEditModal({
               )}
             </div>
 
-            <div className="pem-divider"><span>Section</span></div>
-            <div className="pem-field">
-              <label className="pem-label">Section</label>
-              <input
-                type="text"
-                className="pem-input"
-                value={section}
-                onChange={e => setSection(e.target.value)}
-                onFocus={handleInputFocus}
-                placeholder="e.g. 3A, 2B, 1C"
-              />
-              <span className="pem-input-hint">Your class section as assigned by the registrar.</span>
+            <div className="pem-divider"><span>Block</span></div>
+            <div className="pem-two-col" style={{ marginBottom: 0 }}>
+              <div className="pem-field">
+                <label className="pem-label">Year Level</label>
+                <select
+                  className="pem-select"
+                  value={yearLevel}
+                  onChange={e => setSection(e.target.value ? e.target.value + (section.slice(1) || 'A') : '')}
+                  onFocus={handleInputFocus}
+                >
+                  <option value="">— Year —</option>
+                  {[['1','1st'],['2','2nd'],['3','3rd'],['4','4th']].map(([v,l]) => <option key={v} value={v}>{l} Year</option>)}
+                </select>
+              </div>
+              <div className="pem-field">
+                <label className="pem-label">Block</label>
+                <select
+                  className="pem-select"
+                  value={section}
+                  onChange={e => setSection(e.target.value)}
+                  onFocus={handleInputFocus}
+                  disabled={!yearLevel}
+                >
+                  <option value="">— Block —</option>
+                  {(BLOCKS[yearLevel] || []).map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
             </div>
 
             {(abbr || section) && (

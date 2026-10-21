@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Inbox, Calendar } from 'lucide-react';
+import { Inbox, Calendar, Clock, CheckCircle2, CalendarDays } from 'lucide-react';
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { getFacultyRequests, getProfile, updateRequestStatus } from '../../supabase/api';
@@ -39,31 +39,30 @@ const S = `
 }
 .fdc-banner-btn:hover { background: #fffbe6; }
 
-/* Welcome card */
-.fdc-welcome {
-  background: #fff; border: 1px solid #e5e8f0; border-radius: 14px;
-  padding: 1.4rem 1.6rem; box-shadow: 0 1px 6px rgba(0,0,0,0.05);
-}
-.fdc-welcome h2 { margin: 0 0 0.2rem; font-size: 1.7rem; font-weight: 800; color: #1a2d5a; letter-spacing: -0.3px; }
-.fdc-welcome p  { margin: 0; font-size: 0.88rem; color: #6b7280; }
-
 /* Metric cards */
 .fdc-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
 .fdc-metric {
-  background: #fff; border: 1px solid #e5e8f0; border-radius: 14px;
-  padding: 1.1rem 1.3rem; box-shadow: 0 1px 6px rgba(0,0,0,0.05);
-  cursor: pointer; transition: box-shadow 0.15s, transform 0.15s;
+  background-image: url('/dashboard-card-bg.jpg');
+  background-size: cover; background-position: center;
+  border: none; border-radius: 14px;
+  padding: 1.1rem 1.3rem; box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  cursor: pointer; transition: box-shadow 0.18s, transform 0.14s;
   display: flex; flex-direction: column; gap: 0.2rem; align-items: flex-start;
+  position: relative; overflow: hidden;
 }
-.fdc-metric:hover { box-shadow: 0 4px 16px rgba(26,45,90,0.12); transform: translateY(-1px); }
-.fdc-metric-label { font-size: 0.78rem; color: #6b7280; font-weight: 500; text-align: left; }
-.fdc-metric-num   { font-size: 2rem; font-weight: 800; color: #1a2d5a; line-height: 1; text-align: left; }
-.fdc-metric-num.orange { color: #ffab00; }
-.fdc-metric-num.blue   { color: #1a2d5a; }
-.fdc-metric-num.dark   { color: #1a2d5a; }
-.fdc-metric-sub   { font-size: 0.75rem; color: #9ca3af; font-weight: 500; text-align: left; }
-.fdc-metric-date  { font-size: 1.25rem; font-weight: 800; color: #1a2d5a; line-height: 1.2; text-align: left; }
-.fdc-metric-who   { font-size: 0.75rem; color: #6b7280; margin-top: 0.1rem; text-align: left; }
+.fdc-metric::before {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(10,20,55,0.28); border-radius: 14px; pointer-events: none;
+}
+.fdc-metric > * { position: relative; z-index: 1; }
+.fdc-metric:hover { box-shadow: 0 6px 22px rgba(0,0,0,0.28); transform: translateY(-1px); }
+.fdc-metric-header { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 0.3rem; }
+.fdc-metric-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.fdc-metric-label { font-size: 0.75rem; color: rgba(255,255,255,0.80); font-weight: 600; text-align: left; margin: 0; }
+.fdc-metric-num   { font-size: 1.6rem; font-weight: 800; color: #fff; line-height: 1.1; text-align: left; margin: 0 0 0.12rem 0; }
+.fdc-metric-sub   { font-size: 0.67rem; color: rgba(255,255,255,0.65); font-weight: 500; text-align: left; margin: 0; }
+.fdc-metric-date  { font-size: 1.25rem; font-weight: 800; color: #fff; line-height: 1.2; text-align: left; }
+.fdc-metric-who   { font-size: 0.75rem; color: rgba(255,255,255,0.70); margin-top: 0.1rem; text-align: left; }
 
 /* Section card */
 .fdc-section {
@@ -365,25 +364,29 @@ const FacultyDashboardContent = ({ onTabChange }) => {
       <style>{S}</style>
 
 
-      {/* Welcome */}
-      <div className="fdc-welcome">
-        <h2>Welcome, {firstName || displayName}!</h2>
-      </div>
-
       {/* Metric cards */}
       <div className="fdc-metrics">
         <button className="fdc-metric" onClick={() => onTabChange('Requests', 'Pending')}>
-          <span className="fdc-metric-label">Needs action</span>
-          {loading ? <div className="fdc-skel" style={{ height: 36, width: 60, margin: '0.2rem 0' }} /> : <span className={`fdc-metric-num orange`}>{pendingCount}</span>}
+          <div className="fdc-metric-header">
+            <span className="fdc-metric-label">Needs action</span>
+            <div className="fdc-metric-icon"><Clock size={17} color="#ffffff" /></div>
+          </div>
+          {loading ? <div className="fdc-skel" style={{ height: 36, width: 60, margin: '0.2rem 0' }} /> : <span className="fdc-metric-num">{pendingCount}</span>}
           <span className="fdc-metric-sub">Pending requests</span>
         </button>
         <button className="fdc-metric" onClick={() => onTabChange('Requests', 'Approved')}>
-          <span className="fdc-metric-label">Upcoming</span>
-          {loading ? <div className="fdc-skel" style={{ height: 36, width: 60, margin: '0.2rem 0' }} /> : <span className="fdc-metric-num blue">{approvedCount}</span>}
+          <div className="fdc-metric-header">
+            <span className="fdc-metric-label">Upcoming</span>
+            <div className="fdc-metric-icon"><CheckCircle2 size={17} color="#ffffff" /></div>
+          </div>
+          {loading ? <div className="fdc-skel" style={{ height: 36, width: 60, margin: '0.2rem 0' }} /> : <span className="fdc-metric-num">{approvedCount}</span>}
           <span className="fdc-metric-sub">Approved appointments</span>
         </button>
         <button className="fdc-metric fdc-metric--next" onClick={() => nextAppt && onTabChange('Calendar')}>
-          <span className="fdc-metric-label">Next appointment</span>
+          <div className="fdc-metric-header">
+            <span className="fdc-metric-label">Next appointment</span>
+            <div className="fdc-metric-icon"><CalendarDays size={17} color="#ffffff" /></div>
+          </div>
           {loading ? (
             <>
               <div className="fdc-skel" style={{ height: 18, width: '70%', margin: '0.3rem 0 0.2rem' }} />

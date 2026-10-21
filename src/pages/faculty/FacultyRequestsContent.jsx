@@ -610,14 +610,17 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
                       <Check size={13} /> Approve
                     </button>
                   </>)}
-                  {req.status === 'Approved' && (<>
-                    <button className="frc-btn frc-btn-cancel" onClick={() => setCancelModal({ open: true, req, reason: '', note: '' })}>
-                      <Ban size={13} /> Cancel
-                    </button>
-                    <button className="frc-btn frc-btn-complete" onClick={() => setConfirmModal({ open: true, reqId: req.id, newStatus: 'Completed', label: 'mark as completed' })}>
-                      <CheckCircle2 size={13} /> Done
-                    </button>
-                  </>)}
+                  {req.status === 'Approved' && (() => {
+                    const isPast = req.date && new Date(req.date + 'T23:59:59') < new Date();
+                    return isPast ? null : (<>
+                      <button className="frc-btn frc-btn-cancel" onClick={() => setCancelModal({ open: true, req, reason: '', note: '' })}>
+                        <Ban size={13} /> Cancel
+                      </button>
+                      <button className="frc-btn frc-btn-complete" onClick={() => setConfirmModal({ open: true, reqId: req.id, newStatus: 'Completed', label: 'mark as completed' })}>
+                        <CheckCircle2 size={13} /> Done
+                      </button>
+                    </>);
+                  })()}
                   {['Completed','Declined','Cancelled'].includes(req.status) && (
                     <button className="frc-btn frc-btn-archive" onClick={() => setDeleteModal({ open: true, reqId: req.id })}>
                       <Archive size={13} /> Archive

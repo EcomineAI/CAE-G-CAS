@@ -320,14 +320,15 @@ const facultyDashStyles = `
 }
 
 .fac-topbar {
-  height: 78px;
+  height: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 2rem;
+  padding: 1.4rem 2rem;
   background: var(--topbar-bg, #ffffff);
   border-bottom: 1px solid var(--topbar-border, #e5e8f0);
   flex-shrink: 0;
+  gap: 0.8rem;
   transition: padding-left 0.22s cubic-bezier(0.4,0,0.2,1);
 }
 .fac-sidebar:hover ~ .fac-main-area .fac-topbar {
@@ -1041,7 +1042,7 @@ const FacultyDashboard = () => {
             <span className="fac-nav-icon"><Settings size={18} /></span>
             <span className="fac-nav-label">Settings</span>
           </button>
-          <button data-label="Log Out" className="fac-nav-item" onClick={handleLogout} style={{ color: '#ef4444' }}>
+          <button data-label="Log Out" className="fac-nav-item" onClick={handleLogout} style={{ color: '#f87171' }}>
             <span className="fac-nav-icon"><LogOut size={18} /></span>
             <span className="fac-nav-label">Log Out</span>
           </button>
@@ -1054,9 +1055,16 @@ const FacultyDashboard = () => {
 
         {/* Desktop topbar */}
         <div className="fac-topbar">
-          <span style={{ fontWeight: 700, fontSize: '1.5rem', color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>
-            {activeTab === 'Terms' ? 'Terms & Policy' : activeTab}
-          </span>
+          <div>
+            <span style={{ fontWeight: 800, fontSize: '1.5rem', color: 'var(--text-primary)', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
+              {activeTab === 'Dashboard'
+                ? `${(() => { const h = new Date().getHours(); return h < 12 ? 'Good Morning' : h < 17 ? 'Good Afternoon' : 'Good Evening'; })()}, ${profileName.split(' ')[0] || 'Faculty'}!`
+                : activeTab === 'Terms' ? 'Terms & Policy' : activeTab}
+            </span>
+            <div style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-muted)', marginTop: '2px' }}>
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </div>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             {!isAdminBypass && (
               <button className="fac-topbar-icon-btn" onClick={() => setIsNotifOpen(!isNotifOpen)} title="Notifications" style={{ position: 'relative' }}>
