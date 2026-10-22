@@ -807,7 +807,7 @@ const FacultyDashboard = () => {
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [resetTimer, setResetTimer] = useState(null);
   const [oooDate, setOooDate] = useState('');
-  const saveStatusDebounced = debouncedSave((uid, s) => updateFacultyStatus(uid, s), 500);
+  const saveStatus = (uid, s) => updateFacultyStatus(uid, s);
   const [profilePrefix, setProfilePrefix] = useState('');
   const [profileSuffix, setProfileSuffix] = useState('');
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -1112,7 +1112,7 @@ const FacultyDashboard = () => {
                       { label: 'Out of office',color: '#616161' },
                     ].map(opt => (
                       <div key={opt.label}
-                        onClick={() => { setProfileStatus(opt.label); saveStatusDebounced(user?.id, opt.label); toast.success(`Status set to ${opt.label}`); }}
+                        onClick={() => { setProfileStatus(opt.label); saveStatus(user?.id, opt.label); toast.success(`Status set to ${opt.label}`); }}
                         style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem 0.3rem', cursor: 'pointer', borderRadius: 8, transition: 'background 0.12s' }}
                         onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-primary,#f0f2f8)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -1312,7 +1312,7 @@ const FacultyDashboard = () => {
                   { label: 'Out of office', color: '#616161' },
                 ].map(opt => (
                   <button key={opt.label}
-                    onClick={() => { setProfileStatus(opt.label); saveStatusDebounced(user?.id, opt.label); toast.success(`Status set to ${opt.label}`); }}
+                    onClick={() => { setProfileStatus(opt.label); saveStatus(user?.id, opt.label); toast.success(`Status set to ${opt.label}`); }}
                     style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', background: profileStatus === opt.label ? 'rgba(255,255,255,0.12)' : 'none', border: 'none', borderRadius: 8, padding: '0.45rem 0.5rem', cursor: 'pointer', width: '100%', fontFamily: 'Outfit, sans-serif' }}
                   >
                     <span style={{ width: 9, height: 9, borderRadius: '50%', background: opt.color, flexShrink: 0 }} />
