@@ -1074,7 +1074,11 @@ const FacultyContent = ({ initialFacultyId = null }) => {
   const [selectedSlotIdx, setSelectedSlotIdx] = useState(null);
   const [facultyBlockedDates, setFacultyBlockedDates] = useState([]);
   const [topicOpen, setTopicOpen] = useState(false);
-  const [layoutMode, setLayoutMode] = useState(() => localStorage.getItem('gcas_faculty_layout') || 'grid');
+  const [layoutMode, setLayoutMode] = useState(() => {
+    const saved = localStorage.getItem('gcas_faculty_layout');
+    if (saved) return saved;
+    return window.innerWidth < 600 ? 'list' : 'grid';
+  });
   const { isOnline } = useNetworkStatus();
 
   useEffect(() => {
