@@ -88,9 +88,9 @@ const S = `
   padding: 0.85rem 0; border-top: 1px solid #e5e8f0;
 }
 .fdc-avatar {
-  width: 38px; height: 38px; border-radius: 50%; background: #e5e8f0;
+  width: 38px; height: 38px; border-radius: 50%; background: #2e4a87;
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; overflow: hidden; color: #6b7280;
+  flex-shrink: 0; overflow: hidden; color: #fff;
 }
 .fdc-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .fdc-req-info { flex: 1; min-width: 0; }
@@ -431,7 +431,7 @@ const FacultyDashboardContent = ({ onTabChange }) => {
           </div>
         ) : pendingList.map(req => (
           <div key={req.id} className="fdc-req-row">
-            <div className="fdc-avatar">
+            <div className="fdc-avatar" style={req.avatarColor ? { background: req.avatarColor } : {}}>
               <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{getInitials(req.name)}</span>
             </div>
             <div className="fdc-req-info">
@@ -475,7 +475,7 @@ const FacultyDashboardContent = ({ onTabChange }) => {
           </div>
         ) : upcomingList.map(req => (
           <div key={req.id} className="fdc-upcoming-row">
-            <div className="fdc-avatar">
+            <div className="fdc-avatar" style={req.avatarColor ? { background: req.avatarColor } : {}}>
               <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{getInitials(req.name)}</span>
             </div>
             <div className="fdc-upcoming-info">

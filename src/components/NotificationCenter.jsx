@@ -84,7 +84,7 @@ const NotificationCenter = ({ userId, isOpen, onClose, role = 'Student', onNotif
           playNotifSound();
           let senderProfile = null;
           if (payload.new.sender_id) {
-            const { data } = await supabase.from('profiles').select('id, avatar_url, full_name').eq('id', payload.new.sender_id).single();
+            const { data } = await supabase.from('profiles').select('id, avatar_url, avatar_color, full_name').eq('id', payload.new.sender_id).single();
             senderProfile = data || null;
           }
           setNotifications(prev => [{ ...payload.new, senderProfile }, ...prev]);
@@ -104,7 +104,7 @@ const NotificationCenter = ({ userId, isOpen, onClose, role = 'Student', onNotif
         let profileMap = {};
         if (senderIds.length > 0) {
           const { data: profiles } = await supabase
-            .from('profiles').select('id, avatar_url, full_name').in('id', senderIds);
+            .from('profiles').select('id, avatar_url, avatar_color, full_name').in('id', senderIds);
           (profiles || []).forEach(p => { profileMap[p.id] = p; });
         }
         setNotifications(data.map(n => ({ ...n, senderProfile: profileMap[n.sender_id] || null })));
@@ -266,10 +266,11 @@ const NotificationCenter = ({ userId, isOpen, onClose, role = 'Student', onNotif
                 >
                   {(() => {
                     const senderName = notif.senderProfile?.full_name || extractNameFromMessage(notif.message);
-                    const avatarColor = nameToColor(senderName || '');
+                    const savedColor = notif.senderProfile?.avatar_color || null;
+                    const avatarColor = savedColor || nameToColor(senderName || '');
                     return (
-                      <div className="nc-avatar" style={{ background: senderName ? avatarColor + '33' : '#b2e0e033' }}>
-                        <span style={{ fontSize: '0.82rem', fontWeight: 800, color: senderName ? avatarColor : '#5bc8c8' }}>
+                      <div className="nc-avatar" style={{ background: avatarColor }}>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#fff' }}>
                           {senderName ? getInitials(senderName.replace(/^(Dr|Mr|Ms|Mrs|Prof)\.?\s*/i, '').trim()) : '?'}
                         </span>
                         <div className="nc-avatar-icon" style={{ background: meta.iconBg }}>
