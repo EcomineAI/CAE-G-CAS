@@ -87,10 +87,9 @@ export const subscribeToFacultyStatus = (callback) => {
         event: 'UPDATE',
         schema: 'public',
         table: 'profiles',
-        filter: 'role=eq.faculty'
       },
       (payload) => {
-        callback(payload);
+        if (payload.new?.role === 'faculty') callback(payload);
       }
     )
     .subscribe();
