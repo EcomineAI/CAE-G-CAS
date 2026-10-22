@@ -1,6 +1,19 @@
 import { supabase } from './supabase';
 import { logError } from './ux';
 
+// Auto-complete Approved requests whose date has already passed.
+// Runs silently before any fetch — no await needed at call site if fire-and-forget is ok,
+// but we await it so the fetch sees the updated statuses.
+const autoCompleteExpired = async (filterColumn, userId) => {
+  const today = new Date().toISOString().slice(0, 10);
+  await supabase
+    .from('requests')
+    .update({ status: 'Completed', updated_at: new Date().toISOString() })
+    .eq(filterColumn, userId)
+    .eq('status', 'Approved')
+    .lt('request_date', today);
+};
+
 const insertNotification = async (userId, type, message, requestId = null) => {
   const { error } = await supabase.from('notifications').insert({
     user_id: userId,
@@ -158,6 +171,7 @@ export const deleteSchedule = async (scheduleId) => {
  * Get all requests for a faculty member, with student profile info.
  */
 export const getFacultyRequests = async (facultyId) => {
+  await autoCompleteExpired('faculty_id', facultyId);
   const { data, error } = await supabase
     .from('requests')
     .select(`
@@ -284,6 +298,7 @@ export const updateRequestDetails = async (requestId, subject, details) => {
  * Get all requests for a student, with faculty profile info.
  */
 export const getStudentRequests = async (studentId) => {
+  await autoCompleteExpired('student_id', studentId);
   const { data, error } = await supabase
     .from('requests')
     .select(`
