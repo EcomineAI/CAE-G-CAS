@@ -1376,11 +1376,12 @@ const FacultyContent = ({ initialFacultyId = null }) => {
                 </div>
               </div>
             ) : filteredFaculty.map((faculty, idx) => {
-              const isUnavailable = faculty.status === 'Unavailable' || faculty.status === 'Out of office';
-              const isBusy = faculty.status === 'Busy';
               const isOoo = faculty.status === 'Out of office';
-              const statusColor = isOoo ? '#616161' : isUnavailable ? '#616161' : isBusy ? '#ff1744' : '#00c853';
-              const statusLabel = isOoo ? 'Out of office' : isUnavailable ? 'Unavailable Today' : isBusy ? 'Busy' : null;
+              const isUnavailable = faculty.status === 'Unavailable' || isOoo;
+              const isBusy = faculty.status === 'Busy';
+              const isInMeeting = faculty.status === 'In a meeting';
+              const statusColor = isOoo ? '#616161' : isUnavailable ? '#616161' : isBusy ? '#ff1744' : isInMeeting ? '#ff9800' : '#00c853';
+              const statusLabel = isOoo ? 'Out of office' : isUnavailable ? 'Unavailable Today' : isBusy ? 'Busy' : isInMeeting ? 'In a meeting' : null;
 
               return (
                 <div className="faculty-card" key={idx}>
@@ -1393,7 +1394,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.62rem', fontWeight: 700, color: statusColor || '#00c853' }}>
                       <span style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor || '#00c853', flexShrink: 0, display: 'inline-block' }} />
-                      {isOoo ? 'OOO' : isUnavailable ? 'N/A' : isBusy ? 'Busy' : 'Available'}
+                      {isOoo ? 'OOO' : isUnavailable ? 'N/A' : isBusy ? 'Busy' : isInMeeting ? 'Meeting' : 'Available'}
                     </div>
                   </div>
 
