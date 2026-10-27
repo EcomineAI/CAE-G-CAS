@@ -938,7 +938,7 @@ const FacultyDashboard = () => {
       case 'Settings':
         return (
           <SharedSettingsContent
-            role="faculty"
+            role={isAdminBypass ? 'admin' : 'faculty'}
             profileData={profileData}
             userId={user?.id}
             userEmail={user?.email}
