@@ -192,6 +192,9 @@ const adminStyles = `
 .admin-metric-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .admin-metric-value { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
 .admin-metric-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+.admin-metric-card.clickable { cursor: pointer; transition: transform 0.13s, box-shadow 0.13s, border-color 0.13s; }
+.admin-metric-card.clickable:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.1); }
+.admin-metric-card.clickable.active { border-color: var(--active-color, #6366f1); box-shadow: 0 0 0 2.5px var(--active-color, #6366f1); transform: translateY(-1px); }
 
 .admin-section {
   background: var(--bg-secondary); border: 1px solid var(--border-color);
@@ -292,6 +295,7 @@ const AdminContent = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [activeFilter, setActiveFilter] = useState(null);
 
   // Reports filters
   const [rangePreset, setRangePreset] = useState('month');
@@ -315,15 +319,32 @@ const AdminContent = () => {
   const counts   = ALL_STATUSES.reduce((acc, s) => { acc[s] = requests.filter(r => r.status === s).length; return acc; }, {});
 
   const metrics = [
-    { label: 'Faculty',        value: faculty.length,    icon: Users,         color: '#6366f1' },
-    { label: 'Students',       value: students.length,   icon: GraduationCap, color: '#22c55e' },
-    { label: 'Total Requests', value: requests.length,   icon: CalendarClock, color: '#f97316' },
-    { label: 'Pending',        value: counts.Pending,    icon: Clock,         color: '#eab308' },
-    { label: 'Approved',       value: counts.Approved,   icon: CheckCircle,   color: '#3b82f6' },
-    { label: 'Declined',       value: counts.Declined,   icon: XCircle,       color: '#ef4444' },
-    { label: 'Completed',      value: counts.Completed,  icon: CheckCircle,   color: '#22c55e' },
-    { label: 'Cancelled',      value: counts.Cancelled,  icon: XCircle,       color: '#9ca3af' },
+    { label: 'Faculty',        value: faculty.length,    icon: Users,         color: '#6366f1', filter: 'Faculty' },
+    { label: 'Students',       value: students.length,   icon: GraduationCap, color: '#22c55e', filter: 'Students' },
+    { label: 'Total Requests', value: requests.length,   icon: CalendarClock, color: '#f97316', filter: 'Total Requests' },
+    { label: 'Pending',        value: counts.Pending,    icon: Clock,         color: '#eab308', filter: 'Pending' },
+    { label: 'Approved',       value: counts.Approved,   icon: CheckCircle,   color: '#3b82f6', filter: 'Approved' },
+    { label: 'Declined',       value: counts.Declined,   icon: XCircle,       color: '#ef4444', filter: 'Declined' },
+    { label: 'Completed',      value: counts.Completed,  icon: CheckCircle,   color: '#22c55e', filter: 'Completed' },
+    { label: 'Cancelled',      value: counts.Cancelled,  icon: XCircle,       color: '#9ca3af', filter: 'Cancelled' },
   ];
+
+  // IDs of users who have at least one request with the filtered status
+  const usersWithStatus = (status) => {
+    const fIds = new Set(requests.filter(r => r.status === status).map(r => r.facultyId).filter(Boolean));
+    const sIds = new Set(requests.filter(r => r.status === status).map(r => r.studentId).filter(Boolean));
+    return { fIds, sIds };
+  };
+
+  const filteredProfiles = (() => {
+    if (!activeFilter) return profiles;
+    if (activeFilter === 'Faculty') return profiles.filter(p => p.role === 'faculty');
+    if (activeFilter === 'Students') return profiles.filter(p => p.role === 'student');
+    if (activeFilter === 'Total Requests') return profiles.filter(p =>
+      requests.some(r => r.facultyId === p.id || r.studentId === p.id));
+    const { fIds, sIds } = usersWithStatus(activeFilter);
+    return profiles.filter(p => (p.role === 'faculty' ? fIds : sIds).has(p.id));
+  })();
 
   const profileNameMap = profiles.reduce((acc, p) => { acc[p.id] = p.full_name; return acc; }, {});
 
@@ -402,30 +423,55 @@ const AdminContent = () => {
       {tab === 'overview' && (
         <>
           <div className="admin-metrics">
-            {metrics.map(m => (
-              <div className="admin-metric-card" key={m.label}>
-                <div className="admin-metric-icon" style={{ background: `${m.color}18`, color: m.color }}>
-                  <m.icon size={20} />
+            {metrics.map(m => {
+              const isActive = activeFilter === m.filter;
+              return (
+                <div
+                  key={m.label}
+                  className={`admin-metric-card clickable${isActive ? ' active' : ''}`}
+                  style={{ '--active-color': m.color }}
+                  onClick={() => setActiveFilter(prev => prev === m.filter ? null : m.filter)}
+                >
+                  <div className="admin-metric-icon" style={{ background: `${m.color}${isActive ? '30' : '18'}`, color: m.color }}>
+                    <m.icon size={20} />
+                  </div>
+                  <div>
+                    <div className="admin-metric-value">{loading ? '…' : m.value}</div>
+                    <div className="admin-metric-label">{m.label}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="admin-metric-value">{loading ? '…' : m.value}</div>
-                  <div className="admin-metric-label">{m.label}</div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="admin-section">
             <p className="admin-section-title">
-              User Roles ({profiles.length})
-              <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.8rem' }}>— click a row to view history</span>
+              {activeFilter ? (
+                <>
+                  {activeFilter}
+                  <span style={{ fontWeight: 600, color: 'var(--text-muted)', fontSize: '0.82rem' }}>— {filteredProfiles.length} user{filteredProfiles.length !== 1 ? 's' : ''}</span>
+                  <button
+                    onClick={() => setActiveFilter(null)}
+                    style={{ marginLeft: 'auto', padding: '0.2rem 0.75rem', borderRadius: 20, border: '1.5px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.13s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#1a2d5a'; e.currentTarget.style.color = '#1a2d5a'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+                  >
+                    ✕ Reset
+                  </button>
+                </>
+              ) : (
+                <>
+                  User Roles ({profiles.length})
+                  <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.8rem' }}>— click a card or row to filter</span>
+                </>
+              )}
             </p>
             <div className="admin-body">
               <div className="admin-left">
                 {loading ? (
                   <div className="admin-empty">Loading…</div>
-                ) : profiles.length === 0 ? (
-                  <div className="admin-empty">No users found.</div>
+                ) : filteredProfiles.length === 0 ? (
+                  <div className="admin-empty">No users match this filter.</div>
                 ) : (
                   <div style={{ overflowX: 'auto' }}>
                     <table className="admin-table">
@@ -436,7 +482,7 @@ const AdminContent = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {profiles.map(p => {
+                        {filteredProfiles.map(p => {
                           const dotColor = STATUS_DOT_COLOR[p.status] || '#9ca3af';
                           const isSelected = selectedUser?.id === p.id;
                           const reqCount = getUserReqCount(p.id, p.role);
