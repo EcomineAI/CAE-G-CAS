@@ -534,6 +534,7 @@ const StudentDashboard = () => {
     localStorage.removeItem('gcas_student_tab');
     localStorage.removeItem('gcas_faculty_tab');
     localStorage.removeItem('askademic_last_uid');
+    if (user?.id) localStorage.removeItem(`askademic_avatar_color_${user.id}`);
     sessionStorage.removeItem('admin_bypass');
     await supabase.auth.signOut();
     navigate('/');

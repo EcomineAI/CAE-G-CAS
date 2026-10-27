@@ -136,6 +136,13 @@ export const useAuth = () => {
         setLoading(false);
         return;
       }
+      // On every sign-in (including account switches), wipe stale state immediately
+      // so downstream hooks never read the previous user's displayName while the
+      // new profile is being fetched.
+      if (event === 'SIGNED_IN') {
+        setUser(null);
+        setLoading(true);
+      }
       applyUser(session?.user ?? null, event);
     });
 

@@ -21,11 +21,15 @@ export function ProfileProvider({ children }) {
   const [avatarColor, setAvatarColor] = useState(null);
   const loadedForUser = useRef(null);
 
-  // Derived display fields
-  const displayName   = profileData?.full_name  || user?.displayName || '';
+  // Derived display fields.
+  // Do NOT fall back to user?.displayName — that value is baked into the auth
+  // object during processUser and carries the PREVIOUS session's name until the
+  // new profile row is fetched. Returning '' while profileData is null prevents
+  // stale names flashing in the greeting and profile chip on account switch.
+  const displayName   = profileData?.full_name  || '';
   const namePrefix    = profileData?.name_prefix || '';
   const nameSuffix    = profileData?.name_suffix || '';
-  const avatarUrl     = profileData?.avatar_url  || user?.avatarUrl  || null;
+  const avatarUrl     = profileData?.avatar_url  || null;
   const resolvedColor = resolveAvatarColor(avatarColor, displayName, user?.id);
 
   // Load profile once per user — reset stale state immediately on user switch
