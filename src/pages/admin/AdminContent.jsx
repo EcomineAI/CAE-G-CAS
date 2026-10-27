@@ -719,7 +719,12 @@ const AdminContent = () => {
                                 </div>
                               </td>
                               <td style={{ color: 'var(--text-muted)' }}>{deptOrProgram}</td>
-                              <td><span className="admin-status-dot" style={{ background: dotColor }} />{p.status || '—'}</td>
+                              <td>
+                                {p.role === 'faculty'
+                                  ? <><span className="admin-status-dot" style={{ background: dotColor }} />{p.status || '—'}</>
+                                  : <span style={{ color: 'var(--text-muted)' }}>—</span>
+                                }
+                              </td>
                               <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{fmtDate(p.created_at)}</td>
                               <td>
                                 <span className={`admin-role-badge ${p.role === 'faculty' ? 'faculty' : p.role === 'student' ? 'student' : 'no-role'}`}>
