@@ -984,7 +984,7 @@ const FacultyDashboard = () => {
           </div>
         </div>
 
-        <div className="fac-section-label">Faculty Workplace</div>
+        <div className="fac-section-label">{isAdminBypass ? 'Admin Portal' : 'Faculty Workplace'}</div>
 
         {navItems.map(({ id, icon: Icon }) => (
           <button
