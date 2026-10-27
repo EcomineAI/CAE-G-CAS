@@ -248,27 +248,29 @@ const SharedSettingsContent = ({
           </div>
         )}
 
-        {/* Privacy */}
-        <div className="ss-card">
-          <p className="ss-card-title">Privacy</p>
-          <p className="ss-card-sub" style={{ marginBottom: '0.5rem' }}>
-            {isFaculty
-              ? 'Students only see your name, department, and availability status. Your email and contact details are never shown.'
-              : 'Faculty see your student number alongside your name when reviewing requests.'}
-          </p>
-          {!isFaculty && (
-            <div className="ss-privacy-row">
-              <span className="ss-privacy-chip">
-                <span className="ss-dot" style={{ background: '#00c853' }} />
-                <span style={{ color: '#166534', fontWeight: 600 }}>Visible: name, student number, section, request notes</span>
-              </span>
-              <span className="ss-privacy-chip">
-                <span className="ss-dot" style={{ background: '#ff1744' }} />
-                <span style={{ color: '#991b1b', fontWeight: 600 }}>Hidden: email, contact number</span>
-              </span>
-            </div>
-          )}
-        </div>
+        {/* Privacy — hidden for admin */}
+        {!isAdmin && (
+          <div className="ss-card">
+            <p className="ss-card-title">Privacy</p>
+            <p className="ss-card-sub" style={{ marginBottom: '0.5rem' }}>
+              {isFaculty
+                ? 'Students only see your name, department, and availability status. Your email and contact details are never shown.'
+                : 'Faculty see your student number alongside your name when reviewing requests.'}
+            </p>
+            {!isFaculty && (
+              <div className="ss-privacy-row">
+                <span className="ss-privacy-chip">
+                  <span className="ss-dot" style={{ background: '#00c853' }} />
+                  <span style={{ color: '#166534', fontWeight: 600 }}>Visible: name, student number, section, request notes</span>
+                </span>
+                <span className="ss-privacy-chip">
+                  <span className="ss-dot" style={{ background: '#ff1744' }} />
+                  <span style={{ color: '#991b1b', fontWeight: 600 }}>Hidden: email, contact number</span>
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </>
