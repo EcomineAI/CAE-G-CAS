@@ -541,6 +541,10 @@ const StudentDashboard = () => {
 
   const displayName = realName || 'Student';
   const initials = displayName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  const programAbbr = (() => {
+    const raw = profileData?.program || '';
+    return raw ? ((raw.match(/\(([^)]+)\)/) || [])[1] || raw) : 'Student';
+  })();
 
   const getGreeting = () => {
     const h = new Date().getHours();
@@ -636,7 +640,7 @@ const StudentDashboard = () => {
               <p className="sd-user-name">
                 {profilePrefix ? `${profilePrefix} ` : ''}{displayName}{profileSuffix ? `, ${profileSuffix}` : ''}
               </p>
-              <p className="sd-user-role">BSCS Student</p>
+              <p className="sd-user-role">{programAbbr} Student</p>
             </div>
           </div>
         </aside>
@@ -775,7 +779,7 @@ const StudentDashboard = () => {
               </div>
               <div>
                 <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: '#fff' }}>{displayName}</p>
-                <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)' }}>BSCS Student</p>
+                <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)' }}>{programAbbr} Student</p>
               </div>
             </div>
 

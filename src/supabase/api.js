@@ -460,7 +460,7 @@ export const markRequestSeen = async (requestId) => {
 export const getAllProfiles = async () => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, email, role, department, status, avatar_url, avatar_color, created_at')
+    .select('id, full_name, email, role, department, program, status, avatar_url, avatar_color, created_at')
     .neq('full_name', 'Admin')
     .order('role', { ascending: true })
     .order('full_name', { ascending: true });

@@ -521,7 +521,7 @@ const AdminContent = () => {
                     <table className="admin-table">
                       <thead>
                         <tr>
-                          <th>Name</th><th>Department</th><th>Status</th>
+                          <th>Name</th><th>Dept / Program</th><th>Status</th>
                           <th>Joined</th><th>Role</th><th style={{ textAlign: 'center' }}>Requests</th>
                         </tr>
                       </thead>
@@ -531,6 +531,9 @@ const AdminContent = () => {
                           const isSelected = selectedUser?.id === p.id;
                           const reqCount = getUserReqCount(p.id, p.role);
                           const avatarBg = p.avatar_color || nameToColor(p.full_name || '');
+                          const deptOrProgram = p.role === 'faculty'
+                            ? 'CCS'
+                            : (p.program ? ((p.program.match(/\(([^)]+)\)/) || [])[1] || p.program) : '—');
                           return (
                             <tr key={p.id} className={`clickable${isSelected ? ' row-selected' : ''}`} onClick={() => setSelectedUser(prev => prev?.id === p.id ? null : p)}>
                               <td style={{ fontWeight: 600 }}>
@@ -541,7 +544,7 @@ const AdminContent = () => {
                                   {p.full_name || '—'}
                                 </div>
                               </td>
-                              <td style={{ color: 'var(--text-muted)' }}>{p.role === 'faculty' ? 'CCS' : (p.department || '—')}</td>
+                              <td style={{ color: 'var(--text-muted)' }}>{deptOrProgram}</td>
                               <td><span className="admin-status-dot" style={{ background: dotColor }} />{p.status || '—'}</td>
                               <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{fmtDate(p.created_at)}</td>
                               <td><span className={`admin-role-badge ${p.role || 'student'}`}>{p.role === 'faculty' ? 'Faculty' : 'Student'}</span></td>
@@ -565,7 +568,12 @@ const AdminContent = () => {
                       <p className="admin-detail-name">{selectedUser.full_name || '—'}</p>
                       <div className="admin-detail-meta">
                         <span className={`admin-role-badge ${selectedUser.role || 'student'}`}>{selectedUser.role === 'faculty' ? 'Faculty' : 'Student'}</span>
-                        {selectedUser.role === 'faculty' ? <span>CCS</span> : (selectedUser.department && <span>{selectedUser.department}</span>)}
+                        {selectedUser.role === 'faculty'
+                          ? <span>CCS</span>
+                          : selectedUser.program
+                            ? <span>{(selectedUser.program.match(/\(([^)]+)\)/) || [])[1] || selectedUser.program}</span>
+                            : null
+                        }
                         {selectedUser.status && (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: STATUS_DOT_COLOR[selectedUser.status] || '#9ca3af', display: 'inline-block' }} />
