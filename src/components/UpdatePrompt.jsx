@@ -61,7 +61,10 @@ const POLL_INTERVAL_MS = 5 * 60 * 1000;
 
 const fetchHash = async () => {
   try {
-    const res = await fetch(`/version.json?t=${Date.now()}`);
+    const res = await fetch(`/version.json?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache, no-store' },
+    });
     if (!res.ok) return null;
     const data = await res.json();
     return data.hash || null;
