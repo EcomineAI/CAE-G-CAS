@@ -180,21 +180,62 @@ const adminStyles = `
 .admin-export-btn:hover { border-color: #1a2d5a; color: #1a2d5a; }
 
 .admin-metrics {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
 }
+@media (max-width: 960px) { .admin-metrics { grid-template-columns: repeat(4, 1fr); } }
 @media (max-width: 700px) { .admin-metrics { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 420px) { .admin-metrics { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; } }
 
 .admin-metric-card {
-  background: var(--bg-secondary); border: 1px solid var(--border-color);
-  border-radius: 12px; padding: 1.2rem 1.4rem;
-  display: flex; align-items: center; gap: 1rem; box-shadow: var(--shadow);
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1rem 1.1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  position: relative;
+  overflow: hidden;
 }
-.admin-metric-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.admin-metric-value { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
-.admin-metric-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
-.admin-metric-card.clickable { cursor: pointer; transition: transform 0.13s, box-shadow 0.13s, border-color 0.13s; }
-.admin-metric-card.clickable:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.1); }
-.admin-metric-card.clickable.active { border-color: var(--active-color, #6366f1); box-shadow: 0 0 0 2.5px var(--active-color, #6366f1); transform: translateY(-1px); }
+.admin-metric-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--active-color, transparent);
+  opacity: 0;
+  transition: opacity 0.15s;
+  border-radius: 14px 14px 0 0;
+}
+.admin-metric-card-top { display: flex; align-items: center; justify-content: space-between; }
+.admin-metric-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.admin-metric-value { font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1; letter-spacing: -1px; }
+.admin-metric-label { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.admin-metric-card.clickable {
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+  user-select: none;
+}
+.admin-metric-card.clickable:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  border-color: color-mix(in srgb, var(--active-color, #6366f1) 40%, var(--border-color));
+}
+.admin-metric-card.clickable:hover::after { opacity: 0.5; }
+.admin-metric-card.clickable.active {
+  border-color: var(--active-color, #6366f1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--active-color, #6366f1) 18%, transparent), 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+.admin-metric-card.clickable.active::after { opacity: 1; }
 
 .admin-section {
   background: var(--bg-secondary); border: 1px solid var(--border-color);
@@ -431,13 +472,16 @@ const AdminContent = () => {
                   className={`admin-metric-card clickable${isActive ? ' active' : ''}`}
                   style={{ '--active-color': m.color }}
                   onClick={() => setActiveFilter(prev => prev === m.filter ? null : m.filter)}
+                  title={isActive ? `Clear filter: ${m.label}` : `Filter by: ${m.label}`}
                 >
-                  <div className="admin-metric-icon" style={{ background: `${m.color}${isActive ? '30' : '18'}`, color: m.color }}>
-                    <m.icon size={20} />
-                  </div>
-                  <div>
-                    <div className="admin-metric-value">{loading ? '…' : m.value}</div>
+                  <div className="admin-metric-card-top">
                     <div className="admin-metric-label">{m.label}</div>
+                    <div className="admin-metric-icon" style={{ background: `${m.color}${isActive ? '28' : '14'}`, color: m.color }}>
+                      <m.icon size={17} />
+                    </div>
+                  </div>
+                  <div className="admin-metric-value" style={{ color: isActive ? m.color : 'var(--text-primary)' }}>
+                    {loading ? '…' : m.value}
                   </div>
                 </div>
               );
