@@ -35,6 +35,15 @@ export default defineConfig(() => ({
       filename: 'sw.js',
       manifest: false,
     }),
+    {
+      name: 'inject-build-meta',
+      transformIndexHtml(html) {
+        return html.replace(
+          '<meta charset="UTF-8" />',
+          `<meta charset="UTF-8" />\n    <meta name="app-version" content="${commitHash}" />`
+        );
+      },
+    },
   ],
   server: {
     allowedHosts: [".trycloudflare.com"]
