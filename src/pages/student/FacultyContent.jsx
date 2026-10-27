@@ -1063,7 +1063,8 @@ const FacultyContent = ({ initialFacultyId = null }) => {
   const [facultyView, setFacultyView] = useState('list');
   const [selectedFaculty, setSelectedFaculty] = useState(null);
   const [facultySchedules, setFacultySchedules] = useState([]);
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -1159,50 +1160,53 @@ const FacultyContent = ({ initialFacultyId = null }) => {
   };
 
   const handleBookSlot = async (slot, chosenDate = null) => {
-    if (!user || !selectedFaculty) return;
+    if (!user || !selectedFaculty || isSubmitting) return;
+    setIsSubmitting(true);
 
     if (!isOnline) {
       toast.error('You are offline. Please reconnect and try again.');
+      setIsSubmitting(false);
       return;
     }
 
     const activeCount = await getActiveRequestCount(user.id);
     if (activeCount >= MAX_ACTIVE_REQUESTS) {
       toast.error(`You already have ${MAX_ACTIVE_REQUESTS} active requests. Complete or cancel one before booking again.`);
+      setIsSubmitting(false);
       return;
     }
 
     const slotTaken = await checkActiveRequestForSlot(user.id, slot.id);
     if (slotTaken) {
       toast.error('You already have an active request for this specific slot.');
+      setIsSubmitting(false);
       return;
     }
 
     const hasActive = await checkActiveRequest(user.id, selectedFaculty.id);
     if (hasActive) {
       toast.error('You already have an active request with this faculty member.');
+      setIsSubmitting(false);
       return;
     }
 
     if (slot.filled >= slot.max_slots) {
       toast.error('This consultation slot is already fully booked.');
+      setIsSubmitting(false);
       return;
     }
 
     if (selectedFaculty.status === 'Unavailable' || selectedFaculty.status === 'Out of office') {
       toast.error(`${selectedFaculty.name} is currently ${selectedFaculty.status === 'Out of office' ? 'out of office' : 'unavailable'} and not accepting requests.`);
+      setIsSubmitting(false);
       return;
     }
 
-    // Target date: prefer the date the student picked in the booking modal,
-    // then the slot's specific_date for one-time slots, else today as a last resort.
     const targetDate =
       chosenDate ||
       (slot.schedule_type === 'one-time' && slot.specific_date) ||
       new Date().toISOString().split('T')[0];
-    console.log('[booking] checking block for date:', targetDate, 'faculty:', selectedFaculty.id);
     const block = await isDateBlocked(selectedFaculty.id, targetDate);
-    console.log('[booking] block result:', block);
     if (block) {
       const facultyDisplayName = selectedFaculty?.name || 'The faculty';
       toast.error(
@@ -1212,6 +1216,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
             ? `This date is blocked by the faculty (${block.reason}).`
             : 'This date is blocked by the faculty.'
       );
+      setIsSubmitting(false);
       return;
     }
 
@@ -1236,14 +1241,18 @@ const FacultyContent = ({ initialFacultyId = null }) => {
     };
 
     const result = await submitRequest(requestData, notifContext);
-    if (result) {
-      setSubmittedReqId(result.id);
+    if (result?.data) {
+      setSubmittedReqId(result.data.id);
       setSelectedSlot(slot);
       setFacultyView('list');
       setShowConfirmation(true);
       toast.success('Request sent! Awaiting faculty approval');
+    } else if (result?.error === 'SLOT_FULL') {
+      toast.error('No available slots remaining for this time schedule.');
+      setIsSubmitting(false);
     } else {
       toast.error('Failed to submit request. Please try again.');
+      setIsSubmitting(false);
     }
   };
 
@@ -1440,6 +1449,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
 
         const handleInlineSubmit = async (e) => {
           e.preventDefault();
+          if (isSubmitting) return;
           if (selected.isBlocked) { toast.error(selected.isOoo ? 'Faculty is out of office on this date.' : 'This date is blocked.'); return; }
           if (!chosenSlot) { toast.error('Please select a time slot.'); return; }
           if (!subject) { toast.error('Please select a consultation topic.'); return; }
@@ -1573,8 +1583,15 @@ const FacultyContent = ({ initialFacultyId = null }) => {
 
                     {/* Actions */}
                     <div className="bk-actions">
-                      <button type="submit" className="bk-submit-btn">Submit Request</button>
-                      <button type="button" className="bk-cancel-btn" onClick={() => setFacultyView('list')}>Cancel</button>
+                      <button
+                        type="submit"
+                        className="bk-submit-btn"
+                        disabled={isSubmitting}
+                        style={isSubmitting ? { opacity: 0.65, cursor: 'not-allowed' } : {}}
+                      >
+                        {isSubmitting ? 'Submitting…' : 'Submit Request'}
+                      </button>
+                      <button type="button" className="bk-cancel-btn" disabled={isSubmitting} onClick={() => !isSubmitting && setFacultyView('list')}>Cancel</button>
                     </div>
                   </form>
                 )}

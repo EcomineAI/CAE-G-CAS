@@ -708,8 +708,33 @@ export const getSchedulesForFaculty = async (facultyId) => {
 
 /**
  * Submit a new appointment request.
+ * Returns { data } on success, { error: 'SLOT_FULL' } if the slot filled up between the
+ * client-side check and the insert (race condition), or { error: 'DB_ERROR' } otherwise.
  */
 export const submitRequest = async (requestData, notifContext = null) => {
+  const scheduleId = requestData.schedule_id;
+
+  // Atomic slot-capacity check: count active requests for this slot right before inserting.
+  // This is the server-side guard against simultaneous submissions.
+  if (scheduleId) {
+    const [{ count: filled }, { data: schedRow }] = await Promise.all([
+      supabase
+        .from('requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('schedule_id', scheduleId)
+        .in('status', ['Pending', 'Approved']),
+      supabase
+        .from('schedules')
+        .select('max_slots')
+        .eq('id', scheduleId)
+        .single(),
+    ]);
+    const maxSlots = schedRow?.max_slots ?? 1;
+    if ((filled ?? 0) >= maxSlots) {
+      return { error: 'SLOT_FULL' };
+    }
+  }
+
   const { data, error } = await supabase
     .from('requests')
     .insert([requestData])
@@ -718,7 +743,7 @@ export const submitRequest = async (requestData, notifContext = null) => {
 
   if (error) {
     logError('Error submitting request:', error);
-    return null;
+    return { error: 'DB_ERROR' };
   }
 
   if (notifContext?.facultyId && notifContext?.studentName && data?.id) {
@@ -726,7 +751,7 @@ export const submitRequest = async (requestData, notifContext = null) => {
     await insertNotification(facultyId, 'new_request', `${studentName} requested a consultation on ${day} at ${time}.`, data.id);
   }
 
-  return data;
+  return { data };
 };
 
 /**
