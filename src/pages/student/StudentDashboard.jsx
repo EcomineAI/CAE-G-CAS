@@ -459,6 +459,16 @@ const StudentDashboard = () => {
   useEffect(() => { localStorage.removeItem('gcas_student_high_contrast'); }, []);
 
   useEffect(() => {
+    window.history.pushState({ dashboardGuard: true }, '');
+    const onPop = () => {
+      window.history.pushState({ dashboardGuard: true }, '');
+      setShowLogoutConfirm(true);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  useEffect(() => {
     if (!user) return;
     document.documentElement.className = '';
     ensureProfile();

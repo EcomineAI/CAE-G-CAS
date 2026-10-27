@@ -824,6 +824,16 @@ const FacultyDashboard = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
+  useEffect(() => {
+    window.history.pushState({ dashboardGuard: true }, '');
+    const onPop = () => {
+      window.history.pushState({ dashboardGuard: true }, '');
+      setShowLogoutConfirm(true);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
   // Persistence Effects
   useEffect(() => {
     localStorage.removeItem('gcas_faculty_theme');

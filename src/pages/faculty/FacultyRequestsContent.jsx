@@ -611,14 +611,21 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
                     </button>
                   </>)}
                   {req.status === 'Approved' && (() => {
-                    const isPast = req.date && new Date(req.date + 'T23:59:59') < new Date();
-                    return isPast ? null : (<>
-                      <button className="frc-btn frc-btn-cancel" onClick={() => setCancelModal({ open: true, req, reason: '', note: '' })}>
-                        <Ban size={13} /> Cancel
-                      </button>
-                      <button className="frc-btn frc-btn-complete" onClick={() => setConfirmModal({ open: true, reqId: req.id, newStatus: 'Completed', label: 'mark as completed' })}>
-                        <CheckCircle2 size={13} /> Done
-                      </button>
+                    const now = new Date();
+                    const apptDate = req.date ? new Date(req.date + 'T00:00:00') : null;
+                    const isPast = apptDate && new Date(req.date + 'T23:59:59') < now;
+                    const isTodayOrPast = apptDate && apptDate <= now;
+                    return (<>
+                      {!isPast && (
+                        <button className="frc-btn frc-btn-cancel" onClick={() => setCancelModal({ open: true, req, reason: '', note: '' })}>
+                          <Ban size={13} /> Cancel
+                        </button>
+                      )}
+                      {isTodayOrPast && (
+                        <button className="frc-btn frc-btn-complete" onClick={() => setConfirmModal({ open: true, reqId: req.id, newStatus: 'Completed', label: 'mark as completed' })}>
+                          <CheckCircle2 size={13} /> Done
+                        </button>
+                      )}
                     </>);
                   })()}
                   {['Completed','Declined','Cancelled'].includes(req.status) && (
