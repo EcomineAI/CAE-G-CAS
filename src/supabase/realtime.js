@@ -73,6 +73,32 @@ export const subscribeToRequests = (userId, role, callback, fetchFn) => {
 };
 
 /**
+ * Subscribe to any schedule change across all faculty.
+ * Used by the student Faculty Directory and Dashboard so slot availability
+ * updates live when faculty add, remove, or modify schedules.
+ * @param {Function} fetchFn  - Async fn that re-fetches the full faculty list
+ * @param {Function} callback - Called with the updated faculty list
+ * @returns {Function} unsubscribe function
+ */
+export const subscribeToAllSchedules = (fetchFn, callback) => {
+  const channel = supabase
+    .channel('all-schedules-student')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'schedules' },
+      async () => {
+        const data = await fetchFn();
+        callback(data);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    if (channel) supabase.removeChannel(channel);
+  };
+};
+
+/**
  * Subscribe to faculty profile status changes.
  * Used by student Faculty Directory to see live status updates.
  * @param {Function} callback - Called with the update payload { new: {id, status, ...} }

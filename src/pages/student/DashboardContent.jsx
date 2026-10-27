@@ -3,7 +3,7 @@ import { CheckCircle2, Clock, History, ArrowRight, MapPin } from 'lucide-react';
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { getStudentRequests, getAllFaculty } from '../../supabase/api';
-import { subscribeToRequests, subscribeToFacultyStatus } from '../../supabase/realtime';
+import { subscribeToRequests, subscribeToFacultyStatus, subscribeToAllSchedules } from '../../supabase/realtime';
 import { withMinDelay } from '../../supabase/ux';
 import { formatTimeRange } from '../../utils/dateUtils';
 
@@ -73,12 +73,22 @@ const DashboardContent = ({ onTabChange, realName }) => {
     fetch();
 
     const unsub = subscribeToRequests(user.id, 'student', setRequests, () => getStudentRequests(user.id));
+
+    // Status changes: patch status only (hasBookableSlot/nextSlot stay correct
+    // because a status change doesn't alter schedule structure or fill counts)
     const unsubFaculty = subscribeToFacultyStatus((payload) => {
       setFacultyList(prev => prev.map(f =>
         f.id === payload.new.id ? { ...f, status: payload.new.status } : f
       ));
     });
-    return () => { unsub(); unsubFaculty(); };
+
+    // Schedule changes: full refetch so nextSlot + hasBookableSlot recompute correctly
+    const unsubSchedules = subscribeToAllSchedules(
+      getAllFaculty,
+      (updated) => setFacultyList(updated)
+    );
+
+    return () => { unsub(); unsubFaculty(); unsubSchedules(); };
   }, [user]);
 
   const counts = {

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle, WifiOff, Search, Users, Clock, XCircle, LayoutList, LayoutGrid, Columns } from 'lucide-react';
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
-import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount, isDateBlocked, getBlockedDates } from '../../supabase/api';
-import { subscribeToFacultyStatus } from '../../supabase/realtime';
+import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount, isDateBlocked, getBlockedDates, computeNextSlot } from '../../supabase/api';
+import { subscribeToFacultyStatus, subscribeToAllSchedules } from '../../supabase/realtime';
 import { FacultyCardSkeleton, toast, withMinDelay } from '../../supabase/ux';
 import { formatTimeRange } from '../../utils/dateUtils';
 import { MAX_ACTIVE_REQUESTS } from '../../utils/constants';
@@ -1085,11 +1085,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
     const fetchFaculty = async () => {
       const data = await withMinDelay(getAllFaculty(), 300);
 
-      const mapped = data.map(f => ({
-        ...f,
-        statusColor: f.status === 'Available' ? 'green' : f.status === 'Busy' ? 'red' : 'gray',
-      }));
-      setFacultyList(mapped);
+      setFacultyList(data);
       setLoading(false);
       if (initialFacultyId) {
         const target = mapped.find(f => f.id === initialFacultyId);
@@ -1108,21 +1104,26 @@ const FacultyContent = ({ initialFacultyId = null }) => {
     };
     fetchFaculty();
 
-    // Real-time: faculty status changes
-    const unsub = subscribeToFacultyStatus((payload) => {
+    // Realtime: faculty profile status changes — recompute availability flags
+    const unsubStatus = subscribeToFacultyStatus((payload) => {
       const updatedProfile = payload.new;
       setFacultyList(prev => prev.map(f => {
-        if (f.id === updatedProfile.id) {
-          return {
-            ...f,
-            status: updatedProfile.status,
-            statusColor: updatedProfile.status === 'Available' ? 'green' : updatedProfile.status === 'Busy' ? 'red' : 'gray'
-          };
-        }
-        return f;
+        if (f.id !== updatedProfile.id) return f;
+        return {
+          ...f,
+          status: updatedProfile.status,
+          statusColor: updatedProfile.status === 'Available' ? 'green' : updatedProfile.status === 'Busy' ? 'red' : 'gray',
+        };
       }));
     });
-    return () => unsub();
+
+    // Realtime: any schedule change — full refetch so filled counts + nextSlot stay accurate
+    const unsubSchedules = subscribeToAllSchedules(
+      getAllFaculty,
+      (updated) => setFacultyList(updated)
+    );
+
+    return () => { unsubStatus(); unsubSchedules(); };
   }, []);
 
   const filteredFaculty = facultyList.filter(f => 

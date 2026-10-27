@@ -617,11 +617,17 @@ export const getAllRequestsAdmin = async () => {
 const DAY_ORDER = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 // Compute the next bookable slot label + whether one exists, given a faculty's schedules.
-// A recurring slot is only bookable if its next occurrence date+time hasn't fully passed yet.
+// Skips slots that are time-expired today AND slots where filled >= max_slots (fully booked).
 export const computeNextSlot = (schedules) => {
   const now = new Date();
   const todayIdx = now.getDay();
-  const recurring = (schedules || []).filter(s => s.schedule_type !== 'one-time' && s.day);
+  // Only recurring slots with capacity remaining
+  const recurring = (schedules || []).filter(s => {
+    if (s.schedule_type === 'one-time' || !s.day) return false;
+    const filled = s.filled ?? 0;
+    const max    = s.max_slots ?? 1;
+    return filled < max; // skip fully-booked slots
+  });
   let best = null, bestDiff = Infinity;
 
   for (const s of recurring) {
@@ -635,7 +641,7 @@ export const computeNextSlot = (schedules) => {
       if (!isNaN(eh)) {
         const slotEnd = new Date(now);
         slotEnd.setHours(eh, em || 0, 0, 0);
-        if (now > slotEnd) diff = 7; // already over today, next occurrence is in 7 days
+        if (now > slotEnd) diff = 7;
       }
     }
 
@@ -660,7 +666,8 @@ export const computeNextSlot = (schedules) => {
 
 /**
  * Get all faculty members with their next bookable slot pre-computed.
- * Both Dashboard and Faculty List use this so availability is always consistent.
+ * Fetches active request counts per schedule so computeNextSlot can
+ * correctly skip fully-booked slots when evaluating availability.
  */
 export const getAllFaculty = async () => {
   const { data, error } = await supabase
@@ -675,12 +682,37 @@ export const getAllFaculty = async () => {
     return [];
   }
 
+  // Collect all schedule ids across all faculty so we can batch-count in one query
+  const allScheduleIds = (data || []).flatMap(f => (f.schedules || []).map(s => s.id));
+
+  let fillMap = {};
+  if (allScheduleIds.length > 0) {
+    const { data: activeCounts, error: countError } = await supabase
+      .from('requests')
+      .select('schedule_id')
+      .in('schedule_id', allScheduleIds)
+      .in('status', ['Pending', 'Approved']);
+
+    if (!countError) {
+      (activeCounts || []).forEach(r => {
+        fillMap[r.schedule_id] = (fillMap[r.schedule_id] || 0) + 1;
+      });
+    }
+  }
+
   return (data || []).map(f => {
     const prefix = f.name_prefix || '';
     const suffix = f.name_suffix || '';
     const base   = f.full_name   || 'Faculty Member';
     const displayName = [prefix, base, suffix].filter(Boolean).join(' ');
-    const { nextSlot, hasBookableSlot } = computeNextSlot(f.schedules || []);
+
+    // Attach filled counts so computeNextSlot can skip full slots
+    const schedulesWithFill = (f.schedules || []).map(s => ({
+      ...s,
+      filled: fillMap[s.id] || 0,
+    }));
+
+    const { nextSlot, hasBookableSlot } = computeNextSlot(schedulesWithFill);
     return {
       id: f.id,
       name: displayName,
@@ -693,6 +725,7 @@ export const getAllFaculty = async () => {
       dept: f.department || 'Faculty',
       nextSlot,
       hasBookableSlot,
+      schedules: schedulesWithFill,
     };
   });
 };
