@@ -498,7 +498,7 @@ const AdminContent = () => {
   const userStats = {
     total:     userRequests.length,
     pending:   userRequests.filter(r => r.status === 'Pending').length,
-    approved:  userRequests.filter(r => r.status === 'Approved').length,
+    completed: userRequests.filter(r => r.status === 'Completed').length,
     declined:  userRequests.filter(r => r.status === 'Declined').length,
   };
 
@@ -757,7 +757,7 @@ const AdminContent = () => {
                         {selectedUser.role === 'student' && selectedUser.program && (
                           <span>{(selectedUser.program.match(/\(([^)]+)\)/) || [])[1] || selectedUser.program}</span>
                         )}
-                        {selectedUser.status && (
+                        {selectedUser.role === 'faculty' && selectedUser.status && (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: STATUS_DOT_COLOR[selectedUser.status] || '#9ca3af', display: 'inline-block' }} />
                             {selectedUser.status}
@@ -770,10 +770,10 @@ const AdminContent = () => {
 
                   <div className="admin-detail-stats">
                     {[
-                      { val: userStats.total,    lbl: 'Total',    color: 'var(--text-primary)' },
-                      { val: userStats.pending,  lbl: 'Pending',  color: '#d97706' },
-                      { val: userStats.approved, lbl: 'Approved', color: '#2563eb' },
-                      { val: userStats.declined, lbl: 'Declined', color: '#dc2626' },
+                      { val: userStats.total,     lbl: 'Total',     color: 'var(--text-primary)' },
+                      { val: userStats.pending,   lbl: 'Pending',   color: '#d97706' },
+                      { val: userStats.completed, lbl: 'Completed', color: '#16a34a' },
+                      { val: userStats.declined,  lbl: 'Declined',  color: '#dc2626' },
                     ].map(s => (
                       <div className="admin-detail-stat" key={s.lbl}>
                         <div className="admin-detail-stat-val" style={{ color: s.color }}>{s.val}</div>
