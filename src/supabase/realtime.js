@@ -126,6 +126,29 @@ export const subscribeToFacultyStatus = (callback) => {
 };
 
 /**
+ * Subscribe to full profile updates for any faculty member.
+ * Used by student views so faculty name/prefix/suffix/avatar changes appear without a refresh.
+ * @param {Function} callback - Called with the updated profile row (payload.new)
+ * @returns {Function} unsubscribe function
+ */
+export const subscribeToFacultyProfiles = (callback) => {
+  const channel = supabase
+    .channel('faculty-profiles-student-view')
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'profiles' },
+      (payload) => {
+        if (payload.new?.role === 'faculty') callback(payload.new);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    if (channel) supabase.removeChannel(channel);
+  };
+};
+
+/**
  * Subscribe to profile updates for any student.
  * Used by faculty views so student avatar/color/name changes appear without a refresh.
  * @param {Function} callback - Called with the updated profile row (payload.new)

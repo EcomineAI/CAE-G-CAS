@@ -3,7 +3,7 @@ import { CheckCircle, WifiOff, Search, Users, Clock, XCircle, LayoutList, Layout
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount, isDateBlocked, getBlockedDates, computeNextSlot } from '../../supabase/api';
-import { subscribeToFacultyStatus, subscribeToAllSchedules } from '../../supabase/realtime';
+import { subscribeToFacultyStatus, subscribeToAllSchedules, subscribeToFacultyProfiles } from '../../supabase/realtime';
 import { FacultyCardSkeleton, toast, withMinDelay } from '../../supabase/ux';
 import { formatTimeRange } from '../../utils/dateUtils';
 import { MAX_ACTIVE_REQUESTS } from '../../utils/constants';
@@ -1123,7 +1123,20 @@ const FacultyContent = ({ initialFacultyId = null }) => {
       (updated) => setFacultyList(updated)
     );
 
-    return () => { unsubStatus(); unsubSchedules(); };
+    // Realtime: faculty name/prefix/suffix/avatar changes — patch directory cards instantly
+    const unsubFacultyProfiles = subscribeToFacultyProfiles((updated) => {
+      const prefix = updated.name_prefix || '';
+      const suffix = updated.name_suffix || '';
+      const base   = updated.full_name   || '';
+      const displayName = [prefix, base, suffix].filter(Boolean).join(' ');
+      setFacultyList(prev => prev.map(f =>
+        f.id === updated.id
+          ? { ...f, name: displayName || f.name, fullName: base || f.fullName, avatar: updated.avatar_url ?? f.avatar, avatarColor: updated.avatar_color || f.avatarColor }
+          : f
+      ));
+    });
+
+    return () => { unsubStatus(); unsubSchedules(); unsubFacultyProfiles(); };
   }, []);
 
   const filteredFaculty = facultyList.filter(f => 

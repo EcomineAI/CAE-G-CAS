@@ -3,7 +3,7 @@ import { CheckCircle2, Clock, History, ArrowRight, MapPin } from 'lucide-react';
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { getStudentRequests, getAllFaculty } from '../../supabase/api';
-import { subscribeToRequests, subscribeToFacultyStatus, subscribeToAllSchedules } from '../../supabase/realtime';
+import { subscribeToRequests, subscribeToFacultyStatus, subscribeToAllSchedules, subscribeToFacultyProfiles } from '../../supabase/realtime';
 import { withMinDelay } from '../../supabase/ux';
 import { formatTimeRange } from '../../utils/dateUtils';
 
@@ -88,7 +88,25 @@ const DashboardContent = ({ onTabChange, realName }) => {
       (updated) => setFacultyList(updated)
     );
 
-    return () => { unsub(); unsubFaculty(); unsubSchedules(); };
+    // Faculty profile changes (name/prefix/suffix/avatar): patch requests + facultyList instantly
+    const unsubFacultyProfiles = subscribeToFacultyProfiles((updated) => {
+      const prefix = updated.name_prefix || '';
+      const suffix = updated.name_suffix || '';
+      const base   = updated.full_name   || '';
+      const displayName = [prefix, base, suffix].filter(Boolean).join(' ');
+      setRequests(prev => prev.map(r =>
+        r.avatarSeed === updated.id
+          ? { ...r, name: displayName, fullName: base, namePrefix: prefix, nameSuffix: suffix, avatar: updated.avatar_url ?? r.avatar, avatarColor: updated.avatar_color || r.avatarColor }
+          : r
+      ));
+      setFacultyList(prev => prev.map(f =>
+        f.id === updated.id
+          ? { ...f, name: displayName || f.name, fullName: base || f.fullName, avatar: updated.avatar_url ?? f.avatar, avatarColor: updated.avatar_color || f.avatarColor }
+          : f
+      ));
+    });
+
+    return () => { unsub(); unsubFaculty(); unsubSchedules(); unsubFacultyProfiles(); };
   }, [user]);
 
   const counts = {
