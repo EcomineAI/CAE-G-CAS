@@ -617,42 +617,72 @@ export const getAllRequestsAdmin = async () => {
 const DAY_ORDER = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 // Compute the next bookable slot label + whether one exists, given a faculty's schedules.
-// Skips slots that are time-expired today AND slots where filled >= max_slots (fully booked).
+// Handles both 'recurring' (by day-of-week) and 'one-time' (by specific_date) slots.
+// Skips slots that are time-expired AND slots where filled >= max_slots (fully booked).
 export const computeNextSlot = (schedules) => {
   const now = new Date();
   const todayIdx = now.getDay();
-  // Only recurring slots with capacity remaining
-  const recurring = (schedules || []).filter(s => {
-    if (s.schedule_type === 'one-time' || !s.day) return false;
+
+  let bestDiff = Infinity;
+  let best = null;
+  let bestDate = null; // actual Date object for the best candidate
+
+  for (const s of (schedules || [])) {
     const filled = s.filled ?? 0;
     const max    = s.max_slots ?? 1;
-    return filled < max; // skip fully-booked slots
-  });
-  let best = null, bestDiff = Infinity;
+    if (filled >= max) continue; // skip fully-booked
 
-  for (const s of recurring) {
-    const idx = DAY_ORDER.indexOf(s.day);
-    if (idx < 0) continue;
-    let diff = (idx - todayIdx + 7) % 7;
+    if (s.schedule_type === 'one-time') {
+      if (!s.specific_date) continue;
+      // Parse as local date to avoid timezone offset shifting the day
+      const [sy, smo, sd] = s.specific_date.split('-').map(Number);
+      const slotDate = new Date(sy, smo - 1, sd);
+      const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (slotDate < todayOnly) continue; // past date — skip
 
-    // If it's today, check if the end time has already passed — if so, push to next week
-    if (diff === 0) {
-      const [eh, em] = String(s.end_time || '').split(':').map(Number);
-      if (!isNaN(eh)) {
-        const slotEnd = new Date(now);
-        slotEnd.setHours(eh, em || 0, 0, 0);
-        if (now > slotEnd) diff = 7;
+      // If it's today, check if end time has already passed
+      if (slotDate.getTime() === todayOnly.getTime()) {
+        const [eh, em] = String(s.end_time || '').split(':').map(Number);
+        if (!isNaN(eh)) {
+          const slotEnd = new Date(now);
+          slotEnd.setHours(eh, em || 0, 0, 0);
+          if (now > slotEnd) continue; // time-expired today
+        }
+      }
+
+      const diffDays = (slotDate - todayOnly) / 86400000;
+      if (diffDays < bestDiff) { bestDiff = diffDays; best = s; bestDate = slotDate; }
+
+    } else {
+      // Recurring: find next occurrence by day-of-week
+      if (!s.day) continue;
+      const idx = DAY_ORDER.indexOf(s.day);
+      if (idx < 0) continue;
+      let diff = (idx - todayIdx + 7) % 7;
+
+      // If today, check if end time has passed — if so, push to next week
+      if (diff === 0) {
+        const [eh, em] = String(s.end_time || '').split(':').map(Number);
+        if (!isNaN(eh)) {
+          const slotEnd = new Date(now);
+          slotEnd.setHours(eh, em || 0, 0, 0);
+          if (now > slotEnd) diff = 7;
+        }
+      }
+
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        best = s;
+        const d = new Date(now);
+        d.setDate(now.getDate() + diff);
+        bestDate = d;
       }
     }
-
-    if (diff < bestDiff) { bestDiff = diff; best = s; }
   }
 
   if (!best) return { nextSlot: null, hasBookableSlot: false };
 
-  const date = new Date(now);
-  date.setDate(now.getDate() + bestDiff);
-  const dateLabel = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const dateLabel = bestDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   const [h, m] = String(best.start_time || '').split(':').map(Number);
   let nextSlot = dateLabel;
   if (!isNaN(h)) {
@@ -672,7 +702,7 @@ export const computeNextSlot = (schedules) => {
 export const getAllFaculty = async () => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, avatar_url, avatar_color, status, department, name_prefix, name_suffix, schedules(id, day, start_time, end_time, schedule_type, max_slots)')
+    .select('id, full_name, avatar_url, avatar_color, status, department, name_prefix, name_suffix, schedules(id, day, specific_date, start_time, end_time, schedule_type, max_slots)')
     .eq('role', 'faculty')
     .neq('full_name', 'Admin')
     .order('full_name', { ascending: true });
