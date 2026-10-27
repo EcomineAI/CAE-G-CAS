@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, X, Check, Calendar, AlertTriangle } from 'lucide-react';
+import { Bell, X, Check, Calendar, AlertTriangle, Clock } from 'lucide-react';
 import { supabase } from '../supabase/supabase';
 import { formatTimeAgo, getInitials } from '../utils/dateUtils';
 
@@ -9,6 +9,7 @@ const TYPE_META = {
   cancelled:   { label: 'Appointment cancelled', icon: <X   size={14} color="#fff" />, iconBg: '#ef4444' },
   new_request: { label: 'New consultation request', icon: <Calendar size={14} color="#fff" />, iconBg: '#2e4a87' },
   completed:   { label: 'Consultation completed',   icon: <Check    size={14} color="#fff" />, iconBg: '#22c55e' },
+  expired:     { label: 'Request expired',     icon: <Clock  size={14} color="#fff" />, iconBg: '#9ca3af' },
 };
 
 const getTypeMeta = (type) =>

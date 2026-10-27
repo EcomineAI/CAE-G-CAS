@@ -1,17 +1,51 @@
 import { supabase } from './supabase';
 import { logError } from './ux';
 
-// Auto-complete Approved requests whose date has already passed.
-// Runs silently before any fetch — no await needed at call site if fire-and-forget is ok,
-// but we await it so the fetch sees the updated statuses.
+// Auto-complete Approved and auto-expire Pending requests whose date has passed.
+// Runs silently before any fetch.
 const autoCompleteExpired = async (filterColumn, userId) => {
   const today = new Date().toISOString().slice(0, 10);
+  const now   = new Date().toISOString();
+
+  // 1. Approved → Completed (silent, no notification needed — faculty already confirmed)
   await supabase
     .from('requests')
-    .update({ status: 'Completed', updated_at: new Date().toISOString() })
+    .update({ status: 'Completed', updated_at: now })
     .eq(filterColumn, userId)
     .eq('status', 'Approved')
     .lt('request_date', today);
+
+  // 2. Pending → Expired: fetch affected rows first so we can notify the student
+  const { data: expiring } = await supabase
+    .from('requests')
+    .select('id, student_id, faculty_id, faculty:profiles!requests_faculty_id_fkey(full_name, name_prefix)')
+    .eq(filterColumn, userId)
+    .eq('status', 'Pending')
+    .lt('request_date', today);
+
+  if (!expiring || expiring.length === 0) return;
+
+  const ids = expiring.map(r => r.id);
+  await supabase
+    .from('requests')
+    .update({ status: 'Expired', updated_at: now })
+    .in('id', ids);
+
+  // Notify each student once (only when we're running as the faculty fetch,
+  // so filterColumn === 'faculty_id'; the student fetch would double-notify)
+  if (filterColumn === 'faculty_id') {
+    for (const req of expiring) {
+      if (!req.student_id) continue;
+      const prefix    = req.faculty?.name_prefix ? `${req.faculty.name_prefix} ` : '';
+      const facName   = `${prefix}${req.faculty?.full_name || 'your faculty'}`;
+      await insertNotification(
+        req.student_id,
+        'expired',
+        `Your consultation request to ${facName} has expired because it was not responded to in time.`,
+        req.id
+      );
+    }
+  }
 };
 
 const insertNotification = async (userId, type, message, requestId = null) => {

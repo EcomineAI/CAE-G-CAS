@@ -56,6 +56,7 @@ export const STATUS_LABELS = {
   Declined:    { label: 'Declined',     icon: '❌', color: '#dc2626', bg: '#fee2e2' },
   Completed:   { label: 'Completed',    icon: '🎓', color: '#ea580c', bg: '#fff7ed' },
   Cancelled:   { label: 'Cancelled',    icon: '🚫', color: '#64748b', bg: '#f1f5f9' },
+  Expired:     { label: 'Expired',      icon: '⌛', color: '#9ca3af', bg: '#f3f4f6' },
   Rescheduling:{ label: 'Rescheduling', icon: '📅', color: '#7c3aed', bg: '#ede9fe' },
 };
 
