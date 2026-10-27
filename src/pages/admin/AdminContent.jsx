@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Users, GraduationCap, CalendarClock, CheckCircle, XCircle, Clock, X, BarChart2, Download } from 'lucide-react';
+import { RefreshCw, Users, GraduationCap, CalendarClock, CheckCircle, XCircle, Clock, X, BarChart2, Download, Search, ListFilter } from 'lucide-react';
 import { getAllProfiles, getAllRequestsAdmin } from '../../supabase/api';
 import { getInitials, fmt12 } from '../../utils/dateUtils';
 
@@ -329,6 +329,79 @@ const adminStyles = `
   .admin-body { flex-direction: column; }
   .admin-detail-panel { width: 100%; }
 }
+
+/* ── Appointments tab ── */
+.appt-controls {
+  display: flex; gap: 0.65rem; flex-wrap: wrap; align-items: center;
+  margin-bottom: 1rem;
+}
+.appt-search-wrap {
+  position: relative; flex: 1 1 200px; min-width: 160px;
+}
+.appt-search-wrap svg {
+  position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%);
+  color: var(--text-muted); pointer-events: none;
+}
+.appt-search {
+  width: 100%; padding: 0.48rem 0.75rem 0.48rem 2.1rem;
+  border: 1.5px solid var(--border-color); border-radius: 9px;
+  background: var(--bg-secondary); color: var(--text-primary);
+  font-size: 0.82rem; font-family: inherit; outline: none;
+  transition: border-color 0.13s;
+}
+.appt-search:focus { border-color: #1a2d5a; }
+.appt-search::placeholder { color: var(--text-muted); }
+
+.appt-filter-row { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+.appt-chip {
+  padding: 0.3rem 0.85rem; border-radius: 50px;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-secondary); color: var(--text-muted);
+  font-size: 0.75rem; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: all 0.13s; white-space: nowrap;
+}
+.appt-chip:hover { border-color: #1a2d5a; color: #1a2d5a; }
+.appt-chip.active { background: #1a2d5a; color: #fff; border-color: #1a2d5a; }
+
+.appt-date-range { display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; }
+.appt-date-input {
+  padding: 0.3rem 0.55rem; border: 1.5px solid var(--border-color);
+  border-radius: 8px; font-size: 0.75rem; font-family: inherit;
+  color: var(--text-primary); background: var(--bg-secondary); outline: none;
+}
+.appt-date-input:focus { border-color: #1a2d5a; }
+
+.appt-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.appt-table th {
+  text-align: left; padding: 0.45rem 0.75rem;
+  color: var(--text-muted); font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-color); white-space: nowrap;
+}
+.appt-table td {
+  padding: 0.65rem 0.75rem; color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color); vertical-align: middle;
+}
+.appt-table tr:last-child td { border-bottom: none; }
+.appt-table tr:hover td { background: var(--bg-primary); }
+
+.appt-student-name { font-weight: 700; color: var(--text-primary); }
+.appt-student-prog { font-size: 0.68rem; color: var(--text-muted); margin-top: 1px; }
+.appt-faculty-name { font-weight: 600; }
+.appt-faculty-dept { font-size: 0.68rem; color: var(--text-muted); }
+.appt-subject     { font-weight: 600; color: var(--text-primary); }
+.appt-type        { font-size: 0.68rem; color: var(--text-muted); margin-top: 1px; }
+.appt-time        { font-size: 0.78rem; color: var(--text-secondary); }
+.appt-created     { font-size: 0.72rem; color: var(--text-muted); }
+
+.appt-status {
+  font-size: 0.65rem; font-weight: 700; padding: 2px 8px;
+  border-radius: 9px; border: 1px solid; white-space: nowrap;
+}
+.appt-count-label {
+  font-size: 0.75rem; color: var(--text-muted); font-weight: 600;
+  padding: 0.2rem 0; flex-shrink: 0;
+}
 `;
 
 const AdminContent = () => {
@@ -338,6 +411,13 @@ const AdminContent = () => {
   const [loading, setLoading]   = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [activeFilter, setActiveFilter] = useState(null);
+
+  // Appointments tab filters
+  const [apptSearch,      setApptSearch]      = useState('');
+  const [apptStatus,      setApptStatus]      = useState('All');
+  const [apptDatePreset,  setApptDatePreset]  = useState('all');
+  const [apptCustomFrom,  setApptCustomFrom]  = useState('');
+  const [apptCustomTo,    setApptCustomTo]    = useState('');
 
   // Reports filters
   const [rangePreset, setRangePreset] = useState('month');
@@ -432,6 +512,49 @@ const AdminContent = () => {
     return { id: f.id, name: f.full_name || '—', dept: 'CCS', total, approved, declined, pending, completed, responseRate };
   }).filter(f => f.total > 0).sort((a, b) => b.total - a.total);
 
+  // ── Derived: appointments tab ──────────────────────────────────────────────
+  const apptDateFrom = (() => {
+    if (apptDatePreset === 'custom') return apptCustomFrom || null;
+    if (apptDatePreset === 'today') return today;
+    if (apptDatePreset === 'week')  { const d = new Date(); d.setDate(d.getDate() - 6); return isoDate(d); }
+    if (apptDatePreset === 'month') { const d = new Date(); d.setDate(d.getDate() - 29); return isoDate(d); }
+    return null;
+  })();
+  const apptDateTo = apptDatePreset === 'custom' ? (apptCustomTo || today) : today;
+
+  const filteredAppts = requests.filter(r => {
+    const q = apptSearch.trim().toLowerCase();
+    if (q && !(r.studentName?.toLowerCase().includes(q) || r.facultyName?.toLowerCase().includes(q))) return false;
+    if (apptStatus !== 'All' && r.status !== apptStatus) return false;
+    if (apptDatePreset !== 'all') {
+      const d = r.date || r.createdAt?.split('T')[0] || '';
+      if (apptDateFrom && d < apptDateFrom) return false;
+      if (d > apptDateTo) return false;
+    }
+    return true;
+  });
+
+  const exportApptsCSV = () => {
+    const rows = [
+      ['Student','Program','Faculty','Dept','Date','Time','Type','Subject','Status','Submitted'],
+      ...filteredAppts.map(r => {
+        const progAbbr = r.studentProgram ? ((r.studentProgram.match(/\(([^)]+)\)/) || [])[1] || r.studentProgram) : '—';
+        const timeStr  = r.startTime ? `${fmt12(r.startTime)}${r.endTime ? ` – ${fmt12(r.endTime)}` : ''}` : '—';
+        return [
+          r.studentName, progAbbr, r.facultyName, r.facultyDept || 'CCS',
+          r.date || '—', timeStr, r.consultationType || '—',
+          r.subject || '—', r.status, r.createdAt?.split('T')[0] || '—',
+        ];
+      }),
+    ];
+    const csv  = rows.map(row => row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = `appointments_${today}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="admin-container">
       <style>{adminStyles}</style>
@@ -448,6 +571,11 @@ const AdminContent = () => {
               <Download size={14} /> Export CSV
             </button>
           )}
+          {tab === 'appointments' && (
+            <button className="admin-export-btn" onClick={exportApptsCSV}>
+              <Download size={14} /> Export CSV
+            </button>
+          )}
           <button className="admin-refresh-btn" onClick={load} disabled={loading}>
             <RefreshCw size={15} className={loading ? 'spin' : ''} />
             {loading ? 'Loading…' : 'Refresh'}
@@ -457,8 +585,9 @@ const AdminContent = () => {
 
       {/* Tab bar */}
       <div className="admin-tab-bar">
-        <button className={`admin-tab${tab === 'overview' ? ' active' : ''}`} onClick={() => setTab('overview')}>Overview</button>
-        <button className={`admin-tab${tab === 'reports'  ? ' active' : ''}`} onClick={() => setTab('reports')}><BarChart2 size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />Reports</button>
+        <button className={`admin-tab${tab === 'overview'      ? ' active' : ''}`} onClick={() => setTab('overview')}>Overview</button>
+        <button className={`admin-tab${tab === 'appointments'  ? ' active' : ''}`} onClick={() => setTab('appointments')}><CalendarClock size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />Appointments</button>
+        <button className={`admin-tab${tab === 'reports'       ? ' active' : ''}`} onClick={() => setTab('reports')}><BarChart2 size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />Reports</button>
       </div>
 
       {/* ── OVERVIEW TAB ── */}
@@ -635,6 +764,119 @@ const AdminContent = () => {
             </div>
           </div>
         </>
+      )}
+
+      {/* ── APPOINTMENTS TAB ── */}
+      {tab === 'appointments' && (
+        <div className="admin-section">
+          <p className="admin-section-title" style={{ marginBottom: '1rem' }}>
+            All Appointments
+            <span style={{ fontWeight: 500, color: 'var(--text-muted)', fontSize: '0.8rem' }}>— full audit log</span>
+          </p>
+
+          {/* Search + filters */}
+          <div className="appt-controls">
+            <div className="appt-search-wrap">
+              <Search size={14} />
+              <input
+                className="appt-search"
+                placeholder="Search student or faculty…"
+                value={apptSearch}
+                onChange={e => setApptSearch(e.target.value)}
+              />
+            </div>
+            <div className="appt-filter-row">
+              {['All', ...ALL_STATUSES].map(s => (
+                <button key={s} className={`appt-chip${apptStatus === s ? ' active' : ''}`} onClick={() => setApptStatus(s)}>{s}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="appt-controls" style={{ marginBottom: '0.75rem' }}>
+            <ListFilter size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+            <div className="appt-filter-row">
+              {[['all','All time'],['today','Today'],['week','Last 7 days'],['month','Last 30 days'],['custom','Custom']].map(([v, l]) => (
+                <button key={v} className={`appt-chip${apptDatePreset === v ? ' active' : ''}`} onClick={() => setApptDatePreset(v)}>{l}</button>
+              ))}
+            </div>
+            {apptDatePreset === 'custom' && (
+              <div className="appt-date-range">
+                <input type="date" className="appt-date-input" value={apptCustomFrom} max={apptCustomTo || today} onChange={e => setApptCustomFrom(e.target.value)} />
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>to</span>
+                <input type="date" className="appt-date-input" value={apptCustomTo} min={apptCustomFrom} max={today} onChange={e => setApptCustomTo(e.target.value)} />
+              </div>
+            )}
+            <span className="appt-count-label" style={{ marginLeft: 'auto' }}>
+              {loading ? '…' : `${filteredAppts.length} record${filteredAppts.length !== 1 ? 's' : ''}`}
+            </span>
+          </div>
+
+          {/* Table */}
+          {loading ? (
+            <div className="admin-empty">Loading…</div>
+          ) : filteredAppts.length === 0 ? (
+            <div className="admin-empty">No appointments match this filter.</div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="appt-table">
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Faculty</th>
+                    <th>Date &amp; Time</th>
+                    <th>Type / Subject</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAppts.map(r => {
+                    const st = REQ_STATUS_STYLE[r.status] || REQ_STATUS_STYLE.Cancelled;
+                    const progRaw   = r.studentProgram || '';
+                    const progAbbr  = progRaw ? ((progRaw.match(/\(([^)]+)\)/) || [])[1] || progRaw) : null;
+                    const progLabel = [progAbbr, r.studentSection].filter(Boolean).join(' · ');
+                    const timeLabel = r.startTime
+                      ? `${fmt12(r.startTime)}${r.endTime ? ` – ${fmt12(r.endTime)}` : ''}`
+                      : null;
+                    return (
+                      <tr key={r.id}>
+                        <td>
+                          <div className="appt-student-name">{r.studentName}</div>
+                          {progLabel && <div className="appt-student-prog">{progLabel}</div>}
+                        </td>
+                        <td>
+                          <div className="appt-faculty-name">{r.facultyName}</div>
+                          <div className="appt-faculty-dept">{r.facultyDept || 'CCS'}</div>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 600, fontSize: '0.8rem' }}>{fmtDate(r.date)}</div>
+                          {timeLabel && <div className="appt-time">{timeLabel}</div>}
+                          {r.room && <div className="appt-type">Room {r.room}</div>}
+                        </td>
+                        <td>
+                          <div className="appt-subject">{r.subject || <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>—</span>}</div>
+                          <div className="appt-type">{r.consultationType || 'General'}</div>
+                        </td>
+                        <td>
+                          <span className="appt-status" style={{ background: st.bg, color: st.color, borderColor: st.border }}>
+                            {r.status}
+                          </span>
+                          {(r.declineReason || r.cancelReason) && (
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 3, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                              title={r.declineReason || r.cancelReason}>
+                              {r.declineReason || r.cancelReason}
+                            </div>
+                          )}
+                        </td>
+                        <td className="appt-created">{fmtDate(r.createdAt)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       )}
 
       {/* ── REPORTS TAB ── */}
