@@ -603,7 +603,7 @@ export default function ProfileEditModal({
     prefix !== origValues.prefix ||
     suffix !== origValues.suffix ||
     (isFaculty
-      ? fullName !== origValues.fullName || dept !== origValues.dept || title !== origValues.title
+      ? fullName !== origValues.fullName || title !== origValues.title
       : firstName !== origValues.firstName || middleName !== origValues.middleName || lastName !== origValues.lastName ||
         program !== origValues.program || section !== origValues.section)
   ) : false;
@@ -634,7 +634,7 @@ export default function ProfileEditModal({
       name_prefix: prefix,
       name_suffix: suffix,
       avatar_url: avatarUrl,
-      ...(isFaculty && { department: dept, title }),
+      ...(isFaculty && { department: 'CCS', title }),
       ...(!isFaculty && { program, section }),
     };
     // Optimistic update: local state updates immediately, rolls back on DB failure
@@ -694,7 +694,7 @@ export default function ProfileEditModal({
               </div>
               <div className="pem-avatar-details">
                 <p className="pem-avatar-name">{displayName || 'Your Name'}</p>
-                <p className="pem-avatar-meta">{isFaculty ? (dept || 'No department set') : 'Student'}</p>
+                <p className="pem-avatar-meta">{isFaculty ? 'CCS — College of Computer Studies' : 'Student'}</p>
               </div>
             </div>
 
@@ -868,17 +868,9 @@ export default function ProfileEditModal({
             </div>
 
             <div className="pem-divider"><span>Department</span></div>
-            <div className="pem-field">
-              <label className="pem-label">Department / College</label>
-              <input
-                type="text"
-                className="pem-input"
-                value={dept}
-                onChange={e => setDept(e.target.value)}
-                onFocus={handleInputFocus}
-                placeholder="e.g. College of Computing"
-              />
-              <span className="pem-input-hint">Students see this when browsing the faculty directory.</span>
+            <div className="pem-info-row">
+              <span className="pem-info-row-label">Department / College</span>
+              <span className="pem-info-row-value" style={{ color: 'var(--accent, #2e4a87)' }}>CCS — College of Computer Studies</span>
             </div>
 
             {(title || dept) && (

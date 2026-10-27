@@ -298,7 +298,6 @@ const AdminContent = () => {
   const today = isoDate(new Date());
   const [customFrom, setCustomFrom] = useState('');
   const [customTo,   setCustomTo]   = useState(today);
-  const [deptFilter, setDeptFilter] = useState('All');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -347,13 +346,9 @@ const AdminContent = () => {
   const fromDate = rangePreset === 'custom' ? (customFrom || getRangeStart('month', null)) : getRangeStart(rangePreset, null);
   const toDate   = rangePreset === 'custom' ? (customTo || today) : today;
 
-  const departments = ['All', ...Array.from(new Set(requests.map(r => r.facultyDept).filter(d => d && d !== '—'))).sort()];
-
   const filteredRequests = requests.filter(r => {
     const d = r.createdAt?.split('T')[0] || r.date || '';
-    const inRange = d >= fromDate && d <= toDate;
-    const inDept  = deptFilter === 'All' || r.facultyDept === deptFilter;
-    return inRange && inDept;
+    return d >= fromDate && d <= toDate;
   });
 
   const donutData = ALL_STATUSES.map(s => ({
@@ -371,7 +366,7 @@ const AdminContent = () => {
     const pending  = reqs.filter(r => r.status === 'Pending').length;
     const completed = reqs.filter(r => r.status === 'Completed').length;
     const responseRate = total > 0 ? Math.round(((approved + declined + completed) / total) * 100) : 0;
-    return { id: f.id, name: f.full_name || '—', dept: f.department || '—', total, approved, declined, pending, completed, responseRate };
+    return { id: f.id, name: f.full_name || '—', dept: 'CCS', total, approved, declined, pending, completed, responseRate };
   }).filter(f => f.total > 0).sort((a, b) => b.total - a.total);
 
   return (
@@ -456,7 +451,7 @@ const AdminContent = () => {
                                   {p.full_name || '—'}
                                 </div>
                               </td>
-                              <td style={{ color: 'var(--text-muted)' }}>{p.department || '—'}</td>
+                              <td style={{ color: 'var(--text-muted)' }}>{p.role === 'faculty' ? 'CCS' : (p.department || '—')}</td>
                               <td><span className="admin-status-dot" style={{ background: dotColor }} />{p.status || '—'}</td>
                               <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{fmtDate(p.created_at)}</td>
                               <td><span className={`admin-role-badge ${p.role || 'student'}`}>{p.role === 'faculty' ? 'Faculty' : 'Student'}</span></td>
@@ -480,7 +475,7 @@ const AdminContent = () => {
                       <p className="admin-detail-name">{selectedUser.full_name || '—'}</p>
                       <div className="admin-detail-meta">
                         <span className={`admin-role-badge ${selectedUser.role || 'student'}`}>{selectedUser.role === 'faculty' ? 'Faculty' : 'Student'}</span>
-                        {selectedUser.department && <span>{selectedUser.department}</span>}
+                        {selectedUser.role === 'faculty' ? <span>CCS</span> : (selectedUser.department && <span>{selectedUser.department}</span>)}
                         {selectedUser.status && (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: STATUS_DOT_COLOR[selectedUser.status] || '#9ca3af', display: 'inline-block' }} />
@@ -554,12 +549,6 @@ const AdminContent = () => {
                   <input type="date" className="admin-report-date-input" value={customTo} min={customFrom} max={today} onChange={e => setCustomTo(e.target.value)} />
                 </div>
               )}
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, margin: '0 0.25rem' }}>Dept:</span>
-              {departments.map(d => (
-                <button key={d} className={`admin-report-chip${deptFilter === d ? ' active' : ''}`} onClick={() => setDeptFilter(d)}>
-                  {d}
-                </button>
-              ))}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
               Showing <strong>{filteredRequests.length}</strong> request{filteredRequests.length !== 1 ? 's' : ''} from <strong>{fromDate}</strong> to <strong>{toDate}</strong>

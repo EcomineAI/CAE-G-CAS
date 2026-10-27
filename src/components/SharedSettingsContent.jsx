@@ -122,7 +122,7 @@ const SharedSettingsContent = ({
   const programRaw = profileData?.program || '';
   const programAbbr = programRaw ? ((programRaw.match(/\(([^)]+)\)/) || [])[1] || programRaw) : '—';
   const section  = profileData?.section || '—';
-  const department = profileData?.department || '—';
+  const department = isFaculty ? 'CCS' : (profileData?.department || '—');
   const programSection = [programAbbr !== '—' ? programAbbr : null, section !== '—' ? section : null].filter(Boolean).join(' · ') || '—';
 
   return (
