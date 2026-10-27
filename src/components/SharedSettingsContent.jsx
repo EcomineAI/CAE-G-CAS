@@ -181,9 +181,7 @@ const SharedSettingsContent = ({
         {/* Profile */}
         <div className="ss-card">
           <p className="ss-card-title">Profile</p>
-          <p className="ss-card-sub">
-            {isFaculty ? 'How students see you.' : 'How you appear to faculty.'}
-          </p>
+          {!isFaculty && <p className="ss-card-sub">How you appear to faculty.</p>}
           <InfoRow label="Name" value={name} />
           {isFaculty
             ? <InfoRow label="Faculty ID" value={idFromEmail} />
