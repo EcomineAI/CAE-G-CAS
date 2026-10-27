@@ -184,7 +184,7 @@ const SharedSettingsContent = ({
           <p className="ss-card-sub">
             {isFaculty ? 'How students see you.' : 'How you appear to faculty. Synced from your Google account.'}
           </p>
-          <InfoRow label="Name" value={name} badge={isFaculty ? undefined : 'Google'} />
+          <InfoRow label="Name" value={name} />
           {isFaculty
             ? <InfoRow label="Faculty ID" value={idFromEmail} />
             : <InfoRow label="Student number" value={idFromEmail} />

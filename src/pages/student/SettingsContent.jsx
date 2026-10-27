@@ -214,7 +214,7 @@ const SettingsContent = ({ profileData, userId, userEmail, isDarkMode, setIsDark
 
         {/* Profile */}
         <SectionCard title="Profile" sub="How you appear to faculty. Synced from your Google account.">
-          <InfoRow label="Name" value={name} badge="Google" />
+          <InfoRow label="Name" value={name} />
           <InfoRow label="Student number" value={studentNumber} />
           <InfoRow label="Program and section" value={programSection} />
           <div style={{ padding: '0.75rem 0' }}>
