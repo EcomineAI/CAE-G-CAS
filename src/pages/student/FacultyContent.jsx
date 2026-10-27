@@ -1084,44 +1084,10 @@ const FacultyContent = ({ initialFacultyId = null }) => {
   useEffect(() => {
     const fetchFaculty = async () => {
       const data = await withMinDelay(getAllFaculty(), 300);
-      const DAY_ORDER = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-      const today = new Date();
-      const todayIdx = today.getDay();
 
-      const mapped = await Promise.all(data.map(async f => {
-        const schedules = await getSchedulesForFaculty(f.id);
-        let nextSlot = null;
-        if (schedules.length > 0) {
-          const recurring = schedules.filter(s => s.schedule_type !== 'one-time' && s.day);
-          let best = null;
-          let bestDiff = Infinity;
-          for (const s of recurring) {
-            const idx = DAY_ORDER.indexOf(s.day);
-            if (idx < 0) continue;
-            let diff = (idx - todayIdx + 7) % 7;
-            if (diff === 0) diff = 0;
-            if (diff < bestDiff) { bestDiff = diff; best = s; }
-          }
-          if (best) {
-            const date = new Date(today);
-            date.setDate(today.getDate() + bestDiff);
-            const dateLabel = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-            const [h, m] = String(best.start_time || '').split(':').map(Number);
-            if (!isNaN(h)) {
-              const ampm = h >= 12 ? 'PM' : 'AM';
-              const hour = h % 12 || 12;
-              const minStr = m > 0 ? `:${String(m).padStart(2,'0')}` : '';
-              nextSlot = `${dateLabel} · ${hour}${minStr} ${ampm}`;
-            } else {
-              nextSlot = dateLabel;
-            }
-          }
-        }
-        return {
-          ...f,
-          statusColor: f.status === 'Available' ? 'green' : f.status === 'Busy' ? 'red' : 'gray',
-          nextSlot,
-        };
+      const mapped = data.map(f => ({
+        ...f,
+        statusColor: f.status === 'Available' ? 'green' : f.status === 'Busy' ? 'red' : 'gray',
       }));
       setFacultyList(mapped);
       setLoading(false);
@@ -1384,8 +1350,9 @@ const FacultyContent = ({ initialFacultyId = null }) => {
               const isUnavailable = faculty.status === 'Unavailable' || isOoo;
               const isBusy = faculty.status === 'Busy';
               const isInMeeting = faculty.status === 'In a meeting';
-              const statusColor = isOoo ? '#616161' : isUnavailable ? '#616161' : isBusy ? '#ff1744' : isInMeeting ? '#ff9800' : '#00c853';
-              const statusLabel = isOoo ? 'Out of office' : isUnavailable ? 'Unavailable Today' : isBusy ? 'Busy' : isInMeeting ? 'In a meeting' : null;
+              const noSlot = !faculty.hasBookableSlot;
+              const statusColor = isOoo ? '#616161' : isUnavailable ? '#616161' : noSlot ? '#9ca3af' : isBusy ? '#ff1744' : isInMeeting ? '#ff9800' : '#00c853';
+              const statusLabel = isOoo ? 'Out of office' : isUnavailable ? 'Unavailable Today' : noSlot ? 'No schedule' : isBusy ? 'Busy' : isInMeeting ? 'In a meeting' : null;
 
               return (
                 <div className="faculty-card" key={idx}>
@@ -1398,7 +1365,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.62rem', fontWeight: 700, color: statusColor || '#00c853' }}>
                       <span style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor || '#00c853', flexShrink: 0, display: 'inline-block' }} />
-                      {isOoo ? 'OOO' : isUnavailable ? 'N/A' : isBusy ? 'Busy' : isInMeeting ? 'Meeting' : 'Available'}
+                      {isOoo ? 'OOO' : isUnavailable ? 'N/A' : noSlot ? 'N/A' : isBusy ? 'Busy' : isInMeeting ? 'Meeting' : 'Available'}
                     </div>
                   </div>
 

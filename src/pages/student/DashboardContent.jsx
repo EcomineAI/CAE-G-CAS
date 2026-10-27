@@ -653,17 +653,19 @@ const DashboardContent = ({ onTabChange, realName }) => {
                 const isUnavailable = f.status === 'Unavailable' || f.status === 'Out of office';
                 const isBusy = f.status === 'Busy';
                 const isInMeeting = f.status === 'In a meeting';
-                const dotColor = isUnavailable ? '#616161' : isBusy ? '#ff1744' : isInMeeting ? '#ff9800' : '#00c853';
-                const statusText = f.status === 'Out of office' ? 'Out of office' : isUnavailable ? 'Unavailable' : isBusy ? 'Busy' : isInMeeting ? 'In a meeting' : 'Available';
+                const noSlot = !f.hasBookableSlot;
+                const isDisabled = isUnavailable || noSlot;
+                const dotColor = isUnavailable || noSlot ? '#9ca3af' : isBusy ? '#ff1744' : isInMeeting ? '#ff9800' : '#00c853';
+                const statusText = noSlot ? 'No schedule set' : f.status === 'Out of office' ? 'Out of office' : isUnavailable ? 'Unavailable' : isBusy ? 'Busy' : isInMeeting ? 'In a meeting' : 'Available';
                 return (
                   <div
                     key={i}
                     className="dc-avail-fc"
-                    onClick={() => !isUnavailable && onTabChange('Faculty', 'All', f.id)}
-                    style={{ opacity: isUnavailable ? 0.55 : 1, cursor: isUnavailable ? 'default' : 'pointer' }}
+                    onClick={() => !isDisabled && onTabChange('Faculty', 'All', f.id)}
+                    style={{ opacity: isDisabled ? 0.5 : 1, cursor: isDisabled ? 'default' : 'pointer' }}
                     role="button"
-                    tabIndex={isUnavailable ? -1 : 0}
-                    onKeyDown={e => e.key === 'Enter' && !isUnavailable && onTabChange('Faculty', 'All', f.id)}
+                    tabIndex={isDisabled ? -1 : 0}
+                    onKeyDown={e => e.key === 'Enter' && !isDisabled && onTabChange('Faculty', 'All', f.id)}
                   >
                     <div className="dc-avail-avatar" style={f.avatarColor ? { background: f.avatarColor } : {}}>
                       <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{getInitials(f.name)}</span>
@@ -675,7 +677,11 @@ const DashboardContent = ({ onTabChange, realName }) => {
                         {statusText}
                       </div>
                     </div>
-                    <span className="dc-avail-book-btn" aria-hidden="true">Book</span>
+                    <span
+                      className="dc-avail-book-btn"
+                      aria-hidden="true"
+                      style={isDisabled ? { background: '#e5e7eb', color: '#9ca3af', cursor: 'not-allowed' } : {}}
+                    >Book</span>
                   </div>
                 );
               })}

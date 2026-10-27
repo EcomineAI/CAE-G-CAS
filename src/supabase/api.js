@@ -614,14 +614,58 @@ export const getAllRequestsAdmin = async () => {
   }));
 };
 
+const DAY_ORDER = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+// Compute the next bookable slot label + whether one exists, given a faculty's schedules.
+// A recurring slot is only bookable if its next occurrence date+time hasn't fully passed yet.
+export const computeNextSlot = (schedules) => {
+  const now = new Date();
+  const todayIdx = now.getDay();
+  const recurring = (schedules || []).filter(s => s.schedule_type !== 'one-time' && s.day);
+  let best = null, bestDiff = Infinity;
+
+  for (const s of recurring) {
+    const idx = DAY_ORDER.indexOf(s.day);
+    if (idx < 0) continue;
+    let diff = (idx - todayIdx + 7) % 7;
+
+    // If it's today, check if the end time has already passed — if so, push to next week
+    if (diff === 0) {
+      const [eh, em] = String(s.end_time || '').split(':').map(Number);
+      if (!isNaN(eh)) {
+        const slotEnd = new Date(now);
+        slotEnd.setHours(eh, em || 0, 0, 0);
+        if (now > slotEnd) diff = 7; // already over today, next occurrence is in 7 days
+      }
+    }
+
+    if (diff < bestDiff) { bestDiff = diff; best = s; }
+  }
+
+  if (!best) return { nextSlot: null, hasBookableSlot: false };
+
+  const date = new Date(now);
+  date.setDate(now.getDate() + bestDiff);
+  const dateLabel = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const [h, m] = String(best.start_time || '').split(':').map(Number);
+  let nextSlot = dateLabel;
+  if (!isNaN(h)) {
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hour = h % 12 || 12;
+    const minStr = m > 0 ? `:${String(m).padStart(2, '0')}` : '';
+    nextSlot = `${dateLabel} · ${hour}${minStr} ${ampm}`;
+  }
+  return { nextSlot, hasBookableSlot: true };
+};
+
 /**
- * Get all faculty members from the profiles table.
- * Returns real names, avatars, and live status.
+ * Get all faculty members with their next bookable slot pre-computed.
+ * Both Dashboard and Faculty List use this so availability is always consistent.
  */
 export const getAllFaculty = async () => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, avatar_url, avatar_color, status, department, name_prefix, name_suffix')
+    .select('id, full_name, avatar_url, avatar_color, status, department, name_prefix, name_suffix, schedules(id, day, start_time, end_time, schedule_type, max_slots)')
     .eq('role', 'faculty')
     .neq('full_name', 'Admin')
     .order('full_name', { ascending: true });
@@ -636,6 +680,7 @@ export const getAllFaculty = async () => {
     const suffix = f.name_suffix || '';
     const base   = f.full_name   || 'Faculty Member';
     const displayName = [prefix, base, suffix].filter(Boolean).join(' ');
+    const { nextSlot, hasBookableSlot } = computeNextSlot(f.schedules || []);
     return {
       id: f.id,
       name: displayName,
@@ -645,7 +690,9 @@ export const getAllFaculty = async () => {
       avatar: f.avatar_url || null,
       avatarColor: f.avatar_color || null,
       status: f.status || 'Available',
-      dept: f.department || 'Faculty'
+      dept: f.department || 'Faculty',
+      nextSlot,
+      hasBookableSlot,
     };
   });
 };
