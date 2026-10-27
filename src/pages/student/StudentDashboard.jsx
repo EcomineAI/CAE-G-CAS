@@ -17,6 +17,7 @@ import logo from '../logo.png';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase, ensureProfile } from '../../supabase/supabase';
 import { getProfile, updateProfile } from '../../supabase/api';
+import { subscribeToOwnProfile } from '../../supabase/realtime';
 import { useNavigate } from 'react-router-dom';
 import NotificationCenter from '../../components/NotificationCenter';
 import ProfileEditModal from '../../components/ProfileEditModal';
@@ -490,6 +491,20 @@ const StudentDashboard = () => {
         if (/^\d+$/.test(p.full_name)) setShowProfileModal(true);
       }
     });
+
+    // Keep profile UI in sync across tabs/devices
+    const unsubProfile = subscribeToOwnProfile(user.id, (p) => {
+      setRealName(p.full_name || 'Student');
+      setRealAvatar(p.avatar_url || null);
+      setProfilePrefix(p.name_prefix || '');
+      setProfileSuffix(p.name_suffix || '');
+      setProfileData(prev => ({ ...prev, ...p }));
+      if (p.avatar_color) {
+        setAvatarColor(p.avatar_color);
+        localStorage.setItem(`askademic_avatar_color_${user.id}`, p.avatar_color);
+      }
+    });
+    return () => unsubProfile();
   }, [user]);
 
   useEffect(() => {
@@ -518,6 +533,18 @@ const StudentDashboard = () => {
       if (user?.id) localStorage.setItem(`askademic_avatar_color_${user.id}`, saved.avatar_color);
     }
     setShowProfileModal(false);
+  };
+
+  const handleProfileRollback = () => {
+    if (!profileData) return;
+    setRealName(profileData.full_name || '');
+    setRealAvatar(profileData.avatar_url || null);
+    setProfilePrefix(profileData.name_prefix || '');
+    setProfileSuffix(profileData.name_suffix || '');
+    if (profileData.avatar_color) {
+      setAvatarColor(profileData.avatar_color);
+      if (user?.id) localStorage.setItem(`askademic_avatar_color_${user.id}`, profileData.avatar_color);
+    }
   };
 
   const updateAccessibilityPref = async (key, value) => {
@@ -854,7 +881,7 @@ const StudentDashboard = () => {
         />
         <ProfileEditModal
           isOpen={showProfileModal} onClose={() => setShowProfileModal(false)}
-          onSaved={handleProfileSaved} role="student"
+          onSaved={handleProfileSaved} onRollback={handleProfileRollback} role="student"
           userId={user?.id} initialData={profileData}
           forceComplete={/^\d+$/.test(realName)}
         />

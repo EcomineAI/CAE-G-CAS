@@ -99,4 +99,50 @@ export const subscribeToFacultyStatus = (callback) => {
   };
 };
 
+/**
+ * Subscribe to a specific user's own profile changes.
+ * Keeps the dashboard UI in sync across multiple tabs/devices when the profile
+ * is updated from another session.
+ * @param {string} userId
+ * @param {Function} callback - Called with the updated profile row
+ * @returns {Function} unsubscribe function
+ */
+export const subscribeToOwnProfile = (userId, callback) => {
+  const channel = supabase
+    .channel(`own-profile-${userId}`)
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` },
+      (payload) => { if (payload.new) callback(payload.new); }
+    )
+    .subscribe();
+  return () => { if (channel) supabase.removeChannel(channel); };
+};
+
+/**
+ * Subscribe to request count changes for a schedule slot.
+ * Lets the booking UI update slot capacity in real-time across all clients.
+ * @param {string[]} scheduleIds - Array of schedule IDs to watch
+ * @param {Function} fetchFn - Re-fetches full schedule list and returns it
+ * @param {Function} callback - Called with the refreshed schedule list
+ * @returns {Function} unsubscribe function
+ */
+export const subscribeToSlotFills = (scheduleIds, fetchFn, callback) => {
+  if (!scheduleIds || scheduleIds.length === 0) return () => {};
+  const channel = supabase
+    .channel(`slot-fills-${scheduleIds.join('-')}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'requests' },
+      async (payload) => {
+        const sid = payload.new?.schedule_id || payload.old?.schedule_id;
+        if (!sid || !scheduleIds.includes(sid)) return;
+        const data = await fetchFn();
+        callback(data);
+      }
+    )
+    .subscribe();
+  return () => { if (channel) supabase.removeChannel(channel); };
+};
+
 

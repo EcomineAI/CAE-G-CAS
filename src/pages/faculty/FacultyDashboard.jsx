@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, ensureProfile } from '../../supabase/supabase';
 import { getProfile, updateProfile, updateFacultyStatus, setOutOfOffice } from '../../supabase/api';
+import { subscribeToOwnProfile } from '../../supabase/realtime';
 import { debouncedSave, toast } from '../../supabase/ux';
 import { Layout, Calendar, CalendarDays, Clock, Bell, User, ChevronDown, CheckCircle, AlertCircle, XCircle, Settings, Menu, X as CloseIcon, Info, LogOut, ShieldCheck, FileText } from 'lucide-react';
 import { getInitials } from '../../utils/dateUtils';
@@ -874,17 +875,25 @@ const FacultyDashboard = () => {
           setFacAvatarColorState(p.avatar_color);
           localStorage.setItem(`askademic_avatar_color_${user.id}`, p.avatar_color);
         }
-
-        // #51: Load accessibility prefs
-        if (p.accessibility_prefs) {
-          setAccessibilityPrefs(p.accessibility_prefs);
-        }
-
+        if (p.accessibility_prefs) setAccessibilityPrefs(p.accessibility_prefs);
         if (!p.tnc_accepted && !localStorage.getItem(`gcas_tnc_${user.id}`)) { setTermsReadOnly(false); setShowTerms(true); }
       }
     });
 
-    return () => {};
+    // Keep profile UI in sync across tabs/devices
+    const unsubProfile = subscribeToOwnProfile(user.id, (p) => {
+      setProfileName(p.full_name || 'Faculty Member');
+      setProfileAvatar(p.avatar_url || null);
+      setProfilePrefix(p.name_prefix || '');
+      setProfileSuffix(p.name_suffix || '');
+      setProfileDept(p.department || profileDept);
+      setProfileData(prev => ({ ...prev, ...p }));
+      if (p.avatar_color) {
+        setFacAvatarColorState(p.avatar_color);
+        localStorage.setItem(`askademic_avatar_color_${user.id}`, p.avatar_color);
+      }
+    });
+    return () => unsubProfile();
   }, [user]);
 
   // Notification Listener for unread count
@@ -925,6 +934,19 @@ const FacultyDashboard = () => {
       if (user?.id) localStorage.setItem(`askademic_avatar_color_${user.id}`, saved.avatar_color);
     }
     setShowProfileModal(false);
+  };
+
+  const handleProfileRollback = () => {
+    if (!profileData) return;
+    setProfileName(profileData.full_name || '');
+    setProfileAvatar(profileData.avatar_url || null);
+    setProfilePrefix(profileData.name_prefix || '');
+    setProfileSuffix(profileData.name_suffix || '');
+    setProfileDept(profileData.department || '');
+    if (profileData.avatar_color) {
+      setFacAvatarColorState(profileData.avatar_color);
+      if (user?.id) localStorage.setItem(`askademic_avatar_color_${user.id}`, profileData.avatar_color);
+    }
   };
 
   const updateAccessibilityPref = async (key, value) => {
@@ -1259,6 +1281,7 @@ const FacultyDashboard = () => {
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         onSaved={handleProfileSaved}
+        onRollback={handleProfileRollback}
         role="faculty"
         userId={user?.id}
         initialData={profileData}

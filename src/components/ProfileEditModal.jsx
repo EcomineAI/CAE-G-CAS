@@ -517,6 +517,7 @@ export default function ProfileEditModal({
   isOpen,
   onClose,
   onSaved,
+  onRollback,
   role,
   userId,
   initialData,
@@ -632,17 +633,23 @@ export default function ProfileEditModal({
       name_prefix: prefix,
       name_suffix: suffix,
       avatar_url: avatarUrl,
+      avatar_color: avatarColor || null,
       ...(isFaculty && { department: dept, title }),
       ...(!isFaculty && { program, section }),
     };
+
+    // Optimistic: update UI immediately, before the DB write resolves
+    onSaved({ ...payload });
+
     const updated = await updateProfile(userId, payload);
     setSaving(false);
     if (updated) {
       setSaved(true);
       setTimeout(() => setSaved(false), 2200);
-      onSaved({ ...payload, full_name: computedName, avatar_url: avatarUrl });
       import('../supabase/ux').then(({ toast }) => toast.success('Profile updated!'));
     } else {
+      // Rollback the optimistic update
+      if (onRollback) onRollback();
       import('../supabase/ux').then(({ toast }) => toast.error('Failed to save profile. Please try again.'));
     }
   };

@@ -3,7 +3,7 @@ import { CheckCircle, WifiOff, Search, Users, Clock, XCircle, LayoutList, Layout
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount, isDateBlocked, getBlockedDates } from '../../supabase/api';
-import { subscribeToFacultyStatus } from '../../supabase/realtime';
+import { subscribeToFacultyStatus, subscribeToSlotFills } from '../../supabase/realtime';
 import { FacultyCardSkeleton, toast, withMinDelay } from '../../supabase/ux';
 import { formatTimeRange } from '../../utils/dateUtils';
 import { MAX_ACTIVE_REQUESTS } from '../../utils/constants';
@@ -1081,6 +1081,19 @@ const FacultyContent = ({ initialFacultyId = null }) => {
     return window.innerWidth < 600 ? 'list' : 'grid';
   });
   const { isOnline } = useNetworkStatus();
+
+  // When a booking modal is open, subscribe to slot fill changes so capacity
+  // updates in real-time if another student books the same slot simultaneously.
+  useEffect(() => {
+    if (facultySchedules.length === 0 || !selectedFaculty) return;
+    const ids = facultySchedules.map(s => s.id);
+    const unsub = subscribeToSlotFills(
+      ids,
+      () => getSchedulesForFaculty(selectedFaculty.id),
+      (updated) => setFacultySchedules(updated)
+    );
+    return () => unsub();
+  }, [facultySchedules.length, selectedFaculty?.id]);
 
   useEffect(() => {
     const fetchFaculty = async () => {
