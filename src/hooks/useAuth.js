@@ -82,6 +82,7 @@ export const useAuth = () => {
 
     let cancelled = false;
     let latestToken = 0; // monotonically increases, so stale resolves lose
+    let currentUserId = null; // track the active user so token-refresh SIGNED_IN events don't wipe state
 
     const applyUser = async (sessionUser, source) => {
       const myToken = ++latestToken;
@@ -90,6 +91,7 @@ export const useAuth = () => {
         if (cancelled || myToken !== latestToken) return; // a newer call superseded us
         if (processed) clearStaleTabState(processed.id);
         else clearStaleTabState(null);
+        currentUserId = processed?.id ?? null;
         setUser(processed);
       } catch (e) {
         if (cancelled || myToken !== latestToken) return;
@@ -100,11 +102,13 @@ export const useAuth = () => {
             const processed = await processUser(sessionUser);
             if (cancelled || myToken !== latestToken) return;
             if (processed) clearStaleTabState(processed.id);
+            currentUserId = processed?.id ?? null;
             setUser(processed);
           } catch {
             if (cancelled || myToken !== latestToken) return;
             console.error('[useAuth] profile fetch failed after retry — signing out');
             await supabase.auth.signOut();
+            currentUserId = null;
             setUser(null);
           }
         } else {
@@ -134,17 +138,24 @@ export const useAuth = () => {
       if (cancelled) return;
       if (event === 'SIGNED_OUT') {
         latestToken++;
+        currentUserId = null;
         clearStaleTabState(null);
         setUser(null);
         setLoading(false);
         return;
       }
-      // On every sign-in (including account switches), wipe stale state immediately
-      // so downstream hooks never read the previous user's displayName while the
-      // new profile is being fetched.
       if (event === 'SIGNED_IN') {
-        setUser(null);
-        setLoading(true);
+        const incomingId = session?.user?.id ?? null;
+        // Only wipe state when the user actually changed (real account switch).
+        // Token refreshes fire SIGNED_IN for the same user — don't blank the UI for those.
+        if (incomingId && incomingId !== currentUserId) {
+          setUser(null);
+          setLoading(true);
+        } else {
+          // Same user token refresh — re-process silently without touching loading state
+          applyUser(session?.user ?? null, event);
+          return;
+        }
       }
       applyUser(session?.user ?? null, event);
     });
