@@ -604,6 +604,7 @@ export const getAllRequestsAdmin = async () => {
     studentId: r.student_id,
     facultyId: r.faculty_id,
     studentName: r.student_name || '—',
+    studentNo: r.student_email ? r.student_email.split('@')[0] : null,
     studentProgram: r.student_program || null,
     studentSection: r.student_section || null,
     facultyName: r.faculty_name || '—',

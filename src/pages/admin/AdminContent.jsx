@@ -31,6 +31,22 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'sho
 
 const ALL_STATUSES = ['Pending','Approved','Declined','Completed','Cancelled'];
 
+// ── Search highlight helper ───────────────────────────────────────────────────
+const Hl = ({ text, query }) => {
+  if (!query || !text) return <>{text || ''}</>;
+  const q = query.trim();
+  if (!q) return <>{text}</>;
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="appt-hl">{text.slice(idx, idx + q.length)}</mark>
+      {text.slice(idx + q.length)}
+    </>
+  );
+};
+
 // ── Pure-SVG donut chart ──────────────────────────────────────────────────────
 const DonutChart = ({ data, size = 160 }) => {
   const r = 52, cx = size / 2, cy = size / 2;
@@ -402,6 +418,11 @@ const adminStyles = `
   font-size: 0.75rem; color: var(--text-muted); font-weight: 600;
   padding: 0.2rem 0; flex-shrink: 0;
 }
+.appt-hl {
+  background: #fef08a; color: #1a1a1a;
+  border-radius: 2px; padding: 0 1px;
+  display: inline; /* override <mark> block default */
+}
 `;
 
 const AdminContent = () => {
@@ -524,7 +545,11 @@ const AdminContent = () => {
 
   const filteredAppts = requests.filter(r => {
     const q = apptSearch.trim().toLowerCase();
-    if (q && !(r.studentName?.toLowerCase().includes(q) || r.facultyName?.toLowerCase().includes(q))) return false;
+    if (q && !(
+      r.studentName?.toLowerCase().includes(q) ||
+      r.studentNo?.toLowerCase().includes(q) ||
+      r.facultyName?.toLowerCase().includes(q)
+    )) return false;
     if (apptStatus !== 'All' && r.status !== apptStatus) return false;
     if (apptDatePreset !== 'all') {
       const d = r.date || r.createdAt?.split('T')[0] || '';
@@ -787,7 +812,7 @@ const AdminContent = () => {
               <Search size={14} />
               <input
                 className="appt-search"
-                placeholder="Search student or faculty…"
+                placeholder="Search student name, student ID, or faculty…"
                 value={apptSearch}
                 onChange={e => setApptSearch(e.target.value)}
               />
@@ -845,14 +870,20 @@ const AdminContent = () => {
                     const timeLabel = r.startTime
                       ? `${fmt12(r.startTime)}${r.endTime ? ` – ${fmt12(r.endTime)}` : ''}`
                       : null;
+                    const q = apptSearch.trim();
                     return (
                       <tr key={r.id}>
                         <td>
-                          <div className="appt-student-name">{r.studentName}</div>
+                          <div className="appt-student-name"><Hl text={r.studentName} query={q} /></div>
+                          {r.studentNo && (
+                            <div className="appt-student-prog" style={{ fontFamily: 'ui-monospace, monospace' }}>
+                              <Hl text={r.studentNo} query={q} />
+                            </div>
+                          )}
                           {progLabel && <div className="appt-student-prog">{progLabel}</div>}
                         </td>
                         <td>
-                          <div className="appt-faculty-name">{r.facultyName}</div>
+                          <div className="appt-faculty-name"><Hl text={r.facultyName} query={q} /></div>
                           <div className="appt-faculty-dept">{r.facultyDept || 'CCS'}</div>
                         </td>
                         <td>
