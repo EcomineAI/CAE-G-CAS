@@ -223,16 +223,13 @@ export const getFacultyRequests = async (facultyId) => {
   }
 
   return (data || []).map(req => {
-    let studentName = req.student?.full_name || 'Unknown Student';
-    const studentId = req.student?.email ? req.student.email.split('@')[0] : req.student_id;
-
-    if (!(/^\d+$/.test(studentName)) && studentId) {
-      studentName = `${studentName} (${studentId})`;
-    }
+    const studentName = req.student?.full_name || 'Unknown Student';
+    const studentNo = req.student?.email ? req.student.email.split('@')[0] : null;
 
     return {
       id: req.id,
       name: studentName,
+      studentNo: studentNo || null,
       namePrefix: req.student?.name_prefix || '',
       nameSuffix: req.student?.name_suffix || '',
       avatar: req.student?.avatar_url || null,

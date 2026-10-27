@@ -133,6 +133,11 @@ const requestStyles = `
   color: var(--text-muted); border: 1px solid var(--border-color, #e5e8f0);
   white-space: nowrap; flex-shrink: 0;
 }
+.frc-student-no {
+  font-size: 0.68rem; font-weight: 700;
+  font-family: ui-monospace, monospace;
+  color: var(--text-muted); white-space: nowrap; flex-shrink: 0;
+}
 .frc-status-badge {
   font-size: 0.68rem; font-weight: 700; padding: 2px 8px;
   border-radius: 8px; border: 1px solid; white-space: nowrap; flex-shrink: 0;
@@ -536,7 +541,7 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
             const slotLabel = getSlotLabel(req);
             const metaParts = [req.subject, timeLabel, slotLabel].filter(Boolean);
 
-            const displayName = req.name?.split('(')[0]?.trim() || '—';
+            const displayName = req.name || '—';
             const initials = nameToInitials(displayName);
             const avatarColor = req.avatarColor || nameToAvatarColor(displayName);
             const urgency = getUrgencyTag(req.date);
@@ -565,6 +570,7 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
                 <div className="frc-info">
                   <div className="frc-name-row">
                     <span className="frc-name">{displayName}</span>
+                    {req.studentNo && <span className="frc-student-no">{req.studentNo}</span>}
                     {section && <span className="frc-section-badge">{section}</span>}
                     {req.status !== 'Pending' && (
                       <span className="frc-status-badge" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>
@@ -652,7 +658,7 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
       {declineModal.open && (() => {
         const req = declineModal.req;
         const timeLabel = req?.startTime ? fmt12(req.startTime) : (req?.time?.split(' - ')[0] || '');
-        const subtitle = [req?.name?.split('(')[0]?.trim(), [req?.day, req?.date].filter(Boolean).join(', '), timeLabel].filter(Boolean).join(' · ');
+        const subtitle = [req?.name, req?.studentNo ? `#${req.studentNo}` : null, [req?.day, req?.date].filter(Boolean).join(', '), timeLabel].filter(Boolean).join(' · ');
         return (
           <div className="frc-modal-overlay" onClick={() => setDeclineModal({ open: false, req: null, reason: '', note: '' })}>
             <div className="frc-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>

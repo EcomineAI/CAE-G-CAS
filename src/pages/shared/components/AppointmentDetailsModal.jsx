@@ -58,6 +58,7 @@ const AppointmentDetailsModal = ({ app, refId, role = 'student', timeStr, onClos
   const otherParty = role === 'student'
     ? app.name || app.facultyName
     : app.name || app.studentName;
+  const studentNo = role === 'faculty' ? (app.studentNo || null) : null;
 
   return (
     <div style={OVERLAY} onClick={onClose}>
@@ -77,8 +78,13 @@ const AppointmentDetailsModal = ({ app, refId, role = 'student', timeStr, onClos
               <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1f2937', marginBottom: '0.2rem' }}>
                 {app.subject || 'Consultation'}
               </div>
-              <div style={{ fontSize: '0.83rem', color: '#6b7280' }}>
-                {role === 'student' ? 'with' : 'from'} {otherParty}
+              <div style={{ fontSize: '0.83rem', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                <span>{role === 'student' ? 'with' : 'from'} {otherParty}</span>
+                {studentNo && (
+                  <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.72rem', fontWeight: 700, background: '#f0f2f8', color: '#6b7280', padding: '1px 6px', borderRadius: 5, border: '1px solid #e5e8f0' }}>
+                    {studentNo}
+                  </span>
+                )}
               </div>
             </div>
             <span style={{ ...badge(app.status), flexShrink: 0, marginTop: 2 }}>{app.status}</span>

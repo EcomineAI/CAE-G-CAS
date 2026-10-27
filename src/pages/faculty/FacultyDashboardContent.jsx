@@ -96,6 +96,7 @@ const S = `
 .fdc-req-info { flex: 1; min-width: 0; }
 .fdc-req-name { font-size: 0.88rem; font-weight: 700; color: #1a2d5a; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .fdc-req-section { font-size: 0.75rem; color: #6b7280; font-weight: 500; }
+.fdc-student-no { font-size: 0.68rem; font-weight: 700; font-family: ui-monospace, monospace; color: #9ca3af; white-space: nowrap; }
 .fdc-req-detail { font-size: 0.78rem; color: #374151; margin-top: 0.2rem; }
 .fdc-req-note { font-size: 0.76rem; color: #6b7280; font-style: italic; margin-top: 0.15rem; }
 .fdc-req-actions { display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0; }
@@ -444,6 +445,7 @@ const FacultyDashboardContent = ({ onTabChange }) => {
             <div className="fdc-req-info">
               <div className="fdc-req-name">
                 {req.name}
+                {req.studentNo && <span className="fdc-student-no">{req.studentNo}</span>}
                 {req.section && <span className="fdc-req-section">{req.section}</span>}
               </div>
               <div className="fdc-req-detail">
@@ -488,6 +490,7 @@ const FacultyDashboardContent = ({ onTabChange }) => {
             <div className="fdc-upcoming-info">
               <div className="fdc-upcoming-name">
                 {req.name}
+                {req.studentNo && <span className="fdc-student-no">{req.studentNo}</span>}
                 {req.section && <span className="fdc-req-section">{req.section}</span>}
               </div>
               <div className="fdc-upcoming-detail">
