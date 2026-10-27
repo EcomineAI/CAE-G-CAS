@@ -60,7 +60,7 @@ const processUser = async (sessionUser) => {
 
   return {
     ...sessionUser,
-    role: profile?.role || null,
+    role: profile?.role || 'student', // only reached when profile is explicitly null (no row)
     displayName: profile?.full_name || formatNameFromEmail(sessionUser.email),
     avatarUrl: oauthAvatar || profile?.avatar_url || null
   };

@@ -475,7 +475,7 @@ export const getAllProfiles = async () => {
 export const updateUserRole = async (userId, role) => {
   const { error } = await supabase
     .from('profiles')
-    .update({ role: role || null })
+    .update({ role })
     .eq('id', userId);
   if (error) { logError('Error updating user role:', error); return false; }
   return true;
