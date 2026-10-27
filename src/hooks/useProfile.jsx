@@ -28,13 +28,26 @@ export function ProfileProvider({ children }) {
   const avatarUrl     = profileData?.avatar_url  || user?.avatarUrl  || null;
   const resolvedColor = resolveAvatarColor(avatarColor, displayName, user?.id);
 
-  // Load profile once per user
+  // Load profile once per user — reset stale state immediately on user switch
   useEffect(() => {
-    if (!user?.id || loadedForUser.current === user.id) return;
+    if (!user?.id) {
+      // Signed out: wipe everything so no stale data lingers
+      setProfileData(null);
+      setAvatarColor(null);
+      loadedForUser.current = null;
+      return;
+    }
+
+    if (loadedForUser.current === user.id) return; // already loaded for this user
+
+    // New user — clear previous user's data before fetching
+    setProfileData(null);
+    setAvatarColor(null);
     loadedForUser.current = user.id;
 
+    let cancelled = false;
     getProfile(user.id).then(p => {
-      if (!p) return;
+      if (cancelled || !p) return;
       setProfileData(p);
       if (p.avatar_color) {
         setAvatarColor(p.avatar_color);
@@ -44,6 +57,8 @@ export function ProfileProvider({ children }) {
         if (stored) setAvatarColor(stored);
       }
     });
+
+    return () => { cancelled = true; };
   }, [user?.id]);
 
   // Realtime own-profile sync (another tab or device saved changes)
