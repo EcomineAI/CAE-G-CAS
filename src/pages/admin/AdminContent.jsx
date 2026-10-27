@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Users, GraduationCap, CalendarClock, CheckCircle, XCircle, Clock, X, BarChart2, Download } from 'lucide-react';
-import { getAllProfiles, getAllRequestsAdmin, updateUserRole } from '../../supabase/api';
+import { getAllProfiles, getAllRequestsAdmin } from '../../supabase/api';
 import { getInitials, fmt12 } from '../../utils/dateUtils';
 
 const REQ_STATUS_STYLE = {
@@ -268,15 +268,6 @@ const adminStyles = `
 .admin-role-badge.student  { background: rgba(34,197,94,0.12);   color: #166534; border: 1px solid rgba(34,197,94,0.3); }
 .admin-role-badge.no-role  { background: rgba(239,68,68,0.1);    color: #b91c1c; border: 1px solid rgba(239,68,68,0.3); }
 
-.admin-role-select {
-  padding: 0.28rem 0.55rem; border-radius: 7px; border: 1.5px solid var(--border-color);
-  background: var(--bg-secondary); color: var(--text-primary);
-  font-size: 0.75rem; font-weight: 700; font-family: inherit;
-  cursor: pointer; outline: none; transition: border-color 0.13s;
-}
-.admin-role-select:hover, .admin-role-select:focus { border-color: #1a2d5a; }
-.admin-role-select:disabled { opacity: 0.5; cursor: not-allowed; }
-
 .admin-status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
 .admin-req-count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 20px; padding: 0 6px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 10px; font-size: 0.68rem; font-weight: 700; color: var(--text-muted); }
 .admin-empty { text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 2rem 0; }
@@ -347,7 +338,6 @@ const AdminContent = () => {
   const [loading, setLoading]   = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [activeFilter, setActiveFilter] = useState(null);
-  const [roleSaving, setRoleSaving] = useState({});
 
   // Reports filters
   const [rangePreset, setRangePreset] = useState('month');
@@ -364,16 +354,6 @@ const AdminContent = () => {
   }, []);
 
   useEffect(() => { load(); }, [load]);
-
-  const handleRoleChange = async (userId, newRole) => {
-    setRoleSaving(prev => ({ ...prev, [userId]: true }));
-    const ok = await updateUserRole(userId, newRole || null);
-    if (ok) {
-      setProfiles(prev => prev.map(p => p.id === userId ? { ...p, role: newRole || null } : p));
-      if (selectedUser?.id === userId) setSelectedUser(prev => ({ ...prev, role: newRole || null }));
-    }
-    setRoleSaving(prev => ({ ...prev, [userId]: false }));
-  };
 
   // ── Derived: overview ──────────────────────────────────────────────────────
   const faculty  = profiles.filter(p => p.role === 'faculty');
@@ -568,23 +548,10 @@ const AdminContent = () => {
                               <td style={{ color: 'var(--text-muted)' }}>{deptOrProgram}</td>
                               <td><span className="admin-status-dot" style={{ background: dotColor }} />{p.status || '—'}</td>
                               <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{fmtDate(p.created_at)}</td>
-                              <td onClick={e => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                                  <span className={`admin-role-badge ${p.role === 'faculty' ? 'faculty' : p.role === 'student' ? 'student' : 'no-role'}`}>
-                                    {p.role === 'faculty' ? 'Faculty' : p.role === 'student' ? 'Student' : 'No Role'}
-                                  </span>
-                                  <select
-                                    className="admin-role-select"
-                                    value={p.role || ''}
-                                    onChange={e => handleRoleChange(p.id, e.target.value)}
-                                    disabled={!!roleSaving[p.id]}
-                                    title="Change role"
-                                  >
-                                    <option value="">No Role</option>
-                                    <option value="student">Student</option>
-                                    <option value="faculty">Faculty</option>
-                                  </select>
-                                </div>
+                              <td>
+                                <span className={`admin-role-badge ${p.role === 'faculty' ? 'faculty' : p.role === 'student' ? 'student' : 'no-role'}`}>
+                                  {p.role === 'faculty' ? 'Faculty' : p.role === 'student' ? 'Student' : 'No Role'}
+                                </span>
                               </td>
                               <td style={{ textAlign: 'center' }}><span className="admin-req-count">{reqCount}</span></td>
                             </tr>
@@ -620,19 +587,6 @@ const AdminContent = () => {
                             {selectedUser.status}
                           </span>
                         )}
-                      </div>
-                      <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Role:</span>
-                        <select
-                          className="admin-role-select"
-                          value={selectedUser.role || ''}
-                          onChange={e => handleRoleChange(selectedUser.id, e.target.value)}
-                          disabled={!!roleSaving[selectedUser.id]}
-                        >
-                          <option value="">No Role</option>
-                          <option value="student">Student</option>
-                          <option value="faculty">Faculty</option>
-                        </select>
                       </div>
                     </div>
                     <button className="admin-detail-close" onClick={() => setSelectedUser(null)}><X size={15} /></button>
