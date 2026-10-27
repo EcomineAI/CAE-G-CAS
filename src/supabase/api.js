@@ -707,35 +707,51 @@ export const getSchedulesForFaculty = async (facultyId) => {
 };
 
 /**
- * Submit a new appointment request.
- * Returns { data } on success, { error: 'SLOT_FULL' } if the slot filled up between the
- * client-side check and the insert (race condition), or { error: 'DB_ERROR' } otherwise.
+ * Submit a new appointment request via atomic RPC.
+ *
+ * Uses submit_request_atomic() which holds a pg_advisory_xact_lock
+ * on the schedule row so concurrent submissions are serialized at the
+ * DB layer — first commit wins, second gets SLOT_FULL.
+ *
+ * Returns:
+ *   { data }           — success, data is the inserted request row
+ *   { error: 'SLOT_FULL' }  — slot was taken by a concurrent booking
+ *   { error: 'OTHER' }      — any other DB error
  */
 export const submitRequest = async (requestData, notifContext = null) => {
-  // Slot capacity is enforced by the DB trigger trg_check_slot_capacity.
-  // We go straight to insert — the trigger raises SLOT_FULL if the slot is full,
-  // which is the only truly atomic guard against concurrent submissions.
-  const { data, error } = await supabase
-    .from('requests')
-    .insert([requestData])
-    .select()
-    .single();
+  const { data: rpcData, error } = await supabase.rpc('submit_request_atomic', {
+    p_student_id:        requestData.student_id,
+    p_faculty_id:        requestData.faculty_id,
+    p_schedule_id:       requestData.schedule_id,
+    p_subject:           requestData.subject      ?? '',
+    p_details:           requestData.details       ?? '',
+    p_request_date:      requestData.request_date,
+    p_consultation_type: requestData.consultation_type ?? 'General',
+  });
 
   if (error) {
-    // DB trigger raises 'SLOT_FULL' in the message when the slot is over capacity
-    if (error.message?.includes('SLOT_FULL') || error.code === 'P0001') {
-      return { error: 'SLOT_FULL' };
-    }
+    const isSlotFull = error.message?.includes('SLOT_FULL') ||
+                       error.details?.includes('SLOT_FULL') ||
+                       error.hint?.includes('SLOT_FULL');
+    if (isSlotFull) return { error: 'SLOT_FULL' };
     logError('Error submitting request:', error);
-    return { error: 'DB_ERROR' };
+    return { error: 'OTHER' };
   }
 
-  if (notifContext?.facultyId && notifContext?.studentName && data?.id) {
+  // rpc() with a RETURNS json function gives us the row as a plain object
+  const inserted = typeof rpcData === 'string' ? JSON.parse(rpcData) : rpcData;
+
+  if (notifContext?.facultyId && notifContext?.studentName && inserted?.id) {
     const { facultyId, studentName, day, time } = notifContext;
-    await insertNotification(facultyId, 'new_request', `${studentName} requested a consultation on ${day} at ${time}.`, data.id);
+    await insertNotification(
+      facultyId,
+      'new_request',
+      `${studentName} requested a consultation on ${day} at ${time}.`,
+      inserted.id
+    );
   }
 
-  return { data };
+  return { data: inserted };
 };
 
 /**

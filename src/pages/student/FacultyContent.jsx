@@ -3,7 +3,7 @@ import { CheckCircle, WifiOff, Search, Users, Clock, XCircle, LayoutList, Layout
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount, isDateBlocked, getBlockedDates } from '../../supabase/api';
-import { subscribeToFacultyStatus, subscribeToSlotFills } from '../../supabase/realtime';
+import { subscribeToFacultyStatus } from '../../supabase/realtime';
 import { FacultyCardSkeleton, toast, withMinDelay } from '../../supabase/ux';
 import { formatTimeRange } from '../../utils/dateUtils';
 import { MAX_ACTIVE_REQUESTS } from '../../utils/constants';
@@ -1063,8 +1063,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
   const [facultyView, setFacultyView] = useState('list');
   const [selectedFaculty, setSelectedFaculty] = useState(null);
   const [facultySchedules, setFacultySchedules] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -1081,19 +1080,6 @@ const FacultyContent = ({ initialFacultyId = null }) => {
     return window.innerWidth < 600 ? 'list' : 'grid';
   });
   const { isOnline } = useNetworkStatus();
-
-  // When a booking modal is open, subscribe to slot fill changes so capacity
-  // updates in real-time if another student books the same slot simultaneously.
-  useEffect(() => {
-    if (facultySchedules.length === 0 || !selectedFaculty) return;
-    const ids = facultySchedules.map(s => s.id);
-    const unsub = subscribeToSlotFills(
-      ids,
-      () => getSchedulesForFaculty(selectedFaculty.id),
-      (updated) => setFacultySchedules(updated)
-    );
-    return () => unsub();
-  }, [facultySchedules.length, selectedFaculty?.id]);
 
   useEffect(() => {
     const fetchFaculty = async () => {
@@ -1122,27 +1108,20 @@ const FacultyContent = ({ initialFacultyId = null }) => {
     };
     fetchFaculty();
 
-    // Real-time: faculty status changes + schedule changes
-    const unsub = subscribeToFacultyStatus(
-      (payload) => {
-        const updatedProfile = payload.new;
-        setFacultyList(prev => prev.map(f => {
-          if (f.id !== updatedProfile.id) return f;
+    // Real-time: faculty status changes
+    const unsub = subscribeToFacultyStatus((payload) => {
+      const updatedProfile = payload.new;
+      setFacultyList(prev => prev.map(f => {
+        if (f.id === updatedProfile.id) {
           return {
             ...f,
             status: updatedProfile.status,
-            statusColor: updatedProfile.status === 'Available' ? 'green' : updatedProfile.status === 'Busy' ? 'red' : 'gray',
+            statusColor: updatedProfile.status === 'Available' ? 'green' : updatedProfile.status === 'Busy' ? 'red' : 'gray'
           };
-        }));
-      },
-      async () => {
-        const data = await getAllFaculty();
-        setFacultyList(data.map(f => ({
-          ...f,
-          statusColor: f.status === 'Available' ? 'green' : f.status === 'Busy' ? 'red' : 'gray',
-        })));
-      }
-    );
+        }
+        return f;
+      }));
+    });
     return () => unsub();
   }, []);
 
@@ -1180,53 +1159,50 @@ const FacultyContent = ({ initialFacultyId = null }) => {
   };
 
   const handleBookSlot = async (slot, chosenDate = null) => {
-    if (!user || !selectedFaculty || isSubmitting) return;
-    setIsSubmitting(true);
+    if (!user || !selectedFaculty) return;
 
     if (!isOnline) {
       toast.error('You are offline. Please reconnect and try again.');
-      setIsSubmitting(false);
       return;
     }
 
     const activeCount = await getActiveRequestCount(user.id);
     if (activeCount >= MAX_ACTIVE_REQUESTS) {
       toast.error(`You already have ${MAX_ACTIVE_REQUESTS} active requests. Complete or cancel one before booking again.`);
-      setIsSubmitting(false);
       return;
     }
 
     const slotTaken = await checkActiveRequestForSlot(user.id, slot.id);
     if (slotTaken) {
       toast.error('You already have an active request for this specific slot.');
-      setIsSubmitting(false);
       return;
     }
 
     const hasActive = await checkActiveRequest(user.id, selectedFaculty.id);
     if (hasActive) {
       toast.error('You already have an active request with this faculty member.');
-      setIsSubmitting(false);
       return;
     }
 
     if (slot.filled >= slot.max_slots) {
       toast.error('This consultation slot is already fully booked.');
-      setIsSubmitting(false);
       return;
     }
 
     if (selectedFaculty.status === 'Unavailable' || selectedFaculty.status === 'Out of office') {
       toast.error(`${selectedFaculty.name} is currently ${selectedFaculty.status === 'Out of office' ? 'out of office' : 'unavailable'} and not accepting requests.`);
-      setIsSubmitting(false);
       return;
     }
 
+    // Target date: prefer the date the student picked in the booking modal,
+    // then the slot's specific_date for one-time slots, else today as a last resort.
     const targetDate =
       chosenDate ||
       (slot.schedule_type === 'one-time' && slot.specific_date) ||
       new Date().toISOString().split('T')[0];
+    console.log('[booking] checking block for date:', targetDate, 'faculty:', selectedFaculty.id);
     const block = await isDateBlocked(selectedFaculty.id, targetDate);
+    console.log('[booking] block result:', block);
     if (block) {
       const facultyDisplayName = selectedFaculty?.name || 'The faculty';
       toast.error(
@@ -1236,7 +1212,6 @@ const FacultyContent = ({ initialFacultyId = null }) => {
             ? `This date is blocked by the faculty (${block.reason}).`
             : 'This date is blocked by the faculty.'
       );
-      setIsSubmitting(false);
       return;
     }
 
@@ -1261,18 +1236,19 @@ const FacultyContent = ({ initialFacultyId = null }) => {
     };
 
     const result = await submitRequest(requestData, notifContext);
-    if (result?.data) {
+    if (result?.error === 'SLOT_FULL') {
+      toast.error('Sorry, this slot was just taken by another student.');
+      // Refresh slot counts so the card shows as full immediately
+      const updated = await getSchedulesForFaculty(selectedFaculty.id);
+      setFacultySchedules(updated);
+    } else if (result?.error) {
+      toast.error('Failed to submit request. Please try again.');
+    } else if (result?.data) {
       setSubmittedReqId(result.data.id);
       setSelectedSlot(slot);
       setFacultyView('list');
       setShowConfirmation(true);
       toast.success('Request sent! Awaiting faculty approval');
-    } else if (result?.error === 'SLOT_FULL') {
-      toast.error('No available slots remaining for this time schedule.');
-      setIsSubmitting(false);
-    } else {
-      toast.error('Failed to submit request. Please try again.');
-      setIsSubmitting(false);
     }
   };
 
@@ -1469,7 +1445,6 @@ const FacultyContent = ({ initialFacultyId = null }) => {
 
         const handleInlineSubmit = async (e) => {
           e.preventDefault();
-          if (isSubmitting) return;
           if (selected.isBlocked) { toast.error(selected.isOoo ? 'Faculty is out of office on this date.' : 'This date is blocked.'); return; }
           if (!chosenSlot) { toast.error('Please select a time slot.'); return; }
           if (!subject) { toast.error('Please select a consultation topic.'); return; }
@@ -1603,15 +1578,8 @@ const FacultyContent = ({ initialFacultyId = null }) => {
 
                     {/* Actions */}
                     <div className="bk-actions">
-                      <button
-                        type="submit"
-                        className="bk-submit-btn"
-                        disabled={isSubmitting}
-                        style={isSubmitting ? { opacity: 0.65, cursor: 'not-allowed' } : {}}
-                      >
-                        {isSubmitting ? 'Submitting…' : 'Submit Request'}
-                      </button>
-                      <button type="button" className="bk-cancel-btn" disabled={isSubmitting} onClick={() => !isSubmitting && setFacultyView('list')}>Cancel</button>
+                      <button type="submit" className="bk-submit-btn">Submit Request</button>
+                      <button type="button" className="bk-cancel-btn" onClick={() => setFacultyView('list')}>Cancel</button>
                     </div>
                   </form>
                 )}

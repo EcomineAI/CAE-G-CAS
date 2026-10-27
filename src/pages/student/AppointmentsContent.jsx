@@ -371,8 +371,9 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
       schedule_id: slot.id, subject: app.subject, details: app.details,
       status: 'Pending', request_date: targetDate,
     }, notifCtx);
-    if (result) { setRequests(prev => prev.map(r => r.id === app.id ? { ...r, status: 'Cancelled' } : r)); toast.success('Rescheduled! New request is pending.'); }
-    else toast.error('Failed to reschedule. Please try again.');
+    if (result?.error === 'SLOT_FULL') { toast.error('Sorry, this slot was just taken by another student.'); }
+    else if (result?.error) { toast.error('Failed to reschedule. Please try again.'); }
+    else if (result?.data) { setRequests(prev => prev.map(r => r.id === app.id ? { ...r, status: 'Cancelled' } : r)); toast.success('Rescheduled! New request is pending.'); }
     setSelectedId(null);
   };
 
