@@ -271,6 +271,7 @@ const STATUS_COLORS = {
   Declined:  { bg: '#fee2e2', color: '#b91c1c', border: '#fecaca' },
   Cancelled: { bg: '#f1f5f9', color: '#374151', border: '#cbd5e1' },
   Completed: { bg: '#ede9fe', color: '#3730a3', border: '#c4b5fd' },
+  Expired:   { bg: '#f3f4f6', color: '#6b7280', border: '#e5e7eb' },
 };
 
 const AVATAR_COLORS = ['#2e4a87','#7c3aed','#0891b2','#0d9488','#d97706','#dc2626','#059669','#db2777'];
@@ -339,13 +340,13 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
 
   const getCount = (f) => {
     if (f === 'All') return requests.length;
-    if (f === 'History') return requests.filter(r => ['Completed','Cancelled','Declined'].includes(r.status)).length;
+    if (f === 'History') return requests.filter(r => ['Completed','Cancelled','Declined','Expired'].includes(r.status)).length;
     return requests.filter(r => r.status === f).length;
   };
 
   const filtered = requests.filter(r => {
     const matchFilter = filter === 'All' ? true
-      : filter === 'History' ? ['Completed','Cancelled','Declined'].includes(r.status)
+      : filter === 'History' ? ['Completed','Cancelled','Declined','Expired'].includes(r.status)
       : r.status === filter;
     const q = searchTerm.toLowerCase();
     const matchSearch = !q || (r.name || '').toLowerCase().includes(q) || (r.subject || '').toLowerCase().includes(q) || (r.details || '').toLowerCase().includes(q);
@@ -628,7 +629,7 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
                       )}
                     </>);
                   })()}
-                  {['Completed','Declined','Cancelled'].includes(req.status) && (
+                  {['Completed','Declined','Cancelled','Expired'].includes(req.status) && (
                     <button className="frc-btn frc-btn-archive" onClick={() => setDeleteModal({ open: true, reqId: req.id })}>
                       <Archive size={13} /> Archive
                     </button>
