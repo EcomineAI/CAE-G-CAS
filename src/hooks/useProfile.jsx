@@ -6,6 +6,9 @@ import { useAuth } from './useAuth';
 
 const ProfileContext = createContext(null);
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isRealUUID = (id) => typeof id === 'string' && UUID_RE.test(id);
+
 const AVATAR_PALETTE = ['#2e4a87','#7c3aed','#0891b2','#0d9488','#d97706','#db2777','#059669','#dc2626'];
 
 function resolveAvatarColor(color, name, userId) {
@@ -42,6 +45,9 @@ export function ProfileProvider({ children }) {
       return;
     }
 
+    // Skip DB fetch for non-UUID ids (e.g. 'admin-bypass' fake session)
+    if (!isRealUUID(user.id)) return;
+
     if (loadedForUser.current === user.id) return; // already loaded for this user
 
     // New user — clear previous user's data before fetching
@@ -67,7 +73,7 @@ export function ProfileProvider({ children }) {
 
   // Realtime own-profile sync (another tab or device saved changes)
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !isRealUUID(user.id)) return;
     return subscribeToOwnProfile(user.id, (updated) => {
       setProfileData(prev => ({ ...prev, ...updated }));
       if (updated.avatar_color) {
@@ -79,7 +85,7 @@ export function ProfileProvider({ children }) {
 
   // Optimistic profile update — updates local state immediately, rolls back on failure
   const updateProfileOptimistic = useCallback(async (payload) => {
-    if (!user?.id) return false;
+    if (!user?.id || !isRealUUID(user.id)) return false;
     const result = await optimistic(
       setProfileData,
       profileData,
@@ -96,7 +102,7 @@ export function ProfileProvider({ children }) {
 
   // Instant avatar color update (no save button needed — fires on color pick)
   const updateAvatarColorInstant = useCallback(async (color) => {
-    if (!user?.id) return;
+    if (!user?.id || !isRealUUID(user.id)) return;
     setAvatarColor(color);
     setProfileData(prev => prev ? { ...prev, avatar_color: color } : prev);
     localStorage.setItem(`askademic_avatar_color_${user.id}`, color);

@@ -507,7 +507,9 @@ const StudentDashboard = () => {
   const updateAccessibilityPref = async (key, value) => {
     const newPrefs = { ...accessibilityPrefs, [key]: value };
     setAccessibilityPrefs(newPrefs);
-    await updateProfile(user.id, { accessibility_prefs: newPrefs });
+    if (user?.id && user.id !== 'admin-bypass') {
+      await updateProfile(user.id, { accessibility_prefs: newPrefs });
+    }
   };
 
   const handleTabChange = (tab, filter = 'All', facultyIdOrDate = null) => {

@@ -20,10 +20,13 @@ const clearStaleTabState = (currentUserId) => {
   if (currentUserId) localStorage.setItem('askademic_last_uid', currentUserId);
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Fetch profile with timeout + maybeSingle so missing rows don't throw.
 // Returns { profile, timedOut } so caller can tell the difference between
 // "no profile row" and "we never heard back from Supabase".
 const fetchProfile = async (userId) => {
+  if (!userId || !UUID_RE.test(userId)) return { profile: null, timedOut: false };
   try {
     const query = supabase
       .from('profiles')

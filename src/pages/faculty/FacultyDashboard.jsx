@@ -842,7 +842,7 @@ const FacultyDashboard = () => {
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || user.id === 'admin-bypass') return;
     document.documentElement.className = '';
     ensureProfile();
   }, [user]);
@@ -892,7 +892,9 @@ const FacultyDashboard = () => {
   const updateAccessibilityPref = async (key, value) => {
     const newPrefs = { ...accessibilityPrefs, [key]: value };
     setAccessibilityPrefs(newPrefs);
-    await updateProfile(user.id, { accessibility_prefs: newPrefs });
+    if (user?.id && user.id !== 'admin-bypass') {
+      await updateProfile(user.id, { accessibility_prefs: newPrefs });
+    }
   };
 
   const closeDrawer = () => {
