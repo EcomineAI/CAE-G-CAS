@@ -213,7 +213,7 @@ const SettingsContent = ({ profileData, userId, userEmail, isDarkMode, setIsDark
         <p className="sc-page-sub">Your profile and notification preferences</p>
 
         {/* Profile */}
-        <SectionCard title="Profile" sub="How you appear to faculty. Synced from your Google account.">
+        <SectionCard title="Profile" sub="How you appear to faculty.">
           <InfoRow label="Name" value={name} />
           <InfoRow label="Student number" value={studentNumber} />
           <InfoRow label="Program and section" value={programSection} />

@@ -182,7 +182,7 @@ const SharedSettingsContent = ({
         <div className="ss-card">
           <p className="ss-card-title">Profile</p>
           <p className="ss-card-sub">
-            {isFaculty ? 'How students see you.' : 'How you appear to faculty. Synced from your Google account.'}
+            {isFaculty ? 'How students see you.' : 'How you appear to faculty.'}
           </p>
           <InfoRow label="Name" value={name} />
           {isFaculty
