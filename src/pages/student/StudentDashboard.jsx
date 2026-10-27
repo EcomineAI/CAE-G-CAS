@@ -15,9 +15,10 @@ import WelcomeContent from './WelcomeContent';
 import SharedSettingsContent from '../../components/SharedSettingsContent';
 import logo from '../logo.png';
 import { useAuth } from '../../hooks/useAuth';
+import { useProfile } from '../../hooks/useProfile';
 import { supabase, ensureProfile } from '../../supabase/supabase';
-import { getProfile, updateProfile } from '../../supabase/api';
-import { subscribeToOwnProfile } from '../../supabase/realtime';
+import { updateProfile } from '../../supabase/api';
+
 import { useNavigate } from 'react-router-dom';
 import NotificationCenter from '../../components/NotificationCenter';
 import ProfileEditModal from '../../components/ProfileEditModal';
@@ -428,6 +429,7 @@ const dashStyles = `
 
 const StudentDashboard = () => {
   const { user } = useAuth();
+  const { profileData, setProfileData, displayName: profileDisplayName, namePrefix: profilePrefix, nameSuffix: profileSuffix, avatarUrl: realAvatar, avatarColor: resolvedAvatarColor } = useProfile();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('gcas_student_tab') || 'Welcome');
@@ -447,13 +449,9 @@ const StudentDashboard = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  // Profile
+  // Profile modal visibility
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [realName, setRealName] = useState('');
-  const [realAvatar, setRealAvatar] = useState('');
-  const [profilePrefix, setProfilePrefix] = useState('');
-  const [profileSuffix, setProfileSuffix] = useState('');
-  const [profileData, setProfileData] = useState(null);
+  const realName = profileDisplayName;
 
   useEffect(() => { localStorage.setItem('gcas_student_text_size', textSize); }, [textSize]);
   useEffect(() => { localStorage.removeItem('gcas_student_theme'); }, []);
@@ -473,39 +471,17 @@ const StudentDashboard = () => {
     if (!user) return;
     document.documentElement.className = '';
     ensureProfile();
-    getProfile(user.id).then(p => {
-      if (p) {
-        setRealName(p.full_name || 'Student');
-        setRealAvatar(p.avatar_url || null);
-        setProfilePrefix(p.name_prefix || '');
-        setProfileSuffix(p.name_suffix || '');
-        setProfileData(p);
-        if (p.avatar_color) {
-          setAvatarColor(p.avatar_color);
-          localStorage.setItem(`askademic_avatar_color_${user.id}`, p.avatar_color);
-        }
-        if (p.accessibility_prefs) setAccessibilityPrefs(p.accessibility_prefs);
-        if (!p.tnc_accepted && !localStorage.getItem(`gcas_tnc_${user.id}`)) {
-          setTermsReadOnly(false); setShowTerms(true);
-        }
-        if (/^\d+$/.test(p.full_name)) setShowProfileModal(true);
-      }
-    });
-
-    // Keep profile UI in sync across tabs/devices
-    const unsubProfile = subscribeToOwnProfile(user.id, (p) => {
-      setRealName(p.full_name || 'Student');
-      setRealAvatar(p.avatar_url || null);
-      setProfilePrefix(p.name_prefix || '');
-      setProfileSuffix(p.name_suffix || '');
-      setProfileData(prev => ({ ...prev, ...p }));
-      if (p.avatar_color) {
-        setAvatarColor(p.avatar_color);
-        localStorage.setItem(`askademic_avatar_color_${user.id}`, p.avatar_color);
-      }
-    });
-    return () => unsubProfile();
   }, [user]);
+
+  // Sync accessibility prefs and terms gate from profileData (managed by ProfileContext)
+  useEffect(() => {
+    if (!profileData || !user) return;
+    if (profileData.accessibility_prefs) setAccessibilityPrefs(profileData.accessibility_prefs);
+    if (!profileData.tnc_accepted && !localStorage.getItem(`gcas_tnc_${user.id}`)) {
+      setTermsReadOnly(false); setShowTerms(true);
+    }
+    if (/^\d+$/.test(profileData.full_name)) setShowProfileModal(true);
+  }, [profileData, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -523,28 +499,9 @@ const StudentDashboard = () => {
   }, [user]);
 
   const handleProfileSaved = (saved) => {
-    setRealName(saved.full_name);
-    setRealAvatar(saved.avatar_url);
-    setProfilePrefix(saved.name_prefix || '');
-    setProfileSuffix(saved.name_suffix || '');
+    // ProfileContext already applied the optimistic update; just merge into local profileData copy
     setProfileData(prev => ({ ...prev, ...saved }));
-    if (saved.avatar_color) {
-      setAvatarColor(saved.avatar_color);
-      if (user?.id) localStorage.setItem(`askademic_avatar_color_${user.id}`, saved.avatar_color);
-    }
     setShowProfileModal(false);
-  };
-
-  const handleProfileRollback = () => {
-    if (!profileData) return;
-    setRealName(profileData.full_name || '');
-    setRealAvatar(profileData.avatar_url || null);
-    setProfilePrefix(profileData.name_prefix || '');
-    setProfileSuffix(profileData.name_suffix || '');
-    if (profileData.avatar_color) {
-      setAvatarColor(profileData.avatar_color);
-      if (user?.id) localStorage.setItem(`askademic_avatar_color_${user.id}`, profileData.avatar_color);
-    }
   };
 
   const updateAccessibilityPref = async (key, value) => {
@@ -584,16 +541,6 @@ const StudentDashboard = () => {
 
   const displayName = realName || 'Student';
   const initials = displayName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-
-  const AVATAR_PALETTE = ['#2e4a87','#7c3aed','#0891b2','#0d9488','#d97706','#db2777','#059669','#dc2626'];
-  const [avatarColor, setAvatarColor] = useState(null);
-  useEffect(() => {
-    if (user?.id && !avatarColor) {
-      const stored = localStorage.getItem(`askademic_avatar_color_${user.id}`);
-      if (stored) setAvatarColor(stored);
-    }
-  }, [user?.id]);
-  const resolvedAvatarColor = avatarColor || AVATAR_PALETTE[(displayName.charCodeAt(0) || 0) % AVATAR_PALETTE.length];
 
   const getGreeting = () => {
     const h = new Date().getHours();
@@ -881,7 +828,7 @@ const StudentDashboard = () => {
         />
         <ProfileEditModal
           isOpen={showProfileModal} onClose={() => setShowProfileModal(false)}
-          onSaved={handleProfileSaved} onRollback={handleProfileRollback} role="student"
+          onSaved={handleProfileSaved} role="student"
           userId={user?.id} initialData={profileData}
           forceComplete={/^\d+$/.test(realName)}
         />

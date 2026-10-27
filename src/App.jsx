@@ -7,6 +7,7 @@ import StudentRequest from './pages/student/StudentRequest';
 import FacultyDashboard from './pages/faculty/FacultyDashboard';
 import FacultyManage from './pages/faculty/FacultyManage';
 import ProtectedRoute from './components/ProtectedRoute';
+import { ProfileProvider } from './hooks/useProfile';
 
 const appStyles = `
 /* ── Auth page tokens ── */
@@ -252,7 +253,7 @@ body {
 
 function App() {
   return (
-    <>
+    <ProfileProvider>
       <style>{appStyles}</style>
       <Toaster position="top-center" richColors closeButton toastOptions={{ style: { fontFamily: 'Outfit, system-ui, sans-serif' } }} />
       <Routes>
@@ -285,7 +286,7 @@ function App() {
           </ProtectedRoute>
         } />
       </Routes>
-    </>
+    </ProfileProvider>
   );
 }
 

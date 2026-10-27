@@ -73,32 +73,23 @@ export const subscribeToRequests = (userId, role, callback, fetchFn) => {
 };
 
 /**
- * Subscribe to faculty profile status changes AND schedule changes.
- * Used by student Faculty Directory / Dashboard to see live availability.
- * - Profile UPDATE → patches status on existing list entry via statusCallback
- * - Schedules INSERT/UPDATE/DELETE → triggers full refetch via refetchFn
- * @param {Function} statusCallback - Called with payload { new: {id, status, ...} }
- * @param {Function} [refetchFn] - Called when any schedule changes; should re-fetch faculty list
+ * Subscribe to faculty profile status changes.
+ * Used by student Faculty Directory to see live status updates.
+ * @param {Function} callback - Called with the update payload { new: {id, status, ...} }
  * @returns {Function} unsubscribe function
  */
-export const subscribeToFacultyStatus = (statusCallback, refetchFn) => {
-  // Random suffix ensures each component mount gets its own channel —
-  // duplicate channel names cause Supabase to silently drop the second one.
-  const uid = Math.random().toString(36).slice(2, 8);
+export const subscribeToFacultyStatus = (callback) => {
   const channel = supabase
-    .channel(`faculty-avail-${uid}`)
+    .channel('faculty-status')
     .on(
       'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'profiles' },
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+      },
       (payload) => {
-        if (payload.new?.role === 'faculty') statusCallback(payload);
-      }
-    )
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'schedules' },
-      async () => {
-        if (refetchFn) await refetchFn();
+        if (payload.new?.role === 'faculty') callback(payload);
       }
     )
     .subscribe();
@@ -109,51 +100,63 @@ export const subscribeToFacultyStatus = (statusCallback, refetchFn) => {
 };
 
 /**
- * Subscribe to a specific user's own profile changes.
- * Keeps the dashboard UI in sync across multiple tabs/devices when the profile
- * is updated from another session.
+ * Subscribe to a specific user's own profile row.
+ * Syncs profile changes made from another tab/device back into the current session.
  * @param {string} userId
- * @param {Function} callback - Called with the updated profile row
+ * @param {Function} callback - Called with the full updated profile row
  * @returns {Function} unsubscribe function
  */
 export const subscribeToOwnProfile = (userId, callback) => {
-  const uid = Math.random().toString(36).slice(2, 8);
   const channel = supabase
-    .channel(`own-profile-${userId}-${uid}`)
+    .channel(`own-profile-${userId}`)
     .on(
       'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` },
-      (payload) => { if (payload.new) callback(payload.new); }
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+        filter: `id=eq.${userId}`,
+      },
+      (payload) => {
+        if (payload.new) callback(payload.new);
+      }
     )
     .subscribe();
-  return () => { if (channel) supabase.removeChannel(channel); };
+
+  return () => {
+    if (channel) supabase.removeChannel(channel);
+  };
 };
 
 /**
- * Subscribe to request count changes for a schedule slot.
- * Lets the booking UI update slot capacity in real-time across all clients.
- * @param {string[]} scheduleIds - Array of schedule IDs to watch
- * @param {Function} fetchFn - Re-fetches full schedule list and returns it
- * @param {Function} callback - Called with the refreshed schedule list
+ * Subscribe to request changes that affect slot fill counts for a faculty member's schedules.
+ * Any request INSERT/UPDATE/DELETE for this faculty re-fetches schedules so slot counts stay live.
+ * @param {string} facultyId
+ * @param {Function} fetchFn - Async function that returns the updated schedule list
+ * @param {Function} callback - Called with the updated schedule list
  * @returns {Function} unsubscribe function
  */
-export const subscribeToSlotFills = (scheduleIds, fetchFn, callback) => {
-  if (!scheduleIds || scheduleIds.length === 0) return () => {};
-  const uid = Math.random().toString(36).slice(2, 8);
+export const subscribeToSlotFills = (facultyId, fetchFn, callback) => {
   const channel = supabase
-    .channel(`slot-fills-${uid}`)
+    .channel(`slot-fills-${facultyId}`)
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'requests' },
-      async (payload) => {
-        const sid = payload.new?.schedule_id || payload.old?.schedule_id;
-        if (!sid || !scheduleIds.includes(sid)) return;
+      {
+        event: '*',
+        schema: 'public',
+        table: 'requests',
+        filter: `faculty_id=eq.${facultyId}`,
+      },
+      async () => {
         const data = await fetchFn();
         callback(data);
       }
     )
     .subscribe();
-  return () => { if (channel) supabase.removeChannel(channel); };
+
+  return () => {
+    if (channel) supabase.removeChannel(channel);
+  };
 };
 
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { User, X, UserCircle, Briefcase, Tag, CheckCircle2, ChevronRight, GraduationCap } from 'lucide-react';
 import { PH_PREFIXES, PH_SUFFIXES, FACULTY_TITLES } from '../utils/constants';
-import { updateProfile } from '../supabase/api';
+import { useProfile } from '../hooks/useProfile';
+import { toast } from '../supabase/ux';
 
 const STUDENT_PREFIXES = ['Mr.', 'Ms.', 'Mrs.', 'Miss', 'Mx.'];
 const STUDENT_SUFFIXES = ['Jr.', 'Sr.', 'II', 'III', 'IV'];
@@ -517,13 +518,13 @@ export default function ProfileEditModal({
   isOpen,
   onClose,
   onSaved,
-  onRollback,
   role,
   userId,
   initialData,
   forceComplete,
 }) {
   const isFaculty = role === 'faculty';
+  const { updateProfileOptimistic, updateAvatarColorInstant } = useProfile();
 
   const [activeSection, setActiveSection] = useState('profile');
   const [saving, setSaving] = useState(false);
@@ -556,7 +557,7 @@ export default function ProfileEditModal({
   const handleColorPick = (color) => {
     setAvatarColor(color);
     if (storageKey) localStorage.setItem(storageKey, color);
-    if (userId) updateProfile(userId, { avatar_color: color });
+    if (userId) updateAvatarColorInstant(color);
   };
 
   useEffect(() => {
@@ -624,7 +625,7 @@ export default function ProfileEditModal({
 
   const handleSave = async () => {
     if (!isFaculty && (!firstName.trim() || !lastName.trim())) {
-      import('../supabase/ux').then(({ toast }) => toast.error('First name and Last name are required.'));
+      toast.error('First name and Last name are required.');
       return;
     }
     setSaving(true);
@@ -633,24 +634,16 @@ export default function ProfileEditModal({
       name_prefix: prefix,
       name_suffix: suffix,
       avatar_url: avatarUrl,
-      avatar_color: avatarColor || null,
       ...(isFaculty && { department: dept, title }),
       ...(!isFaculty && { program, section }),
     };
-
-    // Optimistic: update UI immediately, before the DB write resolves
-    onSaved({ ...payload });
-
-    const updated = await updateProfile(userId, payload);
+    // Optimistic update: local state updates immediately, rolls back on DB failure
+    const succeeded = await updateProfileOptimistic(payload);
     setSaving(false);
-    if (updated) {
+    if (succeeded) {
       setSaved(true);
       setTimeout(() => setSaved(false), 2200);
-      import('../supabase/ux').then(({ toast }) => toast.success('Profile updated!'));
-    } else {
-      // Rollback the optimistic update
-      if (onRollback) onRollback();
-      import('../supabase/ux').then(({ toast }) => toast.error('Failed to save profile. Please try again.'));
+      onSaved({ ...payload, full_name: computedName, avatar_url: avatarUrl });
     }
   };
 

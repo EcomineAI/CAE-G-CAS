@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, ensureProfile } from '../../supabase/supabase';
-import { getProfile, updateProfile, updateFacultyStatus, setOutOfOffice } from '../../supabase/api';
-import { subscribeToOwnProfile } from '../../supabase/realtime';
+import { updateProfile, updateFacultyStatus, setOutOfOffice } from '../../supabase/api';
 import { debouncedSave, toast } from '../../supabase/ux';
 import { Layout, Calendar, CalendarDays, Clock, Bell, User, ChevronDown, CheckCircle, AlertCircle, XCircle, Settings, Menu, X as CloseIcon, Info, LogOut, ShieldCheck, FileText } from 'lucide-react';
 import { getInitials } from '../../utils/dateUtils';
@@ -15,6 +14,7 @@ import FacultyCalendarPage from './FacultyCalendarPage';
 import AdminContent from '../admin/AdminContent';
 import TermsModal from '../../components/TermsModal';
 import { useAuth } from '../../hooks/useAuth';
+import { useProfile } from '../../hooks/useProfile';
 import logo from '../logo.png';
 import SharedSettingsContent from '../../components/SharedSettingsContent';
 import NotificationCenter from '../../components/NotificationCenter';
@@ -783,7 +783,7 @@ const facultyDashStyles = `
 
 const FacultyDashboard = () => {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('gcas_faculty_tab') || 'Dashboard');
-  
+
   const handleActiveTabSet = (tab) => {
     setActiveTab(tab);
     localStorage.setItem('gcas_faculty_tab', tab);
@@ -792,25 +792,16 @@ const FacultyDashboard = () => {
   const [accessibilityPrefs, setAccessibilityPrefs] = useState({ reducedMotion: false, dyslexicFont: false });
   const [requestFilter, setRequestFilter] = useState('Pending');
   const { user } = useAuth();
+  const { profileData, setProfileData, displayName: profileName, namePrefix: profilePrefix, nameSuffix: profileSuffix, avatarColor: facAvatarColor } = useProfile();
   const navigate = useNavigate();
 
-  const [profileName, setProfileName] = useState('');
-  const [profileAvatar, setProfileAvatar] = useState('');
-
-  const FAC_AVATAR_PALETTE = ['#2e4a87','#7c3aed','#0891b2','#0d9488','#d97706','#db2777','#059669','#dc2626'];
-  const [facAvatarColorState, setFacAvatarColorState] = useState(() => {
-    if (!user?.id) return null;
-    return localStorage.getItem(`askademic_avatar_color_${user.id}`) || null;
-  });
-  const facAvatarColor = facAvatarColorState || FAC_AVATAR_PALETTE[(profileName.charCodeAt(0) || 0) % FAC_AVATAR_PALETTE.length];
-  const [profileDept, setProfileDept] = useState('');
+  const profileAvatar = profileData?.avatar_url || null;
+  const profileDept   = profileData?.department  || 'General';
   const [profileStatus, setProfileStatus] = useState('Available');
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [resetTimer, setResetTimer] = useState(null);
   const [oooDate, setOooDate] = useState('');
   const saveStatus = (uid, s) => updateFacultyStatus(uid, s);
-  const [profilePrefix, setProfilePrefix] = useState('');
-  const [profileSuffix, setProfileSuffix] = useState('');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDrawerClosing, setIsDrawerClosing] = useState(false);
@@ -818,8 +809,6 @@ const FacultyDashboard = () => {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [focusRequestId, setFocusRequestId] = useState(null);
-  
-  const [profileData, setProfileData] = useState(null);
   const [showTerms, setShowTerms] = useState(false);
   const [termsReadOnly, setTermsReadOnly] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -852,49 +841,21 @@ const FacultyDashboard = () => {
     if (user?.id === 'admin-bypass') setActiveTab('Admin');
   }, [user?.id]);
 
-  // 20 clean, modern avatars using Lorelei style (no specific gender labels or cultural identifiers)
-  // Faculty profile state
-
   useEffect(() => {
     if (!user) return;
-    // Clear auth-page dark class from <html> so dashboard manages its own theme
     document.documentElement.className = '';
-    // Ensure profile exists (handles pre-trigger users)
     ensureProfile();
-    // Load profile for display name
-    getProfile(user.id).then(p => {
-      if (p) {
-        setProfileName(p.full_name || user.displayName || 'Faculty Member');
-        setProfileDept(p.department || 'General');
-        setProfileAvatar(p.avatar_url || user.avatarUrl || null);
-        setProfileStatus(p.status || 'Active');
-        setProfilePrefix(p.name_prefix || '');
-        setProfileSuffix(p.name_suffix || '');
-        setProfileData(p);
-        if (p.avatar_color) {
-          setFacAvatarColorState(p.avatar_color);
-          localStorage.setItem(`askademic_avatar_color_${user.id}`, p.avatar_color);
-        }
-        if (p.accessibility_prefs) setAccessibilityPrefs(p.accessibility_prefs);
-        if (!p.tnc_accepted && !localStorage.getItem(`gcas_tnc_${user.id}`)) { setTermsReadOnly(false); setShowTerms(true); }
-      }
-    });
-
-    // Keep profile UI in sync across tabs/devices
-    const unsubProfile = subscribeToOwnProfile(user.id, (p) => {
-      setProfileName(p.full_name || 'Faculty Member');
-      setProfileAvatar(p.avatar_url || null);
-      setProfilePrefix(p.name_prefix || '');
-      setProfileSuffix(p.name_suffix || '');
-      setProfileDept(p.department || profileDept);
-      setProfileData(prev => ({ ...prev, ...p }));
-      if (p.avatar_color) {
-        setFacAvatarColorState(p.avatar_color);
-        localStorage.setItem(`askademic_avatar_color_${user.id}`, p.avatar_color);
-      }
-    });
-    return () => unsubProfile();
   }, [user]);
+
+  // Sync status, accessibility prefs, and terms gate from profileData (managed by ProfileContext)
+  useEffect(() => {
+    if (!profileData || !user) return;
+    if (profileData.status) setProfileStatus(profileData.status);
+    if (profileData.accessibility_prefs) setAccessibilityPrefs(profileData.accessibility_prefs);
+    if (!profileData.tnc_accepted && !localStorage.getItem(`gcas_tnc_${user.id}`)) {
+      setTermsReadOnly(false); setShowTerms(true);
+    }
+  }, [profileData, user]);
 
   // Notification Listener for unread count
   useEffect(() => {
@@ -923,41 +884,15 @@ const FacultyDashboard = () => {
   const openProfileModal = () => setShowProfileModal(true);
 
   const handleProfileSaved = (saved) => {
-    setProfileName(saved.full_name);
-    setProfileAvatar(saved.avatar_url);
-    setProfilePrefix(saved.name_prefix || '');
-    setProfileSuffix(saved.name_suffix || '');
-    setProfileDept(saved.department || profileDept);
+    // ProfileContext already applied the optimistic update; just merge into local profileData copy
     setProfileData(prev => ({ ...prev, ...saved }));
-    if (saved.avatar_color) {
-      setFacAvatarColorState(saved.avatar_color);
-      if (user?.id) localStorage.setItem(`askademic_avatar_color_${user.id}`, saved.avatar_color);
-    }
     setShowProfileModal(false);
-  };
-
-  const handleProfileRollback = () => {
-    if (!profileData) return;
-    setProfileName(profileData.full_name || '');
-    setProfileAvatar(profileData.avatar_url || null);
-    setProfilePrefix(profileData.name_prefix || '');
-    setProfileSuffix(profileData.name_suffix || '');
-    setProfileDept(profileData.department || '');
-    if (profileData.avatar_color) {
-      setFacAvatarColorState(profileData.avatar_color);
-      if (user?.id) localStorage.setItem(`askademic_avatar_color_${user.id}`, profileData.avatar_color);
-    }
   };
 
   const updateAccessibilityPref = async (key, value) => {
     const newPrefs = { ...accessibilityPrefs, [key]: value };
     setAccessibilityPrefs(newPrefs);
-    
-    // Save to DB using the Spread updateProfile
-    const { updateProfile } = await import('../../supabase/api');
-    await updateProfile(user.id, {
-      accessibility_prefs: newPrefs
-    });
+    await updateProfile(user.id, { accessibility_prefs: newPrefs });
   };
 
   const closeDrawer = () => {
@@ -1281,7 +1216,6 @@ const FacultyDashboard = () => {
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         onSaved={handleProfileSaved}
-        onRollback={handleProfileRollback}
         role="faculty"
         userId={user?.id}
         initialData={profileData}
