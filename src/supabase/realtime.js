@@ -81,13 +81,12 @@ export const subscribeToRequests = (userId, role, callback, fetchFn) => {
  * @param {Function} [refetchFn] - Called when any schedule changes; should re-fetch faculty list
  * @returns {Function} unsubscribe function
  */
-let _facultyStatusSeq = 0;
 export const subscribeToFacultyStatus = (statusCallback, refetchFn) => {
-  // Use a unique channel name each call — two components subscribing with the
-  // same name causes Supabase to silently drop the second subscription.
-  const channelName = `faculty-status-${++_facultyStatusSeq}-${Date.now()}`;
+  // Random suffix ensures each component mount gets its own channel —
+  // duplicate channel names cause Supabase to silently drop the second one.
+  const uid = Math.random().toString(36).slice(2, 8);
   const channel = supabase
-    .channel(channelName)
+    .channel(`faculty-avail-${uid}`)
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'profiles' },
@@ -118,8 +117,9 @@ export const subscribeToFacultyStatus = (statusCallback, refetchFn) => {
  * @returns {Function} unsubscribe function
  */
 export const subscribeToOwnProfile = (userId, callback) => {
+  const uid = Math.random().toString(36).slice(2, 8);
   const channel = supabase
-    .channel(`own-profile-${userId}`)
+    .channel(`own-profile-${userId}-${uid}`)
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` },
@@ -139,8 +139,9 @@ export const subscribeToOwnProfile = (userId, callback) => {
  */
 export const subscribeToSlotFills = (scheduleIds, fetchFn, callback) => {
   if (!scheduleIds || scheduleIds.length === 0) return () => {};
+  const uid = Math.random().toString(36).slice(2, 8);
   const channel = supabase
-    .channel(`slot-fills-${scheduleIds.join('-')}`)
+    .channel(`slot-fills-${uid}`)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'requests' },
