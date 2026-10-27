@@ -626,7 +626,7 @@ const DashboardContent = ({ onTabChange, realName }) => {
                         <div key={i} className="dc-day-appt" style={{ background: sc.bg, color: sc.text }}
                           title={`${a.name || a.facultyName} · ${a.time}`}>
                           {a.time?.split(' - ')[0] || a.startTime || ''}<br />
-                          {a.name?.split(' ').slice(-1)[0] || a.facultyName?.split(' ').slice(-1)[0] || ''}
+                          {(a.fullName || a.name || a.facultyName || '').split(' ')[0] || ''}
                         </div>
                       );
                     })}
