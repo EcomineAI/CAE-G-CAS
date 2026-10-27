@@ -712,29 +712,9 @@ export const getSchedulesForFaculty = async (facultyId) => {
  * client-side check and the insert (race condition), or { error: 'DB_ERROR' } otherwise.
  */
 export const submitRequest = async (requestData, notifContext = null) => {
-  const scheduleId = requestData.schedule_id;
-
-  // Atomic slot-capacity check: count active requests for this slot right before inserting.
-  // This is the server-side guard against simultaneous submissions.
-  if (scheduleId) {
-    const [{ count: filled }, { data: schedRow }] = await Promise.all([
-      supabase
-        .from('requests')
-        .select('id', { count: 'exact', head: true })
-        .eq('schedule_id', scheduleId)
-        .in('status', ['Pending', 'Approved']),
-      supabase
-        .from('schedules')
-        .select('max_slots')
-        .eq('id', scheduleId)
-        .single(),
-    ]);
-    const maxSlots = schedRow?.max_slots ?? 1;
-    if ((filled ?? 0) >= maxSlots) {
-      return { error: 'SLOT_FULL' };
-    }
-  }
-
+  // Slot capacity is enforced by the DB trigger trg_check_slot_capacity.
+  // We go straight to insert — the trigger raises SLOT_FULL if the slot is full,
+  // which is the only truly atomic guard against concurrent submissions.
   const { data, error } = await supabase
     .from('requests')
     .insert([requestData])
@@ -742,6 +722,10 @@ export const submitRequest = async (requestData, notifContext = null) => {
     .single();
 
   if (error) {
+    // DB trigger raises 'SLOT_FULL' in the message when the slot is over capacity
+    if (error.message?.includes('SLOT_FULL') || error.code === 'P0001') {
+      return { error: 'SLOT_FULL' };
+    }
     logError('Error submitting request:', error);
     return { error: 'DB_ERROR' };
   }

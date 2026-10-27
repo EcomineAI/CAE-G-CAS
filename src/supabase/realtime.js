@@ -81,9 +81,13 @@ export const subscribeToRequests = (userId, role, callback, fetchFn) => {
  * @param {Function} [refetchFn] - Called when any schedule changes; should re-fetch faculty list
  * @returns {Function} unsubscribe function
  */
+let _facultyStatusSeq = 0;
 export const subscribeToFacultyStatus = (statusCallback, refetchFn) => {
+  // Use a unique channel name each call — two components subscribing with the
+  // same name causes Supabase to silently drop the second subscription.
+  const channelName = `faculty-status-${++_facultyStatusSeq}-${Date.now()}`;
   const channel = supabase
-    .channel('faculty-status')
+    .channel(channelName)
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'profiles' },
