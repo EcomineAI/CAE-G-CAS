@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { CalendarDays, Clock, MapPin, Plus, Ban, Activity, Trash2, X, Pencil, Check } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { getFacultyRequests, getFacultySchedules, createSchedule, updateSchedule, deleteSchedule, getBlockedDates, createBlockedDate, deleteBlockedDate, setOutOfOffice, getProfile } from '../../supabase/api';
-import { subscribeToRequests, subscribeToSchedules } from '../../supabase/realtime';
+import { subscribeToRequests, subscribeToSchedules, subscribeToSlotFills, subscribeToStudentProfiles } from '../../supabase/realtime';
 import { withMinDelay, toast } from '../../supabase/ux';
 import SharedCalendarGrid, { STATUS_STYLES, WEEKDAYS, MONTH_NAMES, fmt12, calendarSharedStyles } from '../../components/SharedCalendarGrid';
 import { getInitials } from '../../utils/dateUtils';
@@ -396,7 +396,17 @@ const FacultyCalendarPage = ({ onTabChange }) => {
     fetchData();
     const unsubReqs = subscribeToRequests(user.id, 'faculty', setRequests, () => getFacultyRequests(user.id));
     const unsubScheds = subscribeToSchedules(user.id, setSchedules, () => getFacultySchedules(user.id));
-    return () => { unsubReqs(); unsubScheds(); };
+    // Refetch schedules (with updated filled counts) whenever a request is inserted/updated/deleted
+    const unsubFills = subscribeToSlotFills(user.id, () => getFacultySchedules(user.id), setSchedules);
+    // Patch student avatar/color/name in calendar request rows without a full refetch
+    const unsubProfiles = subscribeToStudentProfiles((updated) => {
+      setRequests(prev => prev.map(r =>
+        r.avatarSeed === updated.id
+          ? { ...r, avatarColor: updated.avatar_color || r.avatarColor, avatar: updated.avatar_url ?? r.avatar, name: updated.full_name || r.name }
+          : r
+      ));
+    });
+    return () => { unsubReqs(); unsubScheds(); unsubFills(); unsubProfiles(); };
   }, [user]);
 
   const year  = currentDate.getFullYear();
