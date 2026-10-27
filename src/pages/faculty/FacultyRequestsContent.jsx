@@ -3,7 +3,7 @@ import { Check, X, Search, Archive, Eye, Clock, Inbox, Ban, CheckCircle2, Chevro
 import { useAuth } from '../../hooks/useAuth';
 import { AppointmentDetailsModal } from '../shared';
 import { getFacultyRequests, updateRequestStatus, deleteRequest } from '../../supabase/api';
-import { subscribeToRequests } from '../../supabase/realtime';
+import { subscribeToRequests, subscribeToStudentProfiles } from '../../supabase/realtime';
 import { optimistic, withMinDelay, toast } from '../../supabase/ux';
 import { calculateStudentSlot, buildGcalUrl, fmt12 } from '../../utils/dateUtils';
 import { getToken, createCalendarEvent } from '../../utils/googleCalendar';
@@ -335,7 +335,14 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
     };
     fetch();
     const unsub = subscribeToRequests(user.id, 'faculty', setRequests, () => getFacultyRequests(user.id));
-    return () => unsub();
+    const unsubProfiles = subscribeToStudentProfiles((updated) => {
+      setRequests(prev => prev.map(r =>
+        r.avatarSeed === updated.id
+          ? { ...r, avatarColor: updated.avatar_color || r.avatarColor, avatar: updated.avatar_url ?? r.avatar, name: updated.full_name || r.name }
+          : r
+      ));
+    });
+    return () => { unsub(); unsubProfiles(); };
   }, [user]);
 
   const getCount = (f) => {

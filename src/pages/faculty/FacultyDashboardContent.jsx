@@ -3,7 +3,7 @@ import { Inbox, Calendar, Clock, CheckCircle2, CalendarDays } from 'lucide-react
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { getFacultyRequests, getProfile, updateRequestStatus } from '../../supabase/api';
-import { subscribeToRequests } from '../../supabase/realtime';
+import { subscribeToRequests, subscribeToStudentProfiles } from '../../supabase/realtime';
 import { toast, withMinDelay, prefetch, optimistic } from '../../supabase/ux';
 
 const S = `
@@ -277,7 +277,14 @@ const FacultyDashboardContent = ({ onTabChange }) => {
     };
     fetchData();
     const unsubReqs = subscribeToRequests(user.id, 'faculty', setRequests, () => getFacultyRequests(user.id));
-    return () => { unsubReqs(); };
+    const unsubProfiles = subscribeToStudentProfiles((updated) => {
+      setRequests(prev => prev.map(r =>
+        r.avatarSeed === updated.id
+          ? { ...r, avatarColor: updated.avatar_color || r.avatarColor, avatar: updated.avatar_url ?? r.avatar, name: updated.full_name || r.name }
+          : r
+      ));
+    });
+    return () => { unsubReqs(); unsubProfiles(); };
   }, [user]);
 
   const openApproveModal = (req) => {

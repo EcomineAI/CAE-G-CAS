@@ -126,6 +126,29 @@ export const subscribeToFacultyStatus = (callback) => {
 };
 
 /**
+ * Subscribe to profile updates for any student.
+ * Used by faculty views so student avatar/color/name changes appear without a refresh.
+ * @param {Function} callback - Called with the updated profile row (payload.new)
+ * @returns {Function} unsubscribe function
+ */
+export const subscribeToStudentProfiles = (callback) => {
+  const channel = supabase
+    .channel('student-profiles-faculty-view')
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'profiles' },
+      (payload) => {
+        if (payload.new?.role === 'student') callback(payload.new);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    if (channel) supabase.removeChannel(channel);
+  };
+};
+
+/**
  * Subscribe to a specific user's own profile row.
  * Syncs profile changes made from another tab/device back into the current session.
  * @param {string} userId
