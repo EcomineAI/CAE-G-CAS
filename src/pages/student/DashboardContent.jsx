@@ -642,9 +642,9 @@ const DashboardContent = ({ onTabChange, realName }) => {
                       const sc = getStatusColor(a.status);
                       return (
                         <div key={i} className="dc-day-appt" style={{ background: sc.bg, color: sc.text }}
-                          title={`${a.name || a.facultyName} · ${a.time}`}>
+                          title={`${a.name || a.facultyName || 'Faculty'} · ${a.time}`}>
                           {a.time?.split(' - ')[0] || a.startTime || ''}<br />
-                          {(a.fullName || a.name || a.facultyName || '').split(' ')[0] || ''}
+                          {[a.namePrefix, (a.fullName || a.name || '').split(' ')[0]].filter(Boolean).join(' ') || 'Faculty'}
                         </div>
                       );
                     })}
