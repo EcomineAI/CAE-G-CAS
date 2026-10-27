@@ -73,11 +73,14 @@ const DashboardContent = ({ onTabChange, realName }) => {
     fetch();
 
     const unsub = subscribeToRequests(user.id, 'student', setRequests, () => getStudentRequests(user.id));
-    const unsubFaculty = subscribeToFacultyStatus((payload) => {
-      setFacultyList(prev => prev.map(f =>
-        f.id === payload.new.id ? { ...f, status: payload.new.status } : f
-      ));
-    });
+    const unsubFaculty = subscribeToFacultyStatus(
+      (payload) => {
+        setFacultyList(prev => prev.map(f =>
+          f.id === payload.new.id ? { ...f, status: payload.new.status } : f
+        ));
+      },
+      async () => { const data = await getAllFaculty(); setFacultyList(data); }
+    );
     return () => { unsub(); unsubFaculty(); };
   }, [user]);
 

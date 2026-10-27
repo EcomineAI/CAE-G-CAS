@@ -73,23 +73,29 @@ export const subscribeToRequests = (userId, role, callback, fetchFn) => {
 };
 
 /**
- * Subscribe to faculty profile status changes.
- * Used by student Faculty Directory to see live status updates.
- * @param {Function} callback - Called with the update payload { new: {id, status, ...} }
+ * Subscribe to faculty profile status changes AND schedule changes.
+ * Used by student Faculty Directory / Dashboard to see live availability.
+ * - Profile UPDATE → patches status on existing list entry via statusCallback
+ * - Schedules INSERT/UPDATE/DELETE → triggers full refetch via refetchFn
+ * @param {Function} statusCallback - Called with payload { new: {id, status, ...} }
+ * @param {Function} [refetchFn] - Called when any schedule changes; should re-fetch faculty list
  * @returns {Function} unsubscribe function
  */
-export const subscribeToFacultyStatus = (callback) => {
+export const subscribeToFacultyStatus = (statusCallback, refetchFn) => {
   const channel = supabase
     .channel('faculty-status')
     .on(
       'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'profiles',
-      },
+      { event: 'UPDATE', schema: 'public', table: 'profiles' },
       (payload) => {
-        if (payload.new?.role === 'faculty') callback(payload);
+        if (payload.new?.role === 'faculty') statusCallback(payload);
+      }
+    )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'schedules' },
+      async () => {
+        if (refetchFn) await refetchFn();
       }
     )
     .subscribe();

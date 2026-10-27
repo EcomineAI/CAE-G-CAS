@@ -1122,20 +1122,27 @@ const FacultyContent = ({ initialFacultyId = null }) => {
     };
     fetchFaculty();
 
-    // Real-time: faculty status changes
-    const unsub = subscribeToFacultyStatus((payload) => {
-      const updatedProfile = payload.new;
-      setFacultyList(prev => prev.map(f => {
-        if (f.id === updatedProfile.id) {
+    // Real-time: faculty status changes + schedule changes
+    const unsub = subscribeToFacultyStatus(
+      (payload) => {
+        const updatedProfile = payload.new;
+        setFacultyList(prev => prev.map(f => {
+          if (f.id !== updatedProfile.id) return f;
           return {
             ...f,
             status: updatedProfile.status,
-            statusColor: updatedProfile.status === 'Available' ? 'green' : updatedProfile.status === 'Busy' ? 'red' : 'gray'
+            statusColor: updatedProfile.status === 'Available' ? 'green' : updatedProfile.status === 'Busy' ? 'red' : 'gray',
           };
-        }
-        return f;
-      }));
-    });
+        }));
+      },
+      async () => {
+        const data = await getAllFaculty();
+        setFacultyList(data.map(f => ({
+          ...f,
+          statusColor: f.status === 'Available' ? 'green' : f.status === 'Busy' ? 'red' : 'gray',
+        })));
+      }
+    );
     return () => unsub();
   }, []);
 
