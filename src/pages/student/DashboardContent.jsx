@@ -665,8 +665,8 @@ const DashboardContent = ({ onTabChange, realName }) => {
                 const isInMeeting = f.status === 'In a meeting';
                 const noSlot = !f.hasBookableSlot;
                 const isDisabled = isUnavailable || noSlot;
-                const dotColor = isUnavailable || noSlot ? '#9ca3af' : isBusy ? '#ff1744' : isInMeeting ? '#ff9800' : '#00c853';
-                const statusText = noSlot ? 'No schedule set' : f.status === 'Out of office' ? 'Out of office' : isUnavailable ? 'Unavailable' : isBusy ? 'Busy' : isInMeeting ? 'In a meeting' : 'Available';
+                const dotColor = isUnavailable ? '#9ca3af' : isBusy ? '#ff1744' : isInMeeting ? '#ff9800' : '#00c853';
+                const statusText = f.status === 'Out of office' ? 'Out of office' : isUnavailable ? 'Unavailable' : isBusy ? 'Busy' : isInMeeting ? 'In a meeting' : 'Available';
                 return (
                   <div
                     key={i}
