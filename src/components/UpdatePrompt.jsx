@@ -59,28 +59,40 @@ const styles = `
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
 
+const fetchHash = async () => {
+  try {
+    const res = await fetch(`/version.json?t=${Date.now()}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.hash || null;
+  } catch {
+    return null;
+  }
+};
+
 export default function UpdatePrompt() {
   const [ready, setReady] = useState(false);
   const [newHash, setNewHash] = useState(null);
-  const currentHash = typeof __COMMIT_HASH__ !== 'undefined' ? __COMMIT_HASH__ : null;
+  // Baseline hash: the hash that was live when this page session started
+  const baselineRef = useRef(null);
   const pollingRef = useRef(null);
 
   const checkVersion = async () => {
-    try {
-      const res = await fetch(`/version.json?t=${Date.now()}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.hash && currentHash && data.hash !== currentHash && data.hash !== 'dev') {
-        setNewHash(data.hash);
-        setReady(true);
-      }
-    } catch {
-      // network error — skip
+    const hash = await fetchHash();
+    if (!hash || hash === 'dev' || !baselineRef.current) return;
+    if (hash !== baselineRef.current) {
+      setNewHash(hash);
+      setReady(true);
     }
   };
 
   useEffect(() => {
-    // Service worker update: new SW takes control → show prompt
+    // Capture the baseline hash on mount — this is the version the user loaded
+    fetchHash().then(hash => {
+      if (hash && hash !== 'dev') baselineRef.current = hash;
+    });
+
+    // Service worker update: new SW takes control → show prompt immediately
     const handleControllerChange = () => setReady(true);
     navigator.serviceWorker?.addEventListener('controllerchange', handleControllerChange);
 
@@ -88,17 +100,13 @@ export default function UpdatePrompt() {
     const handleFocus = () => checkVersion();
     window.addEventListener('focus', handleFocus);
 
-    // Background polling
+    // Background polling every 5 minutes
     pollingRef.current = setInterval(checkVersion, POLL_INTERVAL_MS);
-
-    // Initial check after a short delay (let SW register first)
-    const t = setTimeout(checkVersion, 8000);
 
     return () => {
       navigator.serviceWorker?.removeEventListener('controllerchange', handleControllerChange);
       window.removeEventListener('focus', handleFocus);
       clearInterval(pollingRef.current);
-      clearTimeout(t);
     };
   }, []);
 
