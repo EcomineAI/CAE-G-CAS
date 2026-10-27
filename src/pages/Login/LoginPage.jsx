@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, AlertCircle, Eye, EyeOff, GraduationCap, BookOpen } from 'lucide-react';
+import { User, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../../supabase/supabase';
 import TermsModal from '../../components/TermsModal';
 
@@ -17,14 +17,6 @@ const friendlyError = (msg = '') => {
   return msg || 'Something went wrong. Please try again.';
 };
 
-const detectRole = (val) => {
-  const local = val.includes('@') ? val.split('@')[0] : val;
-  if (!local) return null;
-  if (/^\d+$/.test(local)) return 'student';
-  if (local.length > 2) return 'faculty';
-  return null;
-};
-
 const LoginPage = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword]     = useState('');
@@ -39,15 +31,15 @@ const LoginPage = () => {
 
   useEffect(() => { idRef.current?.focus(); }, []);
 
-  const detectedRole = detectRole(identifier.trim());
-
   const triggerShake = () => {
     setShake(true);
     setTimeout(() => setShake(false), 500);
   };
 
   const redirectByRole = (role) => {
-    navigate(role === 'student' ? '/student' : '/faculty');
+    if (role === 'student') navigate('/student');
+    else if (role === 'faculty') navigate('/faculty');
+    else navigate('/faculty'); // null role — ProtectedRoute shows the pending wall
   };
 
   // Called by TermsModal after user accepts
@@ -118,7 +110,7 @@ const LoginPage = () => {
         profile = res.data;
       }
 
-      const role = profile?.role || 'student';
+      const role = profile?.role || null;
       const alreadyAccepted =
         profile?.tnc_accepted === true ||
         localStorage.getItem(`gcas_tnc_${user.id}`) === '1';
@@ -452,13 +444,6 @@ const LoginPage = () => {
             </div>
             <h1 className="lp-title">Askademic</h1>
             <p className="lp-sub">Askademic<br />Gordon College · Olongapo City</p>
-          </div>
-
-          {/* Role hint */}
-          <div className={`lp-role-hint ${detectedRole || 'hidden'}`}>
-            {detectedRole === 'student' && <><GraduationCap size={13} /> Student account</>}
-            {detectedRole === 'faculty' && <><BookOpen size={13} /> Faculty account</>}
-            {!detectedRole && <span>&nbsp;</span>}
           </div>
 
           {/* Error */}

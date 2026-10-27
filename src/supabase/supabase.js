@@ -29,17 +29,13 @@ export const ensureProfile = async () => {
 
   if (existing) return existing;
 
-  // Auto-create profile from auth metadata
+  // Auto-create profile — role is null until an admin assigns it
   const localPart = user.email.split('@')[0];
-  const isStudent = /^\d+$/.test(localPart);
-
   const profile = {
     id: user.id,
     email: user.email,
-    full_name: isStudent
-      ? localPart
-      : localPart.split(/[._-]/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '),
-    role: isStudent ? 'student' : 'faculty',
+    full_name: localPart.split(/[._-]/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '),
+    role: null,
     avatar_url: null,
     status: 'Available'
   };

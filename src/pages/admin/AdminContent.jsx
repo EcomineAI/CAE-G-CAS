@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Users, GraduationCap, CalendarClock, CheckCircle, XCircle, Clock, X, BarChart2, Download } from 'lucide-react';
-import { getAllProfiles, getAllRequestsAdmin } from '../../supabase/api';
+import { getAllProfiles, getAllRequestsAdmin, updateUserRole } from '../../supabase/api';
 import { getInitials, fmt12 } from '../../utils/dateUtils';
 
 const REQ_STATUS_STYLE = {
@@ -181,13 +181,13 @@ const adminStyles = `
 
 .admin-metrics {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 0.85rem;
   margin-bottom: 1.5rem;
 }
-@media (max-width: 960px) { .admin-metrics { grid-template-columns: repeat(4, 1fr); } }
-@media (max-width: 700px) { .admin-metrics { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 420px) { .admin-metrics { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; } }
+@media (max-width: 1100px) { .admin-metrics { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 700px)  { .admin-metrics { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 420px)  { .admin-metrics { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; } }
 
 .admin-metric-card {
   background: var(--bg-secondary);
@@ -301,6 +301,28 @@ const adminStyles = `
 .admin-req-card-subject { font-size: 0.68rem; color: var(--text-secondary); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .admin-detail-empty { text-align: center; padding: 1.5rem 0; color: var(--text-muted); font-size: 0.8rem; }
 
+/* Role management */
+.admin-role-select {
+  padding: 0.28rem 0.55rem; border-radius: 7px; border: 1.5px solid var(--border-color);
+  background: var(--bg-secondary); color: var(--text-primary); font-size: 0.75rem;
+  font-weight: 700; font-family: inherit; cursor: pointer; outline: none;
+  transition: border-color 0.13s;
+}
+.admin-role-select:hover, .admin-role-select:focus { border-color: #1a2d5a; }
+.admin-role-select.saving { opacity: 0.5; pointer-events: none; }
+.admin-unassigned-banner {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.7rem 1rem; background: #fee2e2; border: 1.5px solid #fca5a5;
+  border-radius: 10px; margin-bottom: 0.85rem;
+  font-size: 0.82rem; font-weight: 700; color: #dc2626;
+}
+.admin-section-group-label {
+  font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-muted); padding: 0.5rem 0.8rem 0.3rem;
+  border-top: 1px solid var(--border-color); margin-top: 0.2rem;
+}
+.admin-section-group-label:first-child { border-top: none; margin-top: 0; }
+
 /* Reports */
 .admin-report-filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.2rem; align-items: center; }
 .admin-report-chip { padding: 0.32rem 0.9rem; border-radius: 50px; border: 1.5px solid var(--border-color); background: var(--bg-secondary); color: var(--text-muted); font-size: 0.78rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.13s; white-space: nowrap; }
@@ -337,6 +359,7 @@ const AdminContent = () => {
   const [loading, setLoading]   = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [activeFilter, setActiveFilter] = useState(null);
+  const [roleSaving, setRoleSaving] = useState({});
 
   // Reports filters
   const [rangePreset, setRangePreset] = useState('month');
@@ -354,14 +377,26 @@ const AdminContent = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  const handleRoleChange = async (userId, newRole) => {
+    setRoleSaving(prev => ({ ...prev, [userId]: true }));
+    const ok = await updateUserRole(userId, newRole || null);
+    if (ok) {
+      setProfiles(prev => prev.map(p => p.id === userId ? { ...p, role: newRole || null } : p));
+      if (selectedUser?.id === userId) setSelectedUser(prev => ({ ...prev, role: newRole || null }));
+    }
+    setRoleSaving(prev => ({ ...prev, [userId]: false }));
+  };
+
   // ── Derived: overview ──────────────────────────────────────────────────────
-  const faculty  = profiles.filter(p => p.role === 'faculty');
-  const students = profiles.filter(p => p.role === 'student');
-  const counts   = ALL_STATUSES.reduce((acc, s) => { acc[s] = requests.filter(r => r.status === s).length; return acc; }, {});
+  const faculty    = profiles.filter(p => p.role === 'faculty');
+  const students   = profiles.filter(p => p.role === 'student');
+  const unassigned = profiles.filter(p => !p.role);
+  const counts     = ALL_STATUSES.reduce((acc, s) => { acc[s] = requests.filter(r => r.status === s).length; return acc; }, {});
 
   const metrics = [
     { label: 'Faculty',        value: faculty.length,    icon: Users,         color: '#6366f1', filter: 'Faculty' },
     { label: 'Students',       value: students.length,   icon: GraduationCap, color: '#22c55e', filter: 'Students' },
+    { label: 'Unassigned',     value: unassigned.length, icon: Users,         color: '#f59e0b', filter: 'Unassigned' },
     { label: 'Total Requests', value: requests.length,   icon: CalendarClock, color: '#f97316', filter: 'Total Requests' },
     { label: 'Pending',        value: counts.Pending,    icon: Clock,         color: '#eab308', filter: 'Pending' },
     { label: 'Approved',       value: counts.Approved,   icon: CheckCircle,   color: '#3b82f6', filter: 'Approved' },
@@ -381,10 +416,11 @@ const AdminContent = () => {
     if (!activeFilter) return profiles;
     if (activeFilter === 'Faculty') return profiles.filter(p => p.role === 'faculty');
     if (activeFilter === 'Students') return profiles.filter(p => p.role === 'student');
+    if (activeFilter === 'Unassigned') return profiles.filter(p => !p.role);
     if (activeFilter === 'Total Requests') return profiles.filter(p =>
       requests.some(r => r.facultyId === p.id || r.studentId === p.id));
     const { fIds, sIds } = usersWithStatus(activeFilter);
-    return profiles.filter(p => (p.role === 'faculty' ? fIds : sIds).has(p.id));
+    return profiles.filter(p => fIds.has(p.id) || sIds.has(p.id));
   })();
 
   const profileNameMap = profiles.reduce((acc, p) => { acc[p.id] = p.full_name; return acc; }, {});
@@ -400,9 +436,13 @@ const AdminContent = () => {
     declined:  userRequests.filter(r => r.status === 'Declined').length,
   };
 
-  const getUserReqCount = (userId, role) =>
-    role === 'faculty' ? requests.filter(r => r.facultyId === userId).length
-                       : requests.filter(r => r.studentId === userId).length;
+  const getUserReqCount = (userId, role) => {
+    const asFaculty = requests.filter(r => r.facultyId === userId).length;
+    const asStudent = requests.filter(r => r.studentId === userId).length;
+    if (role === 'faculty') return asFaculty;
+    if (role === 'student') return asStudent;
+    return asFaculty + asStudent;
+  };
 
   // ── Derived: reports ───────────────────────────────────────────────────────
   const fromDate = rangePreset === 'custom' ? (customFrom || getRangeStart('month', null)) : getRangeStart(rangePreset, null);
@@ -516,46 +556,88 @@ const AdminContent = () => {
                   <div className="admin-empty">Loading…</div>
                 ) : filteredProfiles.length === 0 ? (
                   <div className="admin-empty">No users match this filter.</div>
-                ) : (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th>Name</th><th>Dept / Program</th><th>Status</th>
-                          <th>Joined</th><th>Role</th><th style={{ textAlign: 'center' }}>Requests</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredProfiles.map(p => {
-                          const dotColor = STATUS_DOT_COLOR[p.status] || '#9ca3af';
-                          const isSelected = selectedUser?.id === p.id;
-                          const reqCount = getUserReqCount(p.id, p.role);
-                          const avatarBg = p.avatar_color || nameToColor(p.full_name || '');
-                          const deptOrProgram = p.role === 'faculty'
-                            ? 'CCS'
-                            : (p.program ? ((p.program.match(/\(([^)]+)\)/) || [])[1] || p.program) : '—');
-                          return (
-                            <tr key={p.id} className={`clickable${isSelected ? ' row-selected' : ''}`} onClick={() => setSelectedUser(prev => prev?.id === p.id ? null : p)}>
-                              <td style={{ fontWeight: 600 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                  <div style={{ width: 30, height: 30, borderRadius: '50%', background: avatarBg, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 800, flexShrink: 0 }}>
-                                    {getInitials(p.full_name)}
-                                  </div>
-                                  {p.full_name || '—'}
-                                </div>
-                              </td>
-                              <td style={{ color: 'var(--text-muted)' }}>{deptOrProgram}</td>
-                              <td><span className="admin-status-dot" style={{ background: dotColor }} />{p.status || '—'}</td>
-                              <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{fmtDate(p.created_at)}</td>
-                              <td><span className={`admin-role-badge ${p.role || 'student'}`}>{p.role === 'faculty' ? 'Faculty' : 'Student'}</span></td>
-                              <td style={{ textAlign: 'center' }}><span className="admin-req-count">{reqCount}</span></td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                ) : (() => {
+                  const unassigned = filteredProfiles.filter(p => !p.role);
+                  const facultyList = filteredProfiles.filter(p => p.role === 'faculty');
+                  const studentList = filteredProfiles.filter(p => p.role === 'student');
+
+                  const renderRow = (p) => {
+                    const dotColor = STATUS_DOT_COLOR[p.status] || '#9ca3af';
+                    const isSelected = selectedUser?.id === p.id;
+                    const reqCount = getUserReqCount(p.id, p.role);
+                    const avatarBg = p.avatar_color || nameToColor(p.full_name || '');
+                    const deptOrProgram = p.role === 'faculty'
+                      ? 'CCS'
+                      : (p.program ? ((p.program.match(/\(([^)]+)\)/) || [])[1] || p.program) : '—');
+                    return (
+                      <tr key={p.id} className={`clickable${isSelected ? ' row-selected' : ''}`} onClick={() => setSelectedUser(prev => prev?.id === p.id ? null : p)}>
+                        <td style={{ fontWeight: 600 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <div style={{ width: 30, height: 30, borderRadius: '50%', background: avatarBg, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 800, flexShrink: 0 }}>
+                              {getInitials(p.full_name)}
+                            </div>
+                            {p.full_name || '—'}
+                          </div>
+                        </td>
+                        <td style={{ color: 'var(--text-muted)' }}>{deptOrProgram}</td>
+                        <td><span className="admin-status-dot" style={{ background: dotColor }} />{p.status || '—'}</td>
+                        <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{fmtDate(p.created_at)}</td>
+                        <td onClick={e => e.stopPropagation()}>
+                          <select
+                            className={`admin-role-select${roleSaving[p.id] ? ' saving' : ''}`}
+                            value={p.role || ''}
+                            onChange={e => handleRoleChange(p.id, e.target.value)}
+                            disabled={!!roleSaving[p.id]}
+                          >
+                            <option value="">No Role</option>
+                            <option value="student">Student</option>
+                            <option value="faculty">Faculty</option>
+                          </select>
+                        </td>
+                        <td style={{ textAlign: 'center' }}><span className="admin-req-count">{reqCount}</span></td>
+                      </tr>
+                    );
+                  };
+
+                  return (
+                    <div style={{ overflowX: 'auto' }}>
+                      {unassigned.length > 0 && (
+                        <div className="admin-unassigned-banner">
+                          <span style={{ fontSize: '1rem' }}>⚠️</span>
+                          <span>{unassigned.length} unassigned account{unassigned.length !== 1 ? 's' : ''} — assign a role to grant access</span>
+                        </div>
+                      )}
+                      <table className="admin-table">
+                        <thead>
+                          <tr>
+                            <th>Name</th><th>Dept / Program</th><th>Status</th>
+                            <th>Joined</th><th>Role</th><th style={{ textAlign: 'center' }}>Requests</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {unassigned.length > 0 && (
+                            <>
+                              <tr><td colSpan={6} className="admin-section-group-label" style={{ background: '#fff7ed', color: '#b45309', borderColor: '#fcd34d' }}>⚠ Unassigned ({unassigned.length})</td></tr>
+                              {unassigned.map(renderRow)}
+                            </>
+                          )}
+                          {facultyList.length > 0 && (
+                            <>
+                              <tr><td colSpan={6} className="admin-section-group-label">Faculty ({facultyList.length})</td></tr>
+                              {facultyList.map(renderRow)}
+                            </>
+                          )}
+                          {studentList.length > 0 && (
+                            <>
+                              <tr><td colSpan={6} className="admin-section-group-label">Students ({studentList.length})</td></tr>
+                              {studentList.map(renderRow)}
+                            </>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()}
               </div>
 
               {selectedUser && (
