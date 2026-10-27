@@ -245,6 +245,11 @@ const S = `
 const fmt = (dateStr) => {
   if (!dateStr) return '';
   const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+const fmtWithDay = (dateStr) => {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 };
 
@@ -494,7 +499,7 @@ const FacultyDashboardContent = ({ onTabChange }) => {
                 {req.section && <span className="fdc-req-section">{req.section}</span>}
               </div>
               <div className="fdc-upcoming-detail">
-                {req.subject} · {fmt(req.date)} {req.time} · {req.filled || 1} of {req.max_slots || 1} slots held
+                {req.subject} · {fmtWithDay(req.date)} {req.time} · {req.filled || 1} of {req.max_slots || 1} slots held
               </div>
               {req.details && <div className="fdc-upcoming-note">"{req.details}"</div>}
             </div>
