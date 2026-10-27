@@ -593,11 +593,6 @@ export const getAllRequests = async () => {
   }));
 };
 
-// Admin-only: bypasses RLS via SECURITY DEFINER RPC function.
-// Requires running this SQL in Supabase dashboard first:
-//   create or replace function admin_get_all_requests()
-//   returns setof requests security definer set search_path = public language sql
-//   as $$ select * from requests order by created_at desc limit 200; $$;
 export const getAllRequestsAdmin = async () => {
   const { data, error } = await supabase.rpc('admin_get_all_requests');
   if (error) {
@@ -607,10 +602,16 @@ export const getAllRequestsAdmin = async () => {
   return (data || []).map(r => ({
     id: r.id,
     status: r.status,
-    date: r.request_date || r.created_at,
+    date: r.request_date,
+    createdAt: r.created_at,
     studentId: r.student_id,
     facultyId: r.faculty_id,
+    studentName: r.student_name || '—',
+    facultyName: r.faculty_name || '—',
+    facultyDept: r.faculty_department || '—',
     subject: r.subject || null,
+    startTime: r.start_time || null,
+    endTime: r.end_time || null,
   }));
 };
 
