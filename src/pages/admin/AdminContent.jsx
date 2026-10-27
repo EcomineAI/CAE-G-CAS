@@ -664,6 +664,7 @@ const AdminContent = () => {
                           const deptOrProgram = p.role === 'faculty'
                             ? 'CCS'
                             : (p.program ? ((p.program.match(/\(([^)]+)\)/) || [])[1] || p.program) : '—');
+                          const studentNo = p.role === 'student' && p.email ? p.email.split('@')[0] : null;
                           return (
                             <tr key={p.id} className={`clickable${isSelected ? ' row-selected' : ''}`} onClick={() => setSelectedUser(prev => prev?.id === p.id ? null : p)}>
                               <td style={{ fontWeight: 600 }}>
@@ -671,7 +672,10 @@ const AdminContent = () => {
                                   <div style={{ width: 30, height: 30, borderRadius: '50%', background: avatarBg, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 800, flexShrink: 0 }}>
                                     {getInitials(p.full_name)}
                                   </div>
-                                  {p.full_name || '—'}
+                                  <div>
+                                    <div>{p.full_name || '—'}</div>
+                                    {studentNo && <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 500 }}>{studentNo}</div>}
+                                  </div>
                                 </div>
                               </td>
                               <td style={{ color: 'var(--text-muted)' }}>{deptOrProgram}</td>
@@ -706,10 +710,13 @@ const AdminContent = () => {
                         </span>
                         {selectedUser.role === 'faculty'
                           ? <span>CCS</span>
-                          : selectedUser.program
-                            ? <span>{(selectedUser.program.match(/\(([^)]+)\)/) || [])[1] || selectedUser.program}</span>
+                          : selectedUser.email
+                            ? <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary)' }}>{selectedUser.email.split('@')[0]}</span>
                             : null
                         }
+                        {selectedUser.role === 'student' && selectedUser.program && (
+                          <span>{(selectedUser.program.match(/\(([^)]+)\)/) || [])[1] || selectedUser.program}</span>
+                        )}
                         {selectedUser.status && (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: STATUS_DOT_COLOR[selectedUser.status] || '#9ca3af', display: 'inline-block' }} />
