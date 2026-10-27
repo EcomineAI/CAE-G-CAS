@@ -560,15 +560,30 @@ const AdminContent = () => {
   });
 
   const exportApptsCSV = () => {
+    const activeFilters = [
+      apptStatus !== 'All' ? `status=${apptStatus}` : null,
+      apptSearch.trim() ? `q=${apptSearch.trim()}` : null,
+      apptDatePreset !== 'all' ? `date=${apptDatePreset}` : null,
+    ].filter(Boolean).join('_') || 'all';
     const rows = [
-      ['Student','Program','Faculty','Dept','Date','Time','Type','Subject','Status','Submitted'],
+      ['Student Name','Student ID','Program','Faculty Name','Department','Date','Time','Consultation Type','Subject','Status','Submitted'],
       ...filteredAppts.map(r => {
-        const progAbbr = r.studentProgram ? ((r.studentProgram.match(/\(([^)]+)\)/) || [])[1] || r.studentProgram) : '—';
+        const progFull = r.studentProgram || '—';
+        const dateStr  = r.date ? new Date(r.date + 'T00:00:00').toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }) : '—';
         const timeStr  = r.startTime ? `${fmt12(r.startTime)}${r.endTime ? ` – ${fmt12(r.endTime)}` : ''}` : '—';
+        const submittedStr = r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
         return [
-          r.studentName, progAbbr, r.facultyName, r.facultyDept || 'CCS',
-          r.date || '—', timeStr, r.consultationType || '—',
-          r.subject || '—', r.status, r.createdAt?.split('T')[0] || '—',
+          r.studentName || '—',
+          r.studentNo || '—',
+          progFull,
+          r.facultyName || '—',
+          r.facultyDept || 'CCS',
+          dateStr,
+          timeStr,
+          r.consultationType || 'General',
+          r.subject || '—',
+          r.status,
+          submittedStr,
         ];
       }),
     ];
@@ -576,7 +591,7 @@ const AdminContent = () => {
     const blob = new Blob([csv], { type: 'text/csv' });
     const url  = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url;
-    a.download = `appointments_${today}.csv`; a.click();
+    a.download = `appointments_${today}_${activeFilters}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
 
