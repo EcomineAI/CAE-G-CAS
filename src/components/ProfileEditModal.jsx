@@ -735,6 +735,14 @@ export default function ProfileEditModal({
               <span className="pem-info-row-label">Display Name</span>
               <span className="pem-info-row-value" style={{ color: 'var(--accent, #2e4a87)' }}>{displayName || '—'}</span>
             </div>
+            {!isFaculty && initialData?.email && (
+              <div className="pem-info-row">
+                <span className="pem-info-row-label">Student Number</span>
+                <span className="pem-info-row-value" style={{ fontFamily: 'ui-monospace, monospace', letterSpacing: '0.03em' }}>
+                  {initialData.email.split('@')[0]}
+                </span>
+              </div>
+            )}
             {isFaculty && title && (
               <div className="pem-info-row">
                 <span className="pem-info-row-label">Title</span>
