@@ -47,7 +47,11 @@ const LoginPage = () => {
   };
 
   const redirectByRole = (role) => {
-    navigate(role === 'student' ? '/student' : '/faculty');
+    sessionStorage.setItem('askademic_role', role);
+    if (role === 'student') navigate('/student');
+    else if (role === 'dean') navigate('/dean');
+    else if (role === 'program_chair') navigate('/program-chair');
+    else navigate('/faculty');
   };
 
   // Called by TermsModal after user accepts
@@ -78,9 +82,10 @@ const LoginPage = () => {
       return;
     }
 
-    if (id === 'Admin@gmail.com' && password === 'admin') {
+    if (id === 'Admin@gmail.com' && password === 'testing123') {
       sessionStorage.setItem('admin_bypass', '1');
-      navigate('/faculty');
+      sessionStorage.setItem('askademic_role', 'dean');
+      navigate('/dean');
       return;
     }
 

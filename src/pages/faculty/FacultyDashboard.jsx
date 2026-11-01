@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase, ensureProfile } from '../../supabase/supabase';
 import { updateProfile, updateFacultyStatus, setOutOfOffice } from '../../supabase/api';
 import { debouncedSave, toast } from '../../supabase/ux';
-import { Layout, Calendar, CalendarDays, Clock, Bell, User, ChevronDown, CheckCircle, AlertCircle, XCircle, Settings, Menu, X as CloseIcon, Info, LogOut, ShieldCheck, FileText } from 'lucide-react';
+import { Layout, Calendar, CalendarDays, Clock, Bell, User, ChevronDown, CheckCircle, AlertCircle, XCircle, Settings, Menu, X as CloseIcon, Info, LogOut, FileText, ShieldCheck } from 'lucide-react';
 import { getInitials } from '../../utils/dateUtils';
 import FacultyDashboardContent from './FacultyDashboardContent';
 
@@ -11,7 +11,6 @@ import FacultyRequestsContent from './FacultyRequestsContent';
 import FacultyAboutContent from './FacultyAboutContent';
 import ArchiveContent from '../shared/components/ArchiveContent';
 import FacultyCalendarPage from './FacultyCalendarPage';
-import AdminContent from '../admin/AdminContent';
 import TermsModal from '../../components/TermsModal';
 import { useAuth } from '../../hooks/useAuth';
 import { useProfile } from '../../hooks/useProfile';
@@ -21,6 +20,7 @@ import NotificationCenter from '../../components/NotificationCenter';
 import ProfileEditModal from '../../components/ProfileEditModal';
 import LogoutConfirm from '../../components/LogoutConfirm';
 import ErrorBoundary from '../../components/ErrorBoundary';
+import AdminContent from '../admin/AdminContent';
 
 const facultyDashStyles = `
 /* ── Faculty dashboard token bridge ── */
@@ -782,7 +782,11 @@ const facultyDashStyles = `
 `;
 
 const FacultyDashboard = () => {
-  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('gcas_faculty_tab') || 'Dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    const role = sessionStorage.getItem('askademic_role') || '';
+    if (role === 'dean' || role === 'program_chair' || sessionStorage.getItem('admin_bypass') === '1') return 'Overview';
+    return localStorage.getItem('gcas_faculty_tab') || 'Dashboard';
+  });
 
   const handleActiveTabSet = (tab) => {
     setActiveTab(tab);
@@ -838,11 +842,13 @@ const FacultyDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (user?.id === 'admin-bypass') setActiveTab('Admin');
-  }, [user?.id]);
+    if (user?.role === 'dean' || user?.role === 'program_chair' || user?.id === 'admin-bypass') {
+      setActiveTab('Overview');
+    }
+  }, [user?.role, user?.id]);
 
   useEffect(() => {
-    if (!user || user.id === 'admin-bypass') return;
+    if (!user) return;
     document.documentElement.className = '';
     ensureProfile();
   }, [user]);
@@ -892,7 +898,7 @@ const FacultyDashboard = () => {
   const updateAccessibilityPref = async (key, value) => {
     const newPrefs = { ...accessibilityPrefs, [key]: value };
     setAccessibilityPrefs(newPrefs);
-    if (user?.id && user.id !== 'admin-bypass') {
+    if (user?.id) {
       await updateProfile(user.id, { accessibility_prefs: newPrefs });
     }
   };
@@ -911,6 +917,7 @@ const FacultyDashboard = () => {
     localStorage.removeItem('askademic_last_uid');
     if (user?.id) localStorage.removeItem(`askademic_avatar_color_${user.id}`);
     sessionStorage.removeItem('admin_bypass');
+    sessionStorage.removeItem('askademic_role');
     await supabase.auth.signOut();
     navigate('/');
   };
@@ -921,7 +928,20 @@ const FacultyDashboard = () => {
   };
 
   const renderContent = () => {
+    const isDeanRole = user?.role === 'dean' || user?.id === 'admin-bypass';
+    const isPCRole = user?.role === 'program_chair';
+
+    // While auth is still resolving, show nothing to avoid flashing wrong skeleton
+    if (!user) return null;
+
+    // Always show AdminContent for elevated roles regardless of activeTab
+    if (isDeanRole || isPCRole) {
+      return <AdminContent viewerRole={user?.role || 'dean'} viewerProgram={profileData?.program || null} />;
+    }
+
     switch (activeTab) {
+      case 'Overview':
+        return <AdminContent viewerRole={user?.role || 'dean'} viewerProgram={profileData?.program || null} />;
       case 'Dashboard':
         return <FacultyDashboardContent onTabChange={handleTabChange} />;
       case 'Calendar':
@@ -941,7 +961,7 @@ const FacultyDashboard = () => {
       case 'Settings':
         return (
           <SharedSettingsContent
-            role={isAdminBypass ? 'admin' : 'faculty'}
+            role={isDeanRole ? 'admin' : isPCRole ? 'admin' : 'faculty'}
             profileData={profileData}
             userId={user?.id}
             userEmail={user?.email}
@@ -951,17 +971,18 @@ const FacultyDashboard = () => {
             onTabChange={handleActiveTabSet}
           />
         );
-      case 'Admin':
-        return <AdminContent />;
       default:
-        return <FacultyDashboardContent onTabChange={handleTabChange} />;
+        return isDeanRole || isPCRole
+          ? <AdminContent viewerRole={user?.role || 'dean'} viewerProgram={profileData?.program || null} />
+          : <FacultyDashboardContent onTabChange={handleTabChange} />;
     }
   };
 
-  const isAdminBypass = user?.id === 'admin-bypass';
+  const isDeanRole = user?.role === 'dean' || user?.id === 'admin-bypass';
+  const isPCRole = user?.role === 'program_chair';
 
-  const navItems = isAdminBypass
-    ? [{ id: 'Admin', icon: ShieldCheck }]
+  const navItems = (isDeanRole || isPCRole)
+    ? [{ id: 'Overview', icon: ShieldCheck }]
     : [
         { id: 'Dashboard', icon: Layout },
         { id: 'Calendar', icon: CalendarDays },
@@ -987,7 +1008,9 @@ const FacultyDashboard = () => {
           </div>
         </div>
 
-        <div className="fac-section-label">{isAdminBypass ? 'Admin Portal' : 'Faculty Workplace'}</div>
+        <div className="fac-section-label">
+          {isDeanRole ? 'Dean Portal' : isPCRole ? 'Program Chair' : 'Faculty Workplace'}
+        </div>
 
         {navItems.map(({ id, icon: Icon }) => (
           <button
@@ -1002,12 +1025,10 @@ const FacultyDashboard = () => {
         ))}
 
         <div className="fac-sidebar-bottom">
-          {!isAdminBypass && (
-            <button data-label="Terms & Policy" className="fac-nav-item" onClick={() => { setTermsReadOnly(true); setShowTerms(true); }}>
-              <span className="fac-nav-icon"><FileText size={18} /></span>
-              <span className="fac-nav-label">Terms &amp; Policy</span>
-            </button>
-          )}
+          <button data-label="Terms & Policy" className="fac-nav-item" onClick={() => { setTermsReadOnly(true); setShowTerms(true); }}>
+            <span className="fac-nav-icon"><FileText size={18} /></span>
+            <span className="fac-nav-label">Terms &amp; Policy</span>
+          </button>
           <button data-label="Settings" className={`fac-nav-item ${activeTab === 'Settings' ? 'active' : ''}`} onClick={() => handleActiveTabSet('Settings')}>
             <span className="fac-nav-icon"><Settings size={18} /></span>
             <span className="fac-nav-label">Settings</span>
@@ -1036,16 +1057,13 @@ const FacultyDashboard = () => {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            {!isAdminBypass && (
-              <button className="fac-topbar-icon-btn" onClick={() => setIsNotifOpen(!isNotifOpen)} title="Notifications" style={{ position: 'relative' }}>
-                <Bell size={24} />
-                {unreadCount > 0 && (
-                  <span style={{ position: 'absolute', top: 2, right: 2, background: '#ef4444', color: 'white', fontSize: '0.55rem', padding: '1px 4px', borderRadius: '50%', fontWeight: 700 }}>{unreadCount}</span>
-                )}
-              </button>
-            )}
-            {/* Status pill in topbar — hidden for admin */}
-            {!isAdminBypass && <div style={{ position: 'relative' }}>
+            <button className="fac-topbar-icon-btn" onClick={() => setIsNotifOpen(!isNotifOpen)} title="Notifications" style={{ position: 'relative' }}>
+              <Bell size={24} />
+              {unreadCount > 0 && (
+                <span style={{ position: 'absolute', top: 2, right: 2, background: '#ef4444', color: 'white', fontSize: '0.55rem', padding: '1px 4px', borderRadius: '50%', fontWeight: 700 }}>{unreadCount}</span>
+              )}
+            </button>
+            {!isDeanRole && !isPCRole && <div style={{ position: 'relative' }}>
               <button
                 onClick={() => setIsStatusOpen(v => !v)}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', padding: '0.55rem 1.1rem', borderRadius: 20, border: '1.5px solid var(--topbar-border, #e5e8f0)', background: 'var(--card-bg, #fff)', fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.15s' }}
@@ -1140,27 +1158,17 @@ const FacultyDashboard = () => {
             </div>}
 
             <div className="fac-topbar-divider" />
-            {isAdminBypass ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.35rem 0.75rem', borderRadius: 12, background: 'var(--bg-primary, #f0f2f8)', border: '1px solid var(--border-color, #e5e8f0)' }}>
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1a2d5a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <ShieldCheck size={16} color="#fff" />
-                </div>
-                <div style={{ lineHeight: 1.2 }}>
-                  <p style={{ margin: 0, fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-primary)' }}>Admin</p>
-                  <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-muted)' }}>System Administrator</p>
-                </div>
+            <div className="fac-profile-chip" onClick={openProfileModal} title="Edit Profile">
+              <div style={{ lineHeight: 1.2 }}>
+                <p className="fac-profile-name">{profilePrefix ? `${profilePrefix} ` : ''}{profileName || 'Faculty'}{profileSuffix ? `, ${profileSuffix}` : ''}</p>
+                <p className="fac-profile-role">
+                  {isDeanRole ? 'Dean' : isPCRole ? 'Program Chair' : profileDept}
+                </p>
               </div>
-            ) : (
-              <div className="fac-profile-chip" onClick={openProfileModal} title="Edit Profile">
-                <div style={{ lineHeight: 1.2 }}>
-                  <p className="fac-profile-name">{profilePrefix ? `${profilePrefix} ` : ''}{profileName || 'Faculty'}{profileSuffix ? `, ${profileSuffix}` : ''}</p>
-                  <p className="fac-profile-role">{profileDept}</p>
-                </div>
-                <div className={`prof-avatar ${profileStatus?.toLowerCase().replace(/\s+/g,'-')}`} style={{ '--prof-avatar-color': facAvatarColor }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fff' }}>{getInitials(profileName)}</span>
-                </div>
+              <div className={`prof-avatar ${profileStatus?.toLowerCase().replace(/\s+/g,'-')}`} style={{ '--prof-avatar-color': facAvatarColor }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fff' }}>{getInitials(profileName)}</span>
               </div>
-            )}
+            </div>
           </div>
         </div>
 
@@ -1171,12 +1179,10 @@ const FacultyDashboard = () => {
           </button>
           <span style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--accent, #2e4a87)' }}>Askademic</span>
           <div style={{ display: 'flex', gap: '0.2rem', alignItems: 'center' }}>
-            {!isAdminBypass && (
-              <button className="fac-topbar-icon-btn" onClick={() => setIsNotifOpen(!isNotifOpen)} style={{ position: 'relative' }}>
-                <Bell size={16} />
-                {unreadCount > 0 && <span style={{ position: 'absolute', top: 0, right: 0, background: '#ef4444', color: 'white', fontSize: '0.5rem', padding: '1px 3px', borderRadius: '50%', fontWeight: 700 }}>{unreadCount}</span>}
-              </button>
-            )}
+            <button className="fac-topbar-icon-btn" onClick={() => setIsNotifOpen(!isNotifOpen)} style={{ position: 'relative' }}>
+              <Bell size={16} />
+              {unreadCount > 0 && <span style={{ position: 'absolute', top: 0, right: 0, background: '#ef4444', color: 'white', fontSize: '0.5rem', padding: '1px 3px', borderRadius: '50%', fontWeight: 700 }}>{unreadCount}</span>}
+            </button>
           </div>
         </div>
 
@@ -1187,20 +1193,17 @@ const FacultyDashboard = () => {
           </ErrorBoundary>
         </main>
 
-        {/* Mobile bottom nav — hidden for admin-bypass */}
-        {!isAdminBypass && (
-          <div className="bottom-nav">
+        <div className="bottom-nav">
           {[{ id: 'Dashboard', icon: Layout }, { id: 'Calendar', icon: CalendarDays }, { id: 'Requests', icon: Clock }].map((item) => (
             <button key={item.id} className={`bottom-nav-item ${activeTab === item.id ? 'active' : ''}`} onClick={() => handleActiveTabSet(item.id)}>
               <item.icon size={20} />
               <span className="bottom-nav-text">{item.id}</span>
             </button>
           ))}
-          </div>
-        )}
+        </div>
       </div>
 
-      {!isAdminBypass && (
+      {user?.id && (
         <NotificationCenter
           userId={user?.id}
           isOpen={isNotifOpen}
@@ -1225,13 +1228,13 @@ const FacultyDashboard = () => {
         forceComplete={false}
       />
 
-      {!isAdminBypass && showTerms && user?.id && (
+      {showTerms && user?.id && (
         <TermsModal
-          userId={isAdminBypass ? null : user.id}
-          readOnly={isAdminBypass ? true : termsReadOnly}
+          userId={user.id}
+          readOnly={termsReadOnly}
           onAccepted={async () => {
             setShowTerms(false);
-            if (!isAdminBypass && !termsReadOnly) {
+            if (!termsReadOnly) {
               localStorage.setItem(`gcas_tnc_${user.id}`, '1');
               try {
                 await supabase.from('profiles').update({ tnc_accepted: true }).eq('id', user.id);
@@ -1354,11 +1357,9 @@ const FacultyDashboard = () => {
               <button className="drawer-link" onClick={() => { openProfileModal(); closeDrawer(); }}>
                 <User size={20} /> <span>Edit Profile</span>
               </button>
-              {!isAdminBypass && (
-                <button className="drawer-link" onClick={() => { setTermsReadOnly(true); setShowTerms(true); closeDrawer(); }}>
-                  <FileText size={20} /> <span>Terms &amp; Policy</span>
-                </button>
-              )}
+              <button className="drawer-link" onClick={() => { setTermsReadOnly(true); setShowTerms(true); closeDrawer(); }}>
+                <FileText size={20} /> <span>Terms &amp; Policy</span>
+              </button>
             </div>
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '1rem', paddingTop: '1rem' }}>
               <button onClick={handleLogout}

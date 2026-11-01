@@ -62,3 +62,14 @@ export const STATUS_LABELS = {
 
 // Max active requests per student
 export const MAX_ACTIVE_REQUESTS = 2;
+
+// All supported user roles
+export const ALL_ROLES = ['student', 'faculty', 'program_chair', 'dean'];
+
+// Completion outcome statuses (written to requests.completion_status)
+export const COMPLETION_STATUSES = {
+  completed:        { label: 'Completed',        color: '#16a34a', bg: '#dcfce7', border: '#86efac' },
+  no_show_student:  { label: 'Student No-Show',  color: '#b45309', bg: '#fef3c7', border: '#fcd34d' },
+  no_show_faculty:  { label: 'Faculty No-Show',  color: '#b91c1c', bg: '#fee2e2', border: '#fca5a5' },
+  rescheduled:      { label: 'Needs Follow-up',  color: '#6d28d9', bg: '#ede9fe', border: '#c4b5fd' },
+};

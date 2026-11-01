@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Inbox, Calendar, Clock, CheckCircle2, CalendarDays } from 'lucide-react';
+import { Inbox, Calendar, Clock, CheckCircle2, CalendarDays, ClipboardCheck } from 'lucide-react';
+import { COMPLETION_STATUSES } from '../../utils/constants';
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { getFacultyRequests, getProfile, updateRequestStatus } from '../../supabase/api';
@@ -266,6 +267,7 @@ const FacultyDashboardContent = ({ onTabChange }) => {
   const [approveTarget, setApproveTarget] = useState(null);
   const [approveRoom, setApproveRoom] = useState('');
   const [approveNote, setApproveNote] = useState('');
+  const [closeSessionModal, setCloseSessionModal] = useState({ open: false, req: null, outcome: 'completed', followupDate: '', note: '' });
 
   useEffect(() => {
     if (!user) return;
@@ -357,6 +359,22 @@ const FacultyDashboardContent = ({ onTabChange }) => {
       requests.map(r => r.id === req.id ? { ...r, status: 'Cancelled' } : r),
       () => updateRequestStatus(req.id, 'Cancelled', 'Cancelled by faculty', null, null, notifCtx),
       { success: 'Appointment cancelled', error: 'Failed to cancel' }
+    );
+  };
+
+  const handleDashboardCloseSession = async () => {
+    const { req, outcome, followupDate, note } = closeSessionModal;
+    if (!req) return;
+    setCloseSessionModal({ open: false, req: null, outcome: 'completed', followupDate: '', note: '' });
+    const notifCtx = { studentId: req.avatarSeed, facultyName: user?.displayName || user?.user_metadata?.full_name || 'Faculty' };
+    await optimistic(
+      setRequests, requests,
+      requests.map(r => r.id === req.id ? { ...r, status: 'Completed', completion_status: outcome } : r),
+      () => updateRequestStatus(
+        req.id, 'Completed', null, null, note || null, notifCtx, req.room,
+        outcome, outcome === 'rescheduled', followupDate || null
+      ),
+      { success: 'Session closed', error: 'Failed to close session' }
     );
   };
 
@@ -505,7 +523,15 @@ const FacultyDashboardContent = ({ onTabChange }) => {
             </div>
             <div className="fdc-req-actions">
               <span className="fdc-approved-badge">Approved</span>
-              <button className="fdc-cancel-btn" onClick={() => handleCancelUpcoming(req)}>Cancel</button>
+              {req.date === todayStr && (
+                <button className="fdc-approve-btn" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.78rem', padding: '0.35rem 0.8rem' }}
+                  onClick={() => setCloseSessionModal({ open: true, req, outcome: 'completed', followupDate: '', note: '' })}>
+                  <ClipboardCheck size={13} /> Close Session
+                </button>
+              )}
+              {req.date > todayStr && (
+                <button className="fdc-cancel-btn" onClick={() => handleCancelUpcoming(req)}>Cancel</button>
+              )}
             </div>
           </div>
         ))}
@@ -590,6 +616,78 @@ const FacultyDashboardContent = ({ onTabChange }) => {
           </div>
         </div>
       )}
+      {/* Close Session modal */}
+      {closeSessionModal.open && (() => {
+        const req = closeSessionModal.req;
+        const timeLabel = req?.time?.split(' - ')[0] || '';
+        const subtitle = [req?.name, req?.studentNo ? `#${req.studentNo}` : null, req?.date ? fmtWithDay(req.date) : null, timeLabel].filter(Boolean).join(' · ');
+        const closeModal = () => setCloseSessionModal({ open: false, req: null, outcome: 'completed', followupDate: '', note: '' });
+        const outcomes = [
+          { key: 'completed',       label: 'Completed',        color: '#16a34a', bg: '#dcfce7', border: '#86efac' },
+          { key: 'no_show_student', label: 'Student No-Show',  color: '#b45309', bg: '#fef3c7', border: '#fcd34d' },
+          { key: 'no_show_faculty', label: 'Faculty No-Show',  color: '#b91c1c', bg: '#fee2e2', border: '#fca5a5' },
+          { key: 'rescheduled',     label: 'Needs Follow-up',  color: '#6d28d9', bg: '#ede9fe', border: '#c4b5fd' },
+        ];
+        return (
+          <div className="fdc-modal-overlay" onClick={closeModal}>
+            <div className="fdc-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 460 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                <div>
+                  <h3 style={{ margin: 0 }}>Close session</h3>
+                  <p className="fdc-modal-sub" style={{ marginBottom: '1.2rem' }}>{subtitle}</p>
+                </div>
+                <button onClick={closeModal} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.1rem', lineHeight: 1, marginLeft: '0.5rem' }}>✕</button>
+              </div>
+
+              <p className="fdc-modal-label">Session outcome</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1.1rem' }}>
+                {outcomes.map(o => {
+                  const selected = closeSessionModal.outcome === o.key;
+                  return (
+                    <button key={o.key} onClick={() => setCloseSessionModal(m => ({ ...m, outcome: o.key }))}
+                      style={{
+                        padding: '0.5rem 0.75rem', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                        fontSize: '0.8rem', fontWeight: selected ? 600 : 400,
+                        background: selected ? o.bg : 'var(--bg-card)',
+                        color: selected ? o.color : 'var(--text-secondary)',
+                        border: selected ? `1.5px solid ${o.border}` : '1.5px solid var(--border)',
+                        transition: 'all 0.15s',
+                      }}>
+                      {o.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {closeSessionModal.outcome === 'rescheduled' && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <p className="fdc-modal-label">Follow-up date (optional)</p>
+                  <input
+                    type="date"
+                    value={closeSessionModal.followupDate}
+                    onChange={e => setCloseSessionModal(m => ({ ...m, followupDate: e.target.value }))}
+                    style={{ width: '100%', padding: '0.45rem 0.65rem', borderRadius: 7, border: '1.5px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                  />
+                </div>
+              )}
+
+              <p className="fdc-modal-label">Notes (optional)</p>
+              <textarea
+                className="fdc-modal-textarea"
+                rows={3}
+                placeholder="Add a note for your records…"
+                value={closeSessionModal.note}
+                onChange={e => setCloseSessionModal(m => ({ ...m, note: e.target.value }))}
+              />
+
+              <div className="fdc-modal-footer">
+                <button className="fdc-modal-keep" onClick={closeModal}>Go back</button>
+                <button className="fdc-modal-confirm" onClick={handleDashboardCloseSession}>Confirm &amp; Close</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

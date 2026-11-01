@@ -261,14 +261,31 @@ export const getFacultyRequests = async (facultyId) => {
 };
 
 /**
- * Update request status. Accepts optional cancelReason, declineReason, or facultyNote.
+ * Update request status. Accepts optional cancelReason, declineReason, facultyNote,
+ * completionStatus, requiresFollowup, and followupDate for the close-session workflow.
  */
-export const updateRequestStatus = async (requestId, newStatus, cancelReason = null, declineReason = null, facultyNote = null, notifContext = null, room = null) => {
+export const updateRequestStatus = async (
+  requestId,
+  newStatus,
+  cancelReason    = null,
+  declineReason   = null,
+  facultyNote     = null,
+  notifContext    = null,
+  room            = null,
+  completionStatus  = null,
+  requiresFollowup  = false,
+  followupDate      = null,
+) => {
   const updates = { status: newStatus, updated_at: new Date().toISOString() };
-  if (cancelReason !== null) updates.cancel_reason = cancelReason;
-  if (declineReason !== null) updates.decline_reason = declineReason;
-  if (facultyNote !== null) updates.faculty_note = facultyNote;
-  if (room !== null) updates.room = room;
+  if (cancelReason    !== null) updates.cancel_reason    = cancelReason;
+  if (declineReason   !== null) updates.decline_reason   = declineReason;
+  if (facultyNote     !== null) updates.faculty_note     = facultyNote;
+  if (room            !== null) updates.room             = room;
+  if (newStatus === 'Completed') {
+    if (completionStatus !== null) updates.completion_status = completionStatus;
+    updates.requires_followup = requiresFollowup || false;
+    if (followupDate !== null) updates.followup_date = followupDate;
+  }
 
   const { error } = await supabase
     .from('requests')
@@ -278,6 +295,14 @@ export const updateRequestStatus = async (requestId, newStatus, cancelReason = n
   if (error) {
     logError('Error updating request status:', error);
     return false;
+  }
+
+  // When approving, auto-cancel all other Pending requests for the same slot
+  if (newStatus === 'Approved') {
+    const { error: rpcErr } = await supabase.rpc('cancel_competing_requests', {
+      p_approved_request_id: requestId,
+    });
+    if (rpcErr) logError('cancel_competing_requests error:', rpcErr);
   }
 
   // Fire notifications based on new status (4th arg = request_id for deep-link)

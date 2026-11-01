@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, Search, Archive, Eye, Clock, Inbox, Ban, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Check, X, Search, Archive, Eye, Clock, Inbox, Ban, CheckCircle2, ChevronDown, ChevronUp, ClipboardCheck } from 'lucide-react';
+import { COMPLETION_STATUSES } from '../../utils/constants';
 import { useAuth } from '../../hooks/useAuth';
 import { AppointmentDetailsModal } from '../shared';
 import { getFacultyRequests, updateRequestStatus, deleteRequest } from '../../supabase/api';
@@ -311,7 +312,7 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
   const [declineModal, setDeclineModal] = useState({ open: false, req: null, reason: '', note: '' });
   const [approveModal, setApproveModal] = useState({ open: false, reqId: null, note: '', room: '' });
   const [cancelModal,  setCancelModal]  = useState({ open: false, req: null, reason: '', note: '' });
-  const [confirmModal, setConfirmModal] = useState({ open: false, reqId: null, newStatus: null, label: '' });
+  const [closeSessionModal, setCloseSessionModal] = useState({ open: false, req: null, outcome: 'completed', followupDate: '', note: '' });
   const [deleteModal, setDeleteModal]   = useState({ open: false, reqId: null });
 
   useEffect(() => { setFilter(initialFilter); }, [initialFilter]);
@@ -449,14 +450,19 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
     );
   };
 
-  const executeConfirm = async () => {
-    const { reqId, newStatus } = confirmModal;
-    setConfirmModal({ open: false, reqId: null, newStatus: null, label: '' });
+  const handleCloseSession = async () => {
+    const { req, outcome, followupDate, note } = closeSessionModal;
+    if (!req) return;
+    setCloseSessionModal({ open: false, req: null, outcome: 'completed', followupDate: '', note: '' });
+    const notifCtx = { studentId: req.avatarSeed, facultyName: user?.user_metadata?.full_name || 'Faculty' };
     await optimistic(
       setRequests, requests,
-      requests.map(r => r.id === reqId ? { ...r, status: newStatus } : r),
-      () => updateRequestStatus(reqId, newStatus, null, null, null, null),
-      { success: `Marked as ${newStatus}`, error: 'Action failed' }
+      requests.map(r => r.id === req.id ? { ...r, status: 'Completed', completion_status: outcome } : r),
+      () => updateRequestStatus(
+        req.id, 'Completed', null, null, note || null, notifCtx, req.room,
+        outcome, outcome === 'rescheduled', followupDate || null
+      ),
+      { success: 'Session closed', error: 'Failed to close session' }
     );
   };
 
@@ -636,8 +642,8 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
                         </button>
                       )}
                       {isTodayOrPast && (
-                        <button className="frc-btn frc-btn-complete" onClick={() => setConfirmModal({ open: true, reqId: req.id, newStatus: 'Completed', label: 'mark as completed' })}>
-                          <CheckCircle2 size={13} /> Done
+                        <button className="frc-btn frc-btn-complete" onClick={() => setCloseSessionModal({ open: true, req, outcome: 'completed', followupDate: '', note: '' })}>
+                          <ClipboardCheck size={13} /> Close Session
                         </button>
                       )}
                     </>);
@@ -812,19 +818,80 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
         );
       })()}
 
-      {/* ── Confirm modal (complete) ── */}
-      {confirmModal.open && (
-        <div className="frc-modal-overlay" onClick={() => setConfirmModal({ open: false, reqId: null, newStatus: null, label: '' })}>
-          <div className="frc-modal" onClick={e => e.stopPropagation()}>
-            <p className="frc-modal-title">Mark as completed?</p>
-            <p className="frc-modal-sub">This will <strong>{confirmModal.label}</strong> and cannot be undone.</p>
-            <div className="frc-modal-footer">
-              <button className="frc-modal-cancel" onClick={() => setConfirmModal({ open: false, reqId: null, newStatus: null, label: '' })}>Go back</button>
-              <button className="frc-modal-confirm" onClick={executeConfirm}>Confirm</button>
+      {/* ── Close Session modal ── */}
+      {closeSessionModal.open && (() => {
+        const req = closeSessionModal.req;
+        const timeLabel = req?.startTime ? fmt12(req.startTime) : (req?.time?.split(' - ')[0] || '');
+        const subtitle = [req?.name, req?.studentNo ? `#${req.studentNo}` : null, [req?.day, req?.date].filter(Boolean).join(', '), timeLabel].filter(Boolean).join(' · ');
+        const closeModal = () => setCloseSessionModal({ open: false, req: null, outcome: 'completed', followupDate: '', note: '' });
+        const outcomes = [
+          { key: 'completed',       label: 'Completed',        color: '#16a34a', bg: '#dcfce7', border: '#86efac' },
+          { key: 'no_show_student', label: 'Student No-Show',  color: '#b45309', bg: '#fef3c7', border: '#fcd34d' },
+          { key: 'no_show_faculty', label: 'Faculty No-Show',  color: '#b91c1c', bg: '#fee2e2', border: '#fca5a5' },
+          { key: 'rescheduled',     label: 'Needs Follow-up',  color: '#6d28d9', bg: '#ede9fe', border: '#c4b5fd' },
+        ];
+        return (
+          <div className="frc-modal-overlay" onClick={closeModal}>
+            <div className="frc-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 460 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                <div>
+                  <p className="frc-modal-title">Close session</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0 1.2rem' }}>{subtitle}</p>
+                </div>
+                <button onClick={closeModal} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.1rem', lineHeight: 1, marginLeft: '0.5rem' }}>✕</button>
+              </div>
+
+              <label className="frc-modal-label" style={{ marginBottom: '0.6rem', display: 'block' }}>Session outcome</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1.1rem' }}>
+                {outcomes.map(o => {
+                  const selected = closeSessionModal.outcome === o.key;
+                  return (
+                    <button key={o.key} onClick={() => setCloseSessionModal(m => ({ ...m, outcome: o.key }))}
+                      style={{
+                        padding: '0.5rem 0.75rem', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                        fontSize: '0.8rem', fontWeight: selected ? 600 : 400,
+                        background: selected ? o.bg : 'var(--bg-card)',
+                        color: selected ? o.color : 'var(--text-secondary)',
+                        border: selected ? `1.5px solid ${o.border}` : '1.5px solid var(--border)',
+                        transition: 'all 0.15s',
+                      }}>
+                      {o.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {closeSessionModal.outcome === 'rescheduled' && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <label className="frc-modal-label" style={{ marginBottom: '0.4rem', display: 'block' }}>Follow-up date (optional)</label>
+                  <input
+                    type="date"
+                    value={closeSessionModal.followupDate}
+                    onChange={e => setCloseSessionModal(m => ({ ...m, followupDate: e.target.value }))}
+                    style={{ width: '100%', padding: '0.45rem 0.65rem', borderRadius: 7, border: '1.5px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                  />
+                </div>
+              )}
+
+              <div style={{ marginBottom: '1.2rem' }}>
+                <label className="frc-modal-label" style={{ marginBottom: '0.4rem', display: 'block' }}>Notes (optional)</label>
+                <textarea
+                  className="frc-modal-textarea"
+                  rows={3}
+                  placeholder="Add a note for your records…"
+                  value={closeSessionModal.note}
+                  onChange={e => setCloseSessionModal(m => ({ ...m, note: e.target.value }))}
+                />
+              </div>
+
+              <div className="frc-modal-footer">
+                <button className="frc-modal-cancel" onClick={closeModal}>Go back</button>
+                <button className="frc-modal-confirm" onClick={handleCloseSession}>Confirm &amp; Close</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Archive modal ── */}
       {deleteModal.open && (

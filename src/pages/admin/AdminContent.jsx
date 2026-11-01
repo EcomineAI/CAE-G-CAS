@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Users, GraduationCap, CalendarClock, CheckCircle, XCircle, Clock, X, BarChart2, Download, Search, ListFilter } from 'lucide-react';
-import { getAllProfiles, getAllRequestsAdmin } from '../../supabase/api';
+import { getAllProfiles, getAllRequestsAdmin, updateUserRole } from '../../supabase/api';
+import { toast } from '../../supabase/ux';
 import { getInitials, fmt12 } from '../../utils/dateUtils';
+import { ALL_ROLES } from '../../utils/constants';
 
 const REQ_STATUS_STYLE = {
   Pending:   { bg: '#fef3c7', color: '#7c5200',  border: '#d97706' },
@@ -27,6 +29,14 @@ const STATUS_DOT_COLOR = {
 
 const AVATAR_COLORS = ['#5bc8c8','#2e4a87','#7c3aed','#0891b2','#0d9488','#6366f1'];
 const nameToColor = (name = '') => AVATAR_COLORS[(name.charCodeAt(0) || 0) % AVATAR_COLORS.length];
+
+const ROLE_BADGE = {
+  faculty:       { cls: 'faculty',       label: 'Faculty' },
+  student:       { cls: 'student',       label: 'Student' },
+  program_chair: { cls: 'program-chair', label: 'Prog. Chair' },
+  dean:          { cls: 'dean',          label: 'Dean' },
+};
+const roleBadge = (role) => ROLE_BADGE[role] || { cls: 'no-role', label: 'No Role' };
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
 const ALL_STATUSES = ['Pending','Approved','Declined','Completed','Cancelled'];
@@ -280,9 +290,11 @@ const adminStyles = `
 .admin-table tr.row-selected td { background: rgba(99,102,241,0.07) !important; }
 
 .admin-role-badge { font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
-.admin-role-badge.faculty  { background: rgba(99,102,241,0.12);  color: #3730a3; border: 1px solid rgba(99,102,241,0.3); }
-.admin-role-badge.student  { background: rgba(34,197,94,0.12);   color: #166534; border: 1px solid rgba(34,197,94,0.3); }
-.admin-role-badge.no-role  { background: rgba(239,68,68,0.1);    color: #b91c1c; border: 1px solid rgba(239,68,68,0.3); }
+.admin-role-badge.faculty        { background: rgba(99,102,241,0.12);  color: #3730a3; border: 1px solid rgba(99,102,241,0.3); }
+.admin-role-badge.student        { background: rgba(34,197,94,0.12);   color: #166534; border: 1px solid rgba(34,197,94,0.3); }
+.admin-role-badge.program-chair  { background: rgba(14,165,233,0.12);  color: #0369a1; border: 1px solid rgba(14,165,233,0.3); }
+.admin-role-badge.dean           { background: rgba(168,85,247,0.12);  color: #6b21a8; border: 1px solid rgba(168,85,247,0.3); }
+.admin-role-badge.no-role        { background: rgba(239,68,68,0.1);    color: #b91c1c; border: 1px solid rgba(239,68,68,0.3); }
 
 .admin-status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
 .admin-req-count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 20px; padding: 0 6px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 10px; font-size: 0.68rem; font-weight: 700; color: var(--text-muted); }
@@ -425,12 +437,14 @@ const adminStyles = `
 }
 `;
 
-const AdminContent = () => {
+const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
+  const isPC = viewerRole === 'program_chair';
   const [tab, setTab] = useState('overview');
-  const [profiles, setProfiles] = useState([]);
-  const [requests, setRequests] = useState([]);
+  const [allProfiles, setAllProfiles] = useState([]);
+  const [allRequests, setAllRequests] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [roleChanging, setRoleChanging] = useState(false);
   const [activeFilter, setActiveFilter] = useState(null);
 
   // Appointments tab filters
@@ -449,15 +463,34 @@ const AdminContent = () => {
   const load = useCallback(async () => {
     setLoading(true);
     const [p, r] = await Promise.all([getAllProfiles(), getAllRequestsAdmin()]);
-    setProfiles(p);
-    setRequests(r);
+    setAllProfiles(p);
+    setAllRequests(r);
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
+  // ── Scope data by viewer role ──────────────────────────────────────────────
+  // PC sees only users whose program matches their own; Dean sees all.
+  const profiles = isPC && viewerProgram
+    ? allProfiles.filter(p => p.role === 'student' ? p.program === viewerProgram : p.role === 'faculty' || p.role === 'program_chair')
+    : allProfiles;
+
+  const pcFacultyIds = isPC
+    ? new Set(profiles.filter(p => p.role === 'faculty' || p.role === 'program_chair').map(p => p.id))
+    : null;
+
+  const requests = isPC && pcFacultyIds
+    ? allRequests.filter(r => pcFacultyIds.has(r.facultyId))
+    : allRequests;
+
+  // Roles a viewer is allowed to assign
+  const assignableRoles = isPC
+    ? ALL_ROLES.filter(r => r === 'student' || r === 'faculty')
+    : ALL_ROLES;
+
   // ── Derived: overview ──────────────────────────────────────────────────────
-  const faculty  = profiles.filter(p => p.role === 'faculty');
+  const faculty  = profiles.filter(p => p.role === 'faculty' || p.role === 'program_chair' || p.role === 'dean');
   const students = profiles.filter(p => p.role === 'student');
   const counts   = ALL_STATUSES.reduce((acc, s) => { acc[s] = requests.filter(r => r.status === s).length; return acc; }, {});
 
@@ -481,18 +514,33 @@ const AdminContent = () => {
 
   const filteredProfiles = (() => {
     if (!activeFilter) return profiles;
-    if (activeFilter === 'Faculty') return profiles.filter(p => p.role === 'faculty');
+    if (activeFilter === 'Faculty') return profiles.filter(p => p.role === 'faculty' || p.role === 'program_chair' || p.role === 'dean');
     if (activeFilter === 'Students') return profiles.filter(p => p.role === 'student');
     if (activeFilter === 'Total Requests') return profiles.filter(p =>
       requests.some(r => r.facultyId === p.id || r.studentId === p.id));
     const { fIds, sIds } = usersWithStatus(activeFilter);
-    return profiles.filter(p => (p.role === 'faculty' ? fIds : sIds).has(p.id));
+    const isFacultyRole = (r) => r.role === 'faculty' || r.role === 'program_chair' || r.role === 'dean';
+    return profiles.filter(p => (isFacultyRole(p) ? fIds : sIds).has(p.id));
   })();
 
   const profileNameMap = profiles.reduce((acc, p) => { acc[p.id] = p.full_name; return acc; }, {});
 
+  const isFacultyRole = (role) => role === 'faculty' || role === 'program_chair' || role === 'dean';
+
+  const handleRoleChange = async (userId, newRole) => {
+    setRoleChanging(true);
+    const ok = await updateUserRole(userId, newRole);
+    if (ok) {
+      setAllProfiles(prev => prev.map(p => p.id === userId ? { ...p, role: newRole } : p));
+      setSelectedUser(prev => prev ? { ...prev, role: newRole } : prev);
+      toast.success('Role updated');
+    } else {
+      toast.error('Failed to update role');
+    }
+    setRoleChanging(false);
+  };
   const userRequests = selectedUser
-    ? requests.filter(r => selectedUser.role === 'faculty' ? r.facultyId === selectedUser.id : r.studentId === selectedUser.id)
+    ? requests.filter(r => isFacultyRole(selectedUser.role) ? r.facultyId === selectedUser.id : r.studentId === selectedUser.id)
     : [];
 
   const userStats = {
@@ -503,8 +551,8 @@ const AdminContent = () => {
   };
 
   const getUserReqCount = (userId, role) =>
-    role === 'faculty' ? requests.filter(r => r.facultyId === userId).length
-                       : requests.filter(r => r.studentId === userId).length;
+    isFacultyRole(role) ? requests.filter(r => r.facultyId === userId).length
+                        : requests.filter(r => r.studentId === userId).length;
 
   // ── Derived: reports ───────────────────────────────────────────────────────
   const fromDate = rangePreset === 'custom' ? (customFrom || getRangeStart('month', null)) : getRangeStart(rangePreset, null);
@@ -602,8 +650,8 @@ const AdminContent = () => {
       {/* Header */}
       <div className="admin-header">
         <div>
-          <h2>Admin Dashboard</h2>
-          <p>System overview — users &amp; consultation requests</p>
+          <h2>{isPC ? 'Program Chair Dashboard' : 'Admin Dashboard'}</h2>
+          <p>{isPC ? `Overview — ${viewerProgram || 'your program'}` : 'System overview — users & consultation requests'}</p>
         </div>
         <div className="admin-header-right">
           {tab === 'reports' && (
@@ -701,7 +749,7 @@ const AdminContent = () => {
                           const isSelected = selectedUser?.id === p.id;
                           const reqCount = getUserReqCount(p.id, p.role);
                           const avatarBg = p.avatar_color || nameToColor(p.full_name || '');
-                          const deptOrProgram = p.role === 'faculty'
+                          const deptOrProgram = isFacultyRole(p.role)
                             ? 'CCS'
                             : (p.program ? ((p.program.match(/\(([^)]+)\)/) || [])[1] || p.program) : '—');
                           const studentNo = p.role === 'student' && p.email ? p.email.split('@')[0] : null;
@@ -720,15 +768,15 @@ const AdminContent = () => {
                               </td>
                               <td style={{ color: 'var(--text-muted)' }}>{deptOrProgram}</td>
                               <td>
-                                {p.role === 'faculty'
+                                {isFacultyRole(p.role)
                                   ? <><span className="admin-status-dot" style={{ background: dotColor }} />{p.status || '—'}</>
                                   : <span style={{ color: 'var(--text-muted)' }}>—</span>
                                 }
                               </td>
                               <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{fmtDate(p.created_at)}</td>
                               <td>
-                                <span className={`admin-role-badge ${p.role === 'faculty' ? 'faculty' : p.role === 'student' ? 'student' : 'no-role'}`}>
-                                  {p.role === 'faculty' ? 'Faculty' : p.role === 'student' ? 'Student' : 'No Role'}
+                                <span className={`admin-role-badge ${roleBadge(p.role).cls}`}>
+                                  {roleBadge(p.role).label}
                                 </span>
                               </td>
                               <td style={{ textAlign: 'center' }}><span className="admin-req-count">{reqCount}</span></td>
@@ -750,10 +798,10 @@ const AdminContent = () => {
                     <div className="admin-detail-info">
                       <p className="admin-detail-name">{selectedUser.full_name || '—'}</p>
                       <div className="admin-detail-meta">
-                        <span className={`admin-role-badge ${selectedUser.role === 'faculty' ? 'faculty' : selectedUser.role === 'student' ? 'student' : 'no-role'}`}>
-                          {selectedUser.role === 'faculty' ? 'Faculty' : selectedUser.role === 'student' ? 'Student' : 'No Role'}
+                        <span className={`admin-role-badge ${roleBadge(selectedUser.role).cls}`}>
+                          {roleBadge(selectedUser.role).label}
                         </span>
-                        {selectedUser.role === 'faculty'
+                        {isFacultyRole(selectedUser.role)
                           ? <span>CCS</span>
                           : selectedUser.email
                             ? <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary)' }}>{selectedUser.email.split('@')[0]}</span>
@@ -762,7 +810,7 @@ const AdminContent = () => {
                         {selectedUser.role === 'student' && selectedUser.program && (
                           <span>{(selectedUser.program.match(/\(([^)]+)\)/) || [])[1] || selectedUser.program}</span>
                         )}
-                        {selectedUser.role === 'faculty' && selectedUser.status && (
+                        {isFacultyRole(selectedUser.role) && selectedUser.status && (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: STATUS_DOT_COLOR[selectedUser.status] || '#9ca3af', display: 'inline-block' }} />
                             {selectedUser.status}
@@ -787,15 +835,36 @@ const AdminContent = () => {
                     ))}
                   </div>
 
+                  {(!isPC || (selectedUser.role === 'student' || selectedUser.role === 'faculty')) && (
+                    <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid var(--border)' }}>
+                      <p style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-muted)', textTransform: 'uppercase', margin: '0 0 0.45rem' }}>Change Role</p>
+                      <select
+                        value={selectedUser.role || ''}
+                        disabled={roleChanging}
+                        onChange={e => handleRoleChange(selectedUser.id, e.target.value)}
+                        style={{ width: '100%', padding: '0.45rem 0.7rem', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: '0.85rem', fontFamily: 'inherit', cursor: roleChanging ? 'not-allowed' : 'pointer', opacity: roleChanging ? 0.6 : 1 }}
+                      >
+                        {assignableRoles.map(r => (
+                          <option key={r} value={r}>
+                            {r === 'program_chair' ? 'Program Chair' : r.charAt(0).toUpperCase() + r.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '0.4rem 0 0', lineHeight: 1.4 }}>
+                        User must log out and back in for the new role to take effect.
+                      </p>
+                    </div>
+                  )}
+
                   <div className="admin-detail-history">
                     <p className="admin-detail-hist-title">
-                      {selectedUser.role === 'faculty' ? 'Requests Received' : 'Requests Made'}
+                      {isFacultyRole(selectedUser.role) ? 'Requests Received' : 'Requests Made'}
                     </p>
                     {userRequests.length === 0 ? (
                       <div className="admin-detail-empty">No requests found.</div>
                     ) : userRequests.map(r => {
                       const st = REQ_STATUS_STYLE[r.status] || REQ_STATUS_STYLE.Cancelled;
-                      const otherParty = selectedUser.role === 'faculty'
+                      const otherParty = isFacultyRole(selectedUser.role)
                         ? (r.studentName || profileNameMap[r.studentId] || '—')
                         : (r.facultyName || profileNameMap[r.facultyId] || '—');
                       const timeLabel = r.startTime ? fmt12(r.startTime) + (r.endTime ? ` – ${fmt12(r.endTime)}` : '') : null;

@@ -30,7 +30,11 @@ const ProtectedRoute = ({ children, allowedRole }) => {
   if (!user) return <Navigate to="/login" replace />;
 
   if (user.role !== allowedRole) {
-    return <Navigate to={user.role === 'student' ? '/student' : '/faculty'} replace />;
+    const dest = user.role === 'student' ? '/student'
+      : user.role === 'dean' ? '/dean'
+      : user.role === 'program_chair' ? '/program-chair'
+      : '/faculty';
+    return <Navigate to={dest} replace />;
   }
 
   return children;

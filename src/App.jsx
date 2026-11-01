@@ -6,6 +6,8 @@ import StudentDashboard from './pages/student/StudentDashboard';
 import StudentRequest from './pages/student/StudentRequest';
 import FacultyDashboard from './pages/faculty/FacultyDashboard';
 import FacultyManage from './pages/faculty/FacultyManage';
+import DeanDashboard from './pages/dean/DeanDashboard';
+import ProgramChairDashboard from './pages/program-chair/ProgramChairDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import UpdatePrompt from './components/UpdatePrompt';
 import { ProfileProvider } from './hooks/useProfile';
@@ -285,6 +287,20 @@ function App() {
         <Route path="/faculty/manage" element={
           <ProtectedRoute allowedRole="faculty">
             <FacultyManage />
+          </ProtectedRoute>
+        } />
+
+        {/* Dean Routes */}
+        <Route path="/dean" element={
+          <ProtectedRoute allowedRole="dean">
+            <DeanDashboard />
+          </ProtectedRoute>
+        } />
+
+        {/* Program Chair Routes */}
+        <Route path="/program-chair" element={
+          <ProtectedRoute allowedRole="program_chair">
+            <ProgramChairDashboard />
           </ProtectedRoute>
         } />
       </Routes>

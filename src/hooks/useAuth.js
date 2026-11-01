@@ -5,7 +5,7 @@ import { formatNameFromEmail } from '../utils/authUtils';
 const ADMIN_USER = {
   id: 'admin-bypass',
   email: 'Admin@gmail.com',
-  role: 'faculty',
+  role: 'dean',
   displayName: 'Admin',
   avatarUrl: null,
 };

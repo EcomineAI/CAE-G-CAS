@@ -1,6 +1,6 @@
 # FACS — Claude Code Guardrails
 
-**Faculty Appointment & Consultation System** · React 19 + Vite 8 + Supabase · v0.8.x
+**Faculty Appointment & Consultation System** · React 19 + Vite 8 + Supabase · v0.9.x
 
 ---
 
@@ -52,7 +52,14 @@ src/
       FacultyAboutContent.jsx      # About tab
 
     admin/
-      AdminContent.jsx      # Admin panel (embedded inside FacultyDashboard for Admin user)
+      AdminContent.jsx      # Dean/PC dashboard panel (embedded inside FacultyDashboard for dean/program_chair roles)
+                            #   Accepts viewerRole and viewerProgram props — PC view is scoped to their program
+
+    dean/
+      DeanDashboard.jsx     # Re-exports FacultyDashboard (dean role uses same shell)
+
+    program-chair/
+      ProgramChairDashboard.jsx  # Re-exports FacultyDashboard (program_chair role uses same shell)
 
     shared/
       index.js                           # Barrel: export { AppointmentDetailsModal }
@@ -67,7 +74,8 @@ src/
   utils/
     authUtils.js      # getUserRole, isValidRoleEmail, formatNameFromEmail
     constants.js      # APP_NAME, ROOM_NUMBERS, PH_PREFIXES, PH_SUFFIXES, CONSULTATION_TYPES,
-                      #   SCHEDULE_DAYS, FACULTY_TITLES, STATUS_LABELS, MAX_ACTIVE_REQUESTS
+                      #   SCHEDULE_DAYS, FACULTY_TITLES, STATUS_LABELS, MAX_ACTIVE_REQUESTS,
+                      #   COMPLETION_STATUSES, ALL_ROLES
     dateUtils.js      # formatTime, formatDate, formatDateTime, formatRelativeTime,
                       #   fmt12, getInitials, buildGcalUrl, calculateStudentSlot, nextDateForDay
     googleCalendar.js # Google Calendar OAuth token helpers + createCalendarEvent, fetchCalendarEvents
@@ -102,8 +110,9 @@ seeds/
 
 ### Routing
 - Routes are defined **only** in `src/App.jsx`.
-- Student pages → `/student/*`, Faculty pages → `/faculty/*`.
+- Student pages → `/student/*`, Faculty pages → `/faculty/*`, Dean → `/dean`, Program Chair → `/program-chair`.
 - All protected pages must be wrapped in `<ProtectedRoute allowedRole="...">`.
+- `ProtectedRoute` redirects each role to its own route on unauthorized access.
 
 ### Date / Time Formatting — Single Source of Truth
 - **`fmt12(timeStr)`** — compact 12h display (e.g. "2 PM", "2:30 PM") → import from `src/utils/dateUtils.js`.
@@ -120,6 +129,20 @@ seeds/
 - `SharedCalendarGrid` owns the calendar grid markup and styles (`calendarSharedStyles`). Both `FacultyCalendarPage` and `CalendarPage` import from it.
 - `TermsModal` is the **single terms modal** — both dashboards use it.
 - `ProfileEditModal` handles avatar + name editing for both roles.
+
+### Roles
+Four roles exist: `student`, `faculty`, `program_chair`, `dean`.
+- **Dean** — sees all programs; uses `FacultyDashboard` shell → renders `AdminContent` with `viewerRole="dean"`.
+- **Program Chair** — scoped to their `profiles.program`; uses same shell → renders `AdminContent` with `viewerRole="program_chair" viewerProgram={...}`.
+- Role assignment hierarchy: Dean can assign any role; PC can only assign `student`/`faculty`.
+- Role changes take effect on the user's **next login** (no realtime redirect).
+- Dev bypass: `Admin@gmail.com` / `testing123` → routes to `/dean`, sets `sessionStorage admin_bypass=1`.
+
+### Close Session Modal
+Faculty close consultations via a 4-outcome modal (not a simple "Done" button):
+- `completed`, `no_show_student`, `no_show_faculty`, `rescheduled` — stored in `requests.completion_status`.
+- Follow-up date shown only for `rescheduled` outcome.
+- Defined in `COMPLETION_STATUSES` constant; used in `FacultyRequestsContent` and `FacultyDashboardContent`.
 
 ---
 
