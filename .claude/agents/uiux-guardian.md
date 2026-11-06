@@ -1,5 +1,6 @@
 ---
 name: uiux-guardian
+model: haiku
 description: UI/UX Guardian for FACS. Use before UI changes to report existing design conventions, and after to review affected UI for consistency, responsiveness and accessibility. Read-only.
 tools: Read, Glob, Grep
 ---
