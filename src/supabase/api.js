@@ -497,9 +497,22 @@ export const getAllProfiles = async () => {
   return data || [];
 };
 
+export const detectRoleFromEmail = (email) => {
+  if (!email) return 'student';
+  const firstChar = email.charAt(0);
+  return /^\d/.test(firstChar) ? 'student' : 'faculty';
+};
+
 export const updateUserRole = async (userId, role) => {
-  logError('updateUserRole should never be called — roles are email-based and immutable');
-  return false;
+  if (!['student', 'faculty', 'program_chair'].includes(role)) return false;
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ role, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+    .select('id')
+    .single();
+  if (error) { logError('Error updating user role:', error); return false; }
+  return !!data;
 };
 
 

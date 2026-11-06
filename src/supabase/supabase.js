@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { detectRoleFromEmail } from './api';
+import { logError } from './ux';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -21,17 +23,32 @@ export const ensureProfile = async () => {
   if (!user) return null;
 
   // Check if profile exists
+  const detectedRole = detectRoleFromEmail(user.email);
+
   const { data: existing } = await supabase
     .from('profiles')
-    .select('id')
+    .select('id, role')
     .eq('id', user.id)
     .single();
 
-  if (existing) return existing;
+  if (existing) {
+    if (existing.role) return existing;
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ role: detectedRole })
+      .eq('id', user.id)
+      .is('role', null)
+      .select()
+      .single();
+    if (error) {
+      logError('Failed to assign role to existing profile:', error);
+      return existing;
+    }
+    return data;
+  }
 
-  // Auto-create profile from auth metadata
   const localPart = user.email.split('@')[0];
-  const isStudent = /^\d+$/.test(localPart);
+  const isStudent = detectedRole === 'student';
 
   const profile = {
     id: user.id,
@@ -39,7 +56,7 @@ export const ensureProfile = async () => {
     full_name: isStudent
       ? localPart
       : localPart.split(/[._-]/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '),
-    role: isStudent ? 'student' : 'faculty',
+    role: detectedRole,
     avatar_url: null,
     status: 'Available'
   };
@@ -51,7 +68,7 @@ export const ensureProfile = async () => {
     .single();
 
   if (error) {
-    console.error('Failed to ensure profile:', error);
+    logError('Failed to ensure profile:', error);
     return null;
   }
   return data;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Users, GraduationCap, CalendarClock, CheckCircle, XCircle, Clock, X, BarChart2, Download, Search, ListFilter, Star, Flag, MessageSquare, Send, ChevronDown, ChevronUp } from 'lucide-react';
-import { getAllProfiles, getAllRequestsAdmin, submitPCReport, submitDeanIntervention, toggleUserActive } from '../../supabase/api';
+import { RefreshCw, Users, GraduationCap, CalendarClock, CheckCircle, XCircle, Clock, X, BarChart2, Download, Search, ListFilter, Star, Flag, MessageSquare, Send, ChevronDown, ChevronUp, UserCog } from 'lucide-react';
+import { getAllProfiles, getAllRequestsAdmin, submitPCReport, submitDeanIntervention, toggleUserActive, updateUserRole } from '../../supabase/api';
 import { toast } from '../../supabase/ux';
 import { useAuth } from '../../hooks/useAuth';
 import { getInitials, fmt12 } from '../../utils/dateUtils';
@@ -38,6 +38,7 @@ const ROLE_BADGE = {
   dean:          { cls: 'dean',          label: 'Dean' },
 };
 const roleBadge = (role) => ROLE_BADGE[role] || { cls: 'no-role', label: 'No Role' };
+const REASSIGNABLE_ROLES = ['student', 'faculty', 'program_chair'];
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
 const ALL_STATUSES = ['Pending','Approved','Declined','Completed','Cancelled'];
@@ -486,6 +487,9 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
   const [deanNoteText,     setDeanNoteText]      = useState('');
   const [reportSubmitting, setReportSubmitting]  = useState(false);
 
+  const [roleModal,  setRoleModal]  = useState(null);
+  const [roleSaving, setRoleSaving] = useState(false);
+
   // Reports filters
   const [rangePreset, setRangePreset] = useState('month');
   const today = isoDate(new Date());
@@ -730,6 +734,19 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
     setReportSubmitting(false);
   };
 
+  const handleConfirmRoleChange = async () => {
+    const { user: target, newRole } = roleModal;
+    setRoleSaving(true);
+    const ok = await updateUserRole(target.id, newRole);
+    if (ok) {
+      setAllProfiles(prev => prev.map(p => p.id === target.id ? { ...p, role: newRole } : p));
+      setSelectedUser(prev => prev?.id === target.id ? { ...prev, role: newRole } : prev);
+      toast.success(`${target.full_name || 'User'} is now ${roleBadge(newRole).label}.`);
+      setRoleModal(null);
+    } else { toast.error('Failed to change role.'); }
+    setRoleSaving(false);
+  };
+
   return (
     <div className="admin-container">
       <style>{adminStyles}</style>
@@ -950,6 +967,20 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
                     </div>
                   )}
 
+                  {isDean && selectedUser.id !== user?.id && selectedUser.role !== 'dean' && (
+                    <div className="admin-toggle-row">
+                      <div>
+                        <div className="admin-toggle-label">Role</div>
+                        <div className="admin-toggle-hint">Reassign between student, faculty, and program chair.</div>
+                      </div>
+                      <button
+                        onClick={() => setRoleModal({ user: selectedUser, newRole: REASSIGNABLE_ROLES.includes(selectedUser.role) ? selectedUser.role : 'student' })}
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.45rem 0.9rem', borderRadius: 9, border: '1.5px solid #1a2d5a', background: '#fff', color: '#1a2d5a', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+                      >
+                        <UserCog size={14} /> Change Role
+                      </button>
+                    </div>
+                  )}
 
                   <div className="admin-detail-history">
                     <p className="admin-detail-hist-title">
@@ -1365,6 +1396,38 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
               <button onClick={() => setDeanModal(null)} style={{ flex: 1, padding: '0.72rem', borderRadius: 9, border: '1.5px solid #e5e8f0', background: '#fff', color: '#1f2937', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
               <button onClick={handleDeanIntervention} disabled={reportSubmitting} style={{ flex: 1, padding: '0.72rem', borderRadius: 9, border: 'none', background: '#6d28d9', color: '#fff', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit', opacity: reportSubmitting ? 0.6 : 1 }}>
                 {reportSubmitting ? 'Saving…' : 'Send to Faculty'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Dean Change Role Modal ── */}
+      {roleModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, backdropFilter: 'blur(3px)', padding: '1rem' }} onClick={() => !roleSaving && setRoleModal(null)}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '93%', maxWidth: 420, boxShadow: '0 24px 60px rgba(0,0,0,0.22)', padding: '1.6rem 1.8rem', animation: 'fadeIn 0.17s ease' }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1f2937', margin: '0 0 0.3rem' }}>Change Role</h2>
+            <p style={{ fontSize: '0.84rem', color: '#6b7280', marginBottom: '1.2rem', lineHeight: 1.5 }}>
+              Current role for <strong style={{ color: '#1a2d5a' }}>{roleModal.user.full_name || '—'}</strong>: {roleBadge(roleModal.user.role).label}.
+            </p>
+            <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9ca3af', marginBottom: '0.4rem' }}>New role</div>
+            <select
+              value={roleModal.newRole}
+              onChange={e => setRoleModal(m => ({ ...m, newRole: e.target.value }))}
+              disabled={roleSaving}
+              style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: 9, border: '1.5px solid #e5e8f0', fontFamily: 'inherit', fontSize: '0.84rem', boxSizing: 'border-box', marginBottom: '1rem', color: '#1f2937', background: '#fff' }}
+            >
+              {REASSIGNABLE_ROLES.map(r => <option key={r} value={r}>{roleBadge(r).label}</option>)}
+            </select>
+            {roleModal.newRole !== roleModal.user.role && (
+              <p style={{ fontSize: '0.84rem', color: '#1f2937', fontWeight: 600, marginBottom: '1.2rem', lineHeight: 1.5 }}>
+                Change {roleModal.user.full_name || 'this user'} from {roleBadge(roleModal.user.role).label} to {roleBadge(roleModal.newRole).label}?
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: '0.7rem' }}>
+              <button onClick={() => setRoleModal(null)} disabled={roleSaving} style={{ flex: 1, padding: '0.72rem', borderRadius: 9, border: '1.5px solid #e5e8f0', background: '#fff', color: '#1f2937', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+              <button onClick={handleConfirmRoleChange} disabled={roleSaving || roleModal.newRole === roleModal.user.role} style={{ flex: 1, padding: '0.72rem', borderRadius: 9, border: 'none', background: '#1a2d5a', color: '#fff', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit', opacity: (roleSaving || roleModal.newRole === roleModal.user.role) ? 0.6 : 1 }}>
+                {roleSaving ? 'Saving…' : 'Confirm'}
               </button>
             </div>
           </div>
