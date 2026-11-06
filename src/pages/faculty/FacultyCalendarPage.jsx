@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CalendarDays, Clock, MapPin, Plus, Ban, Activity, Trash2, X, Pencil, Check } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { getFacultyRequests, getFacultySchedules, createSchedule, updateSchedule, deleteSchedule, getBlockedDates, createBlockedDate, deleteBlockedDate, setOutOfOffice, getProfile, getDeanBlockedDates } from '../../supabase/api';
+import { getFacultyRequests, getFacultySchedules, createSchedule, updateSchedule, deleteSchedule, getBlockedDates, createBlockedDate, deleteBlockedDate, setOutOfOffice, getProfile, getDeanBlockedDates, addDeanBlockedDate, removeDeanBlockedDate } from '../../supabase/api';
 import { subscribeToRequests, subscribeToSchedules, subscribeToSlotFills, subscribeToStudentProfiles } from '../../supabase/realtime';
-import { withMinDelay, toast } from '../../supabase/ux';
+import { withMinDelay, toast, optimistic } from '../../supabase/ux';
 import SharedCalendarGrid, { STATUS_STYLES, WEEKDAYS, MONTH_NAMES, fmt12, calendarSharedStyles } from '../../components/SharedCalendarGrid';
-import { getInitials } from '../../utils/dateUtils';
+import { getInitials, formatDate } from '../../utils/dateUtils';
 
 /* ── Faculty-specific styles (shared grid styles come from calendarSharedStyles) ── */
 const facultyCalStyles = `
@@ -350,8 +350,51 @@ const weekdayFromIso = (iso) => {
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long' });
 };
 
+const fcpBlockedStyles = `
+.fcp-blocked-section { border-top: 1px solid var(--border-color, #e5e8f0); }
+.fcp-blocked-form { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+.fcp-blocked-form input {
+  min-width: 0; padding: 0.5rem 0.7rem; border-radius: 8px;
+  border: 1.5px solid var(--border-color); background: var(--bg-primary);
+  font-size: 0.82rem; font-family: inherit; color: var(--text-primary); outline: none; box-sizing: border-box;
+}
+.fcp-blocked-form input[type="date"] { flex: 1 1 130px; }
+.fcp-blocked-form input[type="text"] { flex: 2 1 140px; }
+.fcp-blocked-form input:focus { border-color: #1a2d5a; }
+.fcp-blocked-add-btn {
+  flex: 0 0 auto; padding: 0.5rem 1rem; border-radius: 8px; border: none;
+  background: #1a2d5a; color: #fff; font-weight: 700; font-size: 0.82rem;
+  cursor: pointer; font-family: inherit; transition: opacity 0.15s;
+}
+.fcp-blocked-add-btn:hover:not(:disabled) { opacity: 0.88; }
+.fcp-blocked-add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.fcp-blocked-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.fcp-blocked-item {
+  display: flex; align-items: center; gap: 0.6rem; min-width: 0;
+  padding: 0.5rem 0.7rem; border-radius: 10px;
+  background: var(--bg-primary); border: 1.5px solid var(--border-color);
+}
+.fcp-blocked-item-date { font-weight: 700; font-size: 0.78rem; color: #dc2626; white-space: nowrap; }
+.fcp-blocked-item-reason {
+  flex: 1; min-width: 0; font-size: 0.8rem; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fcp-blocked-del-btn {
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 26px; height: 26px; border-radius: 7px; border: none;
+  background: transparent; color: var(--text-muted); cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.fcp-blocked-del-btn:hover { background: #fee2e2; color: #dc2626; }
+.fcp-blocked-empty { font-size: 0.8rem; color: var(--text-muted); font-style: italic; }
+@media (max-width: 480px) {
+  .fcp-blocked-form input[type="date"], .fcp-blocked-form input[type="text"] { flex: 1 1 100%; }
+  .fcp-blocked-add-btn { flex: 1 1 100%; }
+}
+`;
+
 const FacultyCalendarPage = ({ onTabChange }) => {
   const { user } = useAuth();
+  const userRole = user?.role;
   const [requests, setRequests] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -359,8 +402,12 @@ const FacultyCalendarPage = ({ onTabChange }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [statusFilter, setStatusFilter] = useState('All');
   const [blockedDates, setBlockedDates] = useState([]);
-  const [deanBlockedDatesSet, setDeanBlockedDatesSet] = useState(new Set());
-  const [deanBlockedDatesMap, setDeanBlockedDatesMap] = useState({});
+  const [deanBlockedList, setDeanBlockedList] = useState([]);
+  const deanBlockedDatesSet = new Set(deanBlockedList.map(d => d.date));
+  const deanBlockedDatesMap = Object.fromEntries(deanBlockedList.map(d => [d.date, d.reason]));
+  const [newBlockDate, setNewBlockDate] = useState('');
+  const [newBlockReason, setNewBlockReason] = useState('');
+  const [submittingBlock, setSubmittingBlock] = useState(false);
   const [popover, setPopover] = useState(null);
   const [modal, setModal] = useState(null);
   const [facultyDisplayName, setFacultyDisplayName] = useState('');
@@ -389,8 +436,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
       setRequests(reqs);
       setSchedules(scheds);
       setBlockedDates(blocks.map(normBlock));
-      setDeanBlockedDatesSet(new Set((deanBlocks || []).map(d => d.date)));
-      setDeanBlockedDatesMap(Object.fromEntries((deanBlocks || []).map(d => [d.date, d.reason])));
+      setDeanBlockedList(deanBlocks || []);
       if (profile) {
         const parts = [profile.name_prefix, profile.full_name, profile.name_suffix].filter(Boolean);
         setFacultyDisplayName(parts.join(' ') || 'Faculty');
@@ -599,6 +645,32 @@ const FacultyCalendarPage = ({ onTabChange }) => {
     </div>
   ));
 
+  const handleAddDeanBlock = async () => {
+    if (!newBlockDate) { toast.error('Please select a date.'); return; }
+    if (newBlockDate < todayStr) { toast.error('Cannot block a date in the past.'); return; }
+    if (!newBlockReason.trim()) { toast.error('Please enter a reason.'); return; }
+    setSubmittingBlock(true);
+    const createdBy = user?.id === 'admin-bypass' ? null : user?.id;
+    const result = await addDeanBlockedDate(newBlockDate, newBlockReason.trim(), createdBy);
+    setSubmittingBlock(false);
+    if (result) {
+      setDeanBlockedList(prev => [...prev, result].sort((a, b) => a.date.localeCompare(b.date)));
+      setNewBlockDate('');
+      setNewBlockReason('');
+      toast.success('Date blocked successfully.');
+    } else {
+      toast.error('Could not block this date. It may already be blocked.');
+    }
+  };
+
+  const handleRemoveDeanBlock = (id) => optimistic(
+    setDeanBlockedList,
+    deanBlockedList,
+    deanBlockedList.filter(d => d.id !== id),
+    () => removeDeanBlockedDate(id),
+    { success: 'Blocked date removed.', error: 'Could not remove blocked date.' }
+  );
+
   // Build calendar cells using sc-* classes
   const cells = [];
   for (let i = 0; i < startDay; i++) {
@@ -701,6 +773,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
     <div className="fcp-wrapper">
       <style>{calendarSharedStyles}</style>
       <style>{facultyCalStyles}</style>
+      <style>{fcpBlockedStyles}</style>
 
       <div className="fcp-layout">
 
@@ -961,6 +1034,45 @@ const FacultyCalendarPage = ({ onTabChange }) => {
             <div className="fcp-no-day">
               <CalendarDays size={28} strokeWidth={1.5} style={{ opacity: 0.25 }} />
               <span>Select a day to see details</span>
+            </div>
+          )}
+
+          {userRole === 'dean' && (
+            <div className="sc-section fcp-blocked-section">
+              <div className="sc-section-title">Block Institution Dates</div>
+              <div className="fcp-blocked-form">
+                <input
+                  type="date"
+                  value={newBlockDate}
+                  min={todayStr}
+                  onChange={e => setNewBlockDate(e.target.value)}
+                />
+                <input
+                  type="text"
+                  placeholder="Reason (e.g. Foundation Day)"
+                  value={newBlockReason}
+                  onChange={e => setNewBlockReason(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAddDeanBlock()}
+                />
+                <button className="fcp-blocked-add-btn" onClick={handleAddDeanBlock} disabled={submittingBlock}>
+                  {submittingBlock ? 'Adding…' : 'Add'}
+                </button>
+              </div>
+              {deanBlockedList.length === 0 ? (
+                <div className="fcp-blocked-empty">No blocked dates</div>
+              ) : (
+                <div className="fcp-blocked-list">
+                  {deanBlockedList.map(bd => (
+                    <div key={bd.id} className="fcp-blocked-item">
+                      <span className="fcp-blocked-item-date">{formatDate(bd.date)}</span>
+                      <span className="fcp-blocked-item-reason">{bd.reason}</span>
+                      <button className="fcp-blocked-del-btn" onClick={() => handleRemoveDeanBlock(bd.id)} title="Remove blocked date">
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
