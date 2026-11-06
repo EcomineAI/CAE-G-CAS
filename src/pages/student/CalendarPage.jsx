@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { CalendarDays } from 'lucide-react';
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
-import { getStudentRequests } from '../../supabase/api';
+import { getStudentRequests, getDeanBlockedDates } from '../../supabase/api';
 import { subscribeToRequests } from '../../supabase/realtime';
 import { withMinDelay } from '../../supabase/ux';
 import SharedCalendarGrid, {
@@ -16,6 +16,7 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
   const { user } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deanBlockedDatesSet, setDeanBlockedDatesSet] = useState(new Set());
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [statusFilter, setStatusFilter] = useState('All');
@@ -69,8 +70,12 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const data = await withMinDelay(getStudentRequests(user.id), 300);
+      const [data, deanBlocks] = await withMinDelay(
+        Promise.all([getStudentRequests(user.id), getDeanBlockedDates()]),
+        300
+      );
       setRequests(data);
+      setDeanBlockedDatesSet(new Set((deanBlocks || []).map(d => d.date)));
       setLoading(false);
     };
     fetchData();
@@ -181,10 +186,11 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
     const isSelected = dateStr === selectedDate;
     const isPast     = dateStr < todayStr;
     const hasHistory = isPast && requests.some(r => r.date === dateStr);
+    const isDeanBlocked = deanBlockedDatesSet.has(dateStr);
     cells.push(
       <div
         key={d}
-        className={`sc-day${isToday ? ' sc-day-today' : ''}${isSelected ? ' sc-day-selected' : ''}${isPast && !hasHistory ? ' sc-day-past' : ''}${hasHistory ? ' sc-day-past-history' : ''}`}
+        className={`sc-day${isToday ? ' sc-day-today' : ''}${isSelected ? ' sc-day-selected' : ''}${isDeanBlocked ? ' sc-day-dean-blocked' : ''}${isPast && !hasHistory ? ' sc-day-past' : ''}${hasHistory ? ' sc-day-past-history' : ''}`}
         onClick={() => handleDayClick(dateStr)}
         role="button"
         tabIndex={0}
@@ -239,6 +245,7 @@ const CalendarPage = ({ onTabChange, focusAppointmentId = null, focusDate = null
     { color: '#ff1744', label: 'Declined' },
     { color: '#38bdf8', label: 'Completed' },
     { color: '#78909c', label: 'Cancelled' },
+    { color: '#dc2626', label: 'Institution Closed' },
   ];
 
   return (

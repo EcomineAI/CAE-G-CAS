@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle, WifiOff, Search, Users, Clock, XCircle, LayoutList, LayoutGrid, Columns } from 'lucide-react';
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
-import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount, isDateBlocked, getBlockedDates, computeNextSlot } from '../../supabase/api';
+import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount, isDateBlocked, getBlockedDates, computeNextSlot, isDeanBlockedDate } from '../../supabase/api';
 import { subscribeToFacultyStatus, subscribeToAllSchedules, subscribeToFacultyProfiles } from '../../supabase/realtime';
 import { FacultyCardSkeleton, toast, withMinDelay } from '../../supabase/ux';
 import { formatTimeRange } from '../../utils/dateUtils';
@@ -1182,6 +1182,16 @@ const FacultyContent = ({ initialFacultyId = null }) => {
 
     if (user.isActive === false) {
       toast.error('Your account has been deactivated. Please contact your program chair.');
+      return;
+    }
+
+    const targetDateForDeanCheck =
+      chosenDate ||
+      (slot.schedule_type === 'one-time' && slot.specific_date) ||
+      new Date().toISOString().split('T')[0];
+    const deanBlocked = await isDeanBlockedDate(targetDateForDeanCheck);
+    if (deanBlocked) {
+      toast.error(`This date is unavailable: ${deanBlocked.reason}`);
       return;
     }
 

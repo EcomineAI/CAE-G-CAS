@@ -183,6 +183,21 @@ export const calendarSharedStyles = `
 .sc-day:focus-visible { outline: 2px solid #1a2d5a; outline-offset: -2px; }
 .sc-day-past { opacity: 0.38; pointer-events: none; }
 .sc-day-past .sc-day-num { color: #94a3b8; }
+.sc-day-dean-blocked {
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(220,38,38,0.07) 0px,
+    rgba(220,38,38,0.07) 4px,
+    transparent 4px,
+    transparent 10px
+  ) !important;
+  border-color: rgba(220,38,38,0.25) !important;
+  cursor: not-allowed !important;
+}
+.sc-day-dean-blocked .sc-day-num {
+  color: #dc2626 !important;
+  font-weight: 600;
+}
 .sc-day-past-history { opacity: 0.6; cursor: pointer; }
 .sc-day-past-history:hover { background: #f1f3f8; }
 .sc-day-past-history .sc-day-num { color: #64748b; }
@@ -725,6 +740,18 @@ export const calendarSharedStyles = `
 .faculty-dashboard-wrapper.dark .sc-legend {
   background: rgba(15,17,48,0.5);
   border-color: rgba(99,102,241,0.2);
+}
+.dashboard-fixed-wrapper.dark .sc-day-dean-blocked,
+.faculty-dashboard-wrapper.dark .sc-day-dean-blocked,
+.sc-wrapper.dark .sc-day-dean-blocked {
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(239,68,68,0.12) 0px,
+    rgba(239,68,68,0.12) 4px,
+    transparent 4px,
+    transparent 10px
+  ) !important;
+  border-color: rgba(239,68,68,0.3) !important;
 }
 
 /* ── Popover ── */

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Users, GraduationCap, CalendarClock, CheckCircle, XCircle, Clock, X, BarChart2, Download, Search, ListFilter, Star, Flag, MessageSquare, Send, ChevronDown, ChevronUp } from 'lucide-react';
-import { getAllProfiles, getAllRequestsAdmin, updateUserRole, submitPCReport, submitDeanIntervention, toggleUserActive } from '../../supabase/api';
+import { RefreshCw, Users, GraduationCap, CalendarClock, CheckCircle, XCircle, Clock, X, BarChart2, Download, Search, ListFilter, Star, Flag, MessageSquare, Send, ChevronDown, ChevronUp, CalendarX } from 'lucide-react';
+import { getAllProfiles, getAllRequestsAdmin, updateUserRole, submitPCReport, submitDeanIntervention, toggleUserActive, getDeanBlockedDates, addDeanBlockedDate, removeDeanBlockedDate } from '../../supabase/api';
 import { toast } from '../../supabase/ux';
 import { useAuth } from '../../hooks/useAuth';
-import { getInitials, fmt12 } from '../../utils/dateUtils';
+import { getInitials, fmt12, formatDate } from '../../utils/dateUtils';
 import { ALL_ROLES } from '../../utils/constants';
 
 const REQ_STATUS_STYLE = {
@@ -457,6 +457,45 @@ const adminStyles = `
   transition: transform 0.18s; pointer-events: none;
 }
 .admin-toggle-track.on .admin-toggle-thumb { transform: translateX(18px); }
+
+.admin-blocked-section { margin-top: 0; }
+.admin-blocked-form-row {
+  display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;
+  margin-bottom: 1.2rem;
+}
+.admin-blocked-form-row input[type="date"],
+.admin-blocked-form-row input[type="text"] {
+  padding: 0.5rem 0.75rem; border-radius: 8px;
+  border: 1.5px solid var(--border-color);
+  font-size: 0.85rem; font-family: inherit; color: var(--text-primary);
+  background: var(--bg-primary); outline: none;
+}
+.admin-blocked-form-row input[type="date"] { flex: 0 0 160px; }
+.admin-blocked-form-row input[type="text"] { flex: 1 1 200px; }
+.admin-blocked-form-row input:focus { border-color: #1a2d5a; }
+.admin-blocked-add-btn {
+  padding: 0.5rem 1.1rem; border-radius: 8px; border: none;
+  background: #1a2d5a; color: #fff; font-weight: 700; font-size: 0.84rem;
+  cursor: pointer; white-space: nowrap; font-family: inherit;
+  transition: opacity 0.15s;
+}
+.admin-blocked-add-btn:hover { opacity: 0.88; }
+.admin-blocked-add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.admin-blocked-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.admin-blocked-item {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.65rem 0.9rem; border-radius: 10px;
+  background: var(--bg-primary); border: 1.5px solid var(--border-color);
+}
+.admin-blocked-item-date { font-weight: 700; font-size: 0.85rem; color: #dc2626; min-width: 110px; }
+.admin-blocked-item-reason { flex: 1; font-size: 0.84rem; color: var(--text-primary); }
+.admin-blocked-del-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 7px; border: none;
+  background: transparent; color: var(--text-muted); cursor: pointer;
+  transition: background 0.15s, color 0.15s; flex-shrink: 0;
+}
+.admin-blocked-del-btn:hover { background: #fee2e2; color: #dc2626; }
 `;
 
 const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
@@ -487,6 +526,13 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
   const [deanNoteText,     setDeanNoteText]      = useState('');
   const [reportSubmitting, setReportSubmitting]  = useState(false);
 
+  // Blocked dates (dean only)
+  const [blockedDates, setBlockedDates] = useState([]);
+  const [loadingBlockedDates, setLoadingBlockedDates] = useState(false);
+  const [newBlockDate, setNewBlockDate] = useState('');
+  const [newBlockReason, setNewBlockReason] = useState('');
+  const [submittingBlock, setSubmittingBlock] = useState(false);
+
   // Reports filters
   const [rangePreset, setRangePreset] = useState('month');
   const today = isoDate(new Date());
@@ -496,17 +542,48 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [p, r] = await Promise.all([getAllProfiles(), getAllRequestsAdmin()]);
-      setAllProfiles(p);
-      setAllRequests(r);
+      const promises = [getAllProfiles(), getAllRequestsAdmin()];
+      if (!isPC) promises.push(getDeanBlockedDates());
+      const results = await Promise.all(promises);
+      setAllProfiles(results[0]);
+      setAllRequests(results[1]);
+      if (!isPC) setBlockedDates(results[2] || []);
     } catch (err) {
       toast.error('Failed to load dashboard data. Please refresh.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isPC]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleAddBlockedDate = async () => {
+    if (!newBlockDate) { toast.error('Please select a date.'); return; }
+    if (newBlockDate < today) { toast.error('Cannot block a date in the past.'); return; }
+    if (!newBlockReason.trim()) { toast.error('Please enter a reason.'); return; }
+    setSubmittingBlock(true);
+    const createdBy = user?.id === 'admin-bypass' ? null : user?.id;
+    const result = await addDeanBlockedDate(newBlockDate, newBlockReason.trim(), createdBy);
+    setSubmittingBlock(false);
+    if (result) {
+      setBlockedDates(prev => [...prev, result].sort((a, b) => a.date.localeCompare(b.date)));
+      setNewBlockDate('');
+      setNewBlockReason('');
+      toast.success('Date blocked successfully.');
+    } else {
+      toast.error('Could not block this date. It may already be blocked.');
+    }
+  };
+
+  const handleRemoveBlockedDate = async (id) => {
+    setBlockedDates(prev => prev.filter(bd => bd.id !== id));
+    const ok = await removeDeanBlockedDate(id);
+    if (!ok) {
+      toast.error('Could not remove blocked date.');
+      const refreshed = await getDeanBlockedDates();
+      setBlockedDates(refreshed);
+    }
+  };
 
   // ── Scope data by viewer role ──────────────────────────────────────────────
   // PC sees only users whose program matches their own; Dean sees all.
@@ -787,6 +864,11 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
             <span style={{ position: 'absolute', top: 2, right: 2, width: 7, height: 7, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
           )}
         </button>
+        {isDean && (
+          <button className={`admin-tab${tab === 'blocked'      ? ' active' : ''}`} onClick={() => setTab('blocked')}>
+            <CalendarX size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />Blocked Dates
+          </button>
+        )}
       </div>
 
       {/* ── OVERVIEW TAB ── */}
@@ -1352,6 +1434,54 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
             )}
           </div>
         </>
+      )}
+
+      {/* ── BLOCKED DATES TAB ── */}
+      {tab === 'blocked' && isDean && (
+        <div className="admin-section admin-blocked-section">
+          <p className="admin-section-title">Institution Blocked Dates</p>
+          <div className="admin-blocked-form-row">
+            <input
+              type="date"
+              value={newBlockDate}
+              min={today}
+              onChange={e => setNewBlockDate(e.target.value)}
+            />
+            <input
+              type="text"
+              placeholder="Reason (e.g. Foundation Day)"
+              value={newBlockReason}
+              onChange={e => setNewBlockReason(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAddBlockedDate()}
+            />
+            <button
+              className="admin-blocked-add-btn"
+              onClick={handleAddBlockedDate}
+              disabled={submittingBlock}
+            >
+              {submittingBlock ? 'Adding…' : 'Add'}
+            </button>
+          </div>
+          {blockedDates.length === 0 ? (
+            <div className="admin-empty">No blocked dates.</div>
+          ) : (
+            <div className="admin-blocked-list">
+              {blockedDates.map(bd => (
+                <div key={bd.id} className="admin-blocked-item">
+                  <span className="admin-blocked-item-date">{formatDate(bd.date)}</span>
+                  <span className="admin-blocked-item-reason">{bd.reason}</span>
+                  <button
+                    className="admin-blocked-del-btn"
+                    onClick={() => handleRemoveBlockedDate(bd.id)}
+                    title="Remove blocked date"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* ── PC Report Modal ── */}

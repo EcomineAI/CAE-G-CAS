@@ -595,6 +595,44 @@ export const isDateBlocked = async (facultyId, dateStr) => {
   return (data && data.length > 0) ? data[0] : null;
 };
 
+export const getDeanBlockedDates = async () => {
+  const { data, error } = await supabase
+    .from('dean_blocked_dates')
+    .select('id, date, reason')
+    .order('date', { ascending: true });
+  if (error) { logError('getDeanBlockedDates', error); return []; }
+  return data || [];
+};
+
+export const addDeanBlockedDate = async (date, reason, createdBy) => {
+  const { data, error } = await supabase
+    .from('dean_blocked_dates')
+    .insert({ date, reason, created_by: createdBy })
+    .select('id, date, reason')
+    .single();
+  if (error) { logError('addDeanBlockedDate', error); return null; }
+  return data;
+};
+
+export const removeDeanBlockedDate = async (id) => {
+  const { error } = await supabase
+    .from('dean_blocked_dates')
+    .delete()
+    .eq('id', id);
+  if (error) { logError('removeDeanBlockedDate', error); return false; }
+  return true;
+};
+
+export const isDeanBlockedDate = async (dateStr) => {
+  const { data, error } = await supabase
+    .from('dean_blocked_dates')
+    .select('reason')
+    .eq('date', dateStr)
+    .maybeSingle();
+  if (error) return null;
+  return data || null;
+};
+
 export const getAllRequests = async () => {
   const { data, error } = await supabase
     .from('requests')

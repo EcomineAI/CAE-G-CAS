@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CalendarDays, Clock, MapPin, Plus, Ban, Activity, Trash2, X, Pencil, Check } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { getFacultyRequests, getFacultySchedules, createSchedule, updateSchedule, deleteSchedule, getBlockedDates, createBlockedDate, deleteBlockedDate, setOutOfOffice, getProfile } from '../../supabase/api';
+import { getFacultyRequests, getFacultySchedules, createSchedule, updateSchedule, deleteSchedule, getBlockedDates, createBlockedDate, deleteBlockedDate, setOutOfOffice, getProfile, getDeanBlockedDates } from '../../supabase/api';
 import { subscribeToRequests, subscribeToSchedules, subscribeToSlotFills, subscribeToStudentProfiles } from '../../supabase/realtime';
 import { withMinDelay, toast } from '../../supabase/ux';
 import SharedCalendarGrid, { STATUS_STYLES, WEEKDAYS, MONTH_NAMES, fmt12, calendarSharedStyles } from '../../components/SharedCalendarGrid';
@@ -359,6 +359,8 @@ const FacultyCalendarPage = ({ onTabChange }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [statusFilter, setStatusFilter] = useState('All');
   const [blockedDates, setBlockedDates] = useState([]);
+  const [deanBlockedDatesSet, setDeanBlockedDatesSet] = useState(new Set());
+  const [deanBlockedDatesMap, setDeanBlockedDatesMap] = useState({});
   const [popover, setPopover] = useState(null);
   const [modal, setModal] = useState(null);
   const [facultyDisplayName, setFacultyDisplayName] = useState('');
@@ -380,13 +382,15 @@ const FacultyCalendarPage = ({ onTabChange }) => {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const [reqs, scheds, blocks, profile] = await withMinDelay(
-        Promise.all([getFacultyRequests(user.id), getFacultySchedules(user.id), getBlockedDates(user.id), getProfile(user.id)]),
+      const [reqs, scheds, blocks, profile, deanBlocks] = await withMinDelay(
+        Promise.all([getFacultyRequests(user.id), getFacultySchedules(user.id), getBlockedDates(user.id), getProfile(user.id), getDeanBlockedDates()]),
         300
       );
       setRequests(reqs);
       setSchedules(scheds);
       setBlockedDates(blocks.map(normBlock));
+      setDeanBlockedDatesSet(new Set((deanBlocks || []).map(d => d.date)));
+      setDeanBlockedDatesMap(Object.fromEntries((deanBlocks || []).map(d => [d.date, d.reason])));
       if (profile) {
         const parts = [profile.name_prefix, profile.full_name, profile.name_suffix].filter(Boolean);
         setFacultyDisplayName(parts.join(' ') || 'Faculty');
@@ -464,6 +468,11 @@ const FacultyCalendarPage = ({ onTabChange }) => {
     : '';
 
   const handleDayClick = (dateStr) => {
+    if (deanBlockedDatesSet.has(dateStr)) {
+      const reason = deanBlockedDatesMap[dateStr];
+      toast.error(`This date is blocked: ${reason}`);
+      return;
+    }
     setSelectedDate(prev => {
       const next = prev === dateStr ? null : dateStr;
       if (next && window.innerWidth < 900) {
@@ -600,6 +609,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
     const isToday    = dateStr === todayStr;
     const isSelected = dateStr === selectedDate;
     const isPast     = dateStr < todayStr;
+    const isDeanBlocked = deanBlockedDatesSet.has(dateStr);
     const { daySchedules, dayRequests } = getEventsForDate(dateStr);
     const block = findBlock(blockedDates, dateStr);
     const totalSlots  = daySchedules.reduce((sum,s) => sum + (s.max_slots||0), 0);
@@ -615,11 +625,11 @@ const FacultyCalendarPage = ({ onTabChange }) => {
     cells.push(
       <div
         key={d}
-        className={`sc-day${isToday ? ' sc-day-today' : ''}${isSelected ? ' sc-day-selected' : ''}${block ? ' fcp-day-blocked' : ''}${isPast ? ' fcp-day-past' : ''}`}
+        className={`sc-day${isToday ? ' sc-day-today' : ''}${isSelected ? ' sc-day-selected' : ''}${isDeanBlocked ? ' sc-day-dean-blocked' : ''}${block ? ' fcp-day-blocked' : ''}${isPast ? ' fcp-day-past' : ''}`}
         onClick={() => handleDayClick(dateStr)}
         role="button" tabIndex={0}
         onKeyDown={e => e.key === 'Enter' && handleDayClick(dateStr)}
-        aria-label={`${MONTH_NAMES[month]} ${d}${block ? ' (blocked)' : ''}`}
+        aria-label={`${MONTH_NAMES[month]} ${d}${isDeanBlocked ? ' (institution closed)' : ''}${block ? ' (blocked)' : ''}`}
       >
         <span className="sc-day-num">{d}</span>
         {block && (
@@ -707,6 +717,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
             { color: '#3b82f6', label: 'Open slots' },
             { color: '#d97706', label: 'Has pending' },
             { color: '#9ca3af', label: 'Blocked' },
+            { color: '#dc2626', label: 'Institution Closed' },
           ]}
           headerExtra={headerExtra}
           onPrev={prevMonth}
