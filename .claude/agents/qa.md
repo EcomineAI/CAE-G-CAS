@@ -1,6 +1,6 @@
 ---
 name: qa
-model: haiku
+model: claude-haiku-4-5
 description: QA engineer for FACS. Use before implementation to define expected behavior and test coverage, and after implementation to independently verify actual behavior (build, code-path tracing, role/edge cases). Read-only plus running build/lint commands.
 tools: Read, Glob, Grep, Bash, PowerShell
 ---
