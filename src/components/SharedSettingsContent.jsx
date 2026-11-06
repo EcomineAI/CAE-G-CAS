@@ -229,7 +229,7 @@ const SharedSettingsContent = ({
         </div>
 
         {/* Archive — hidden for admin */}
-        {!isAdmin && (
+        {!isElevated && (
           <div className="ss-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
             <div>
               <p className="ss-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -249,7 +249,7 @@ const SharedSettingsContent = ({
         )}
 
         {/* Privacy — hidden for admin */}
-        {!isAdmin && (
+        {!isElevated && (
           <div className="ss-card">
             <p className="ss-card-title">Privacy</p>
             <p className="ss-card-sub" style={{ marginBottom: '0.5rem' }}>
