@@ -395,6 +395,7 @@ const fcpBlockedStyles = `
 const FacultyCalendarPage = ({ onTabChange }) => {
   const { user } = useAuth();
   const userRole = user?.role;
+  const isDean = userRole === 'dean';
   const [requests, setRequests] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -784,15 +785,15 @@ const FacultyCalendarPage = ({ onTabChange }) => {
           todayStr={todayStr}
           selectedDate={selectedDate}
           statusFilter={statusFilter}
-          filterOptions={['All', 'Approved', 'Pending']}
+          filterOptions={isDean ? [] : ['All', 'Approved', 'Pending']}
           cells={loading ? skeletonCells : cells}
-          legendItems={[
+          legendItems={isDean ? [] : [
             { color: '#3b82f6', label: 'Open slots' },
             { color: '#d97706', label: 'Has pending' },
             { color: '#9ca3af', label: 'Blocked' },
             { color: '#dc2626', label: 'Institution Closed' },
           ]}
-          headerExtra={headerExtra}
+          headerExtra={isDean ? null : headerExtra}
           onPrev={prevMonth}
           onNext={nextMonth}
           onToday={goToday}
@@ -1022,7 +1023,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
                   >
                     <Ban size={13} /> Block this date
                   </button>
-                  {!showAddSlotForm && (
+                  {!isDean && !showAddSlotForm && (
                     <button className="fcp-add-slot-btn" onClick={() => setShowAddSlotForm(true)}>
                       <Plus size={13} /> Add slot
                     </button>
@@ -1079,7 +1080,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
           {/* Activity summary */}
           <div className="sc-section">
             <div className="sc-section-title">Activity</div>
-            {loading ? (
+            {!isDean && (loading ? (
               Array.from({ length: 5 }, (_, i) => (
                 <div key={i} className="sc-skel-activity-row">
                   <div className="sc-skel sc-skel-dot" />
@@ -1097,7 +1098,7 @@ const FacultyCalendarPage = ({ onTabChange }) => {
                   <span className="sc-count-badge" style={{ background: badgeBg, color: badgeColor }}>{counts[key]}</span>
                 </button>
               ))
-            )}
+            ))}
           </div>
 
         </div>

@@ -987,31 +987,35 @@ const SharedCalendarGrid = ({
       {headerExtra}
     </div>
 
-    <div className="sc-filter-bar">
-      {filterOptions.map(f => (
-        <button
-          key={f}
-          className={`sc-filter-chip ${statusFilter === f ? 'active' : ''}`}
-          onClick={() => onFilterChange(f)}
-        >
-          {f}
-        </button>
-      ))}
-    </div>
+    {filterOptions.length > 0 && (
+      <div className="sc-filter-bar">
+        {filterOptions.map(f => (
+          <button
+            key={f}
+            className={`sc-filter-chip ${statusFilter === f ? 'active' : ''}`}
+            onClick={() => onFilterChange(f)}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+    )}
 
     <div className="sc-grid">
       {WEEKDAYS.map(d => <div key={d} className="sc-weekday">{d}</div>)}
       {cells}
     </div>
 
-    <div className="sc-legend">
-      {legendItems.map(({ color, label }) => (
-        <div key={label} className="sc-legend-item">
-          <span className="sc-legend-dot" style={{ background: color }} />
-          {label}
-        </div>
-      ))}
-    </div>
+    {legendItems?.length > 0 && (
+      <div className="sc-legend">
+        {legendItems.map(({ color, label }) => (
+          <div key={label} className="sc-legend-item">
+            <span className="sc-legend-dot" style={{ background: color }} />
+            {label}
+          </div>
+        ))}
+      </div>
+    )}
   </div>
 );
 
