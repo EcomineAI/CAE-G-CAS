@@ -161,9 +161,17 @@ export const useAuth = () => {
       applyUser(session?.user ?? null, event);
     });
 
+    const refreshInterval = setInterval(async () => {
+      if (cancelled) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled || !session?.user) return;
+      await supabase.auth.refreshSession().catch(() => {});
+    }, 300000);
+
     return () => {
       cancelled = true;
       clearTimeout(hardTimeout);
+      clearInterval(refreshInterval);
       subscription.unsubscribe();
     };
   }, []);
