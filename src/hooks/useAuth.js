@@ -35,7 +35,7 @@ const fetchProfile = async (userId) => {
       .maybeSingle();
 
     const timeout = new Promise(resolve =>
-      setTimeout(() => resolve({ data: null, error: null, __timeout: true }), 5000)
+      setTimeout(() => resolve({ data: null, error: null, __timeout: true }), 10000)
     );
 
     const res = await Promise.race([query, timeout]);
