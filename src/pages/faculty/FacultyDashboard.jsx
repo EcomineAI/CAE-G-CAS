@@ -934,9 +934,12 @@ const FacultyDashboard = () => {
     // While auth is still resolving, show nothing to avoid flashing wrong skeleton
     if (!user) return null;
 
-    // Always show AdminContent for elevated roles regardless of activeTab
+    // Elevated roles stay on AdminContent except for their Calendar and Settings tabs
     if (isDeanRole || isPCRole) {
-      return <AdminContent viewerRole={user?.role || 'dean'} viewerProgram={profileData?.program || null} />;
+      if (activeTab === 'Calendar') return <FacultyCalendarPage onTabChange={handleTabChange} />;
+      if (activeTab !== 'Settings') {
+        return <AdminContent viewerRole={user?.role || 'dean'} viewerProgram={profileData?.program || null} />;
+      }
     }
 
     switch (activeTab) {
@@ -982,7 +985,7 @@ const FacultyDashboard = () => {
   const isPCRole = user?.role === 'program_chair';
 
   const navItems = (isDeanRole || isPCRole)
-    ? [{ id: 'Overview', icon: ShieldCheck }]
+    ? [{ id: 'Overview', icon: ShieldCheck }, { id: 'Calendar', icon: Calendar }]
     : [
         { id: 'Dashboard', icon: Layout },
         { id: 'Calendar', icon: CalendarDays },
