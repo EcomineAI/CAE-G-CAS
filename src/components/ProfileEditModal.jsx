@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, X, UserCircle, Briefcase, Tag, CheckCircle2, ChevronRight, GraduationCap } from 'lucide-react';
-import { PH_PREFIXES, PH_SUFFIXES, FACULTY_TITLES } from '../utils/constants';
+import { PH_PREFIXES, PH_SUFFIXES, FACULTY_TITLES, DEPARTMENTS } from '../utils/constants';
 import { useProfile } from '../hooks/useProfile';
 import { toast } from '../supabase/ux';
 
@@ -523,7 +523,8 @@ export default function ProfileEditModal({
   initialData,
   forceComplete,
 }) {
-  const isFaculty = role === 'faculty';
+  const isPC = role === 'program_chair';
+  const isFaculty = role === 'faculty' || isPC || role === 'dean';
   const { updateProfileOptimistic, updateAvatarColorInstant } = useProfile();
 
   const [activeSection, setActiveSection] = useState('profile');
@@ -536,7 +537,7 @@ export default function ProfileEditModal({
   const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName]     = useState('');
   const [fullName, setFullName]     = useState('');
-  const [dept, setDept]             = useState('');
+  const [dept, setDept]             = useState('CCS');
   const [title, setTitle]           = useState('');
   const [avatarUrl, setAvatarUrl]   = useState('');
   const [program, setProgram]       = useState('');
@@ -562,7 +563,7 @@ export default function ProfileEditModal({
 
   useEffect(() => {
     if (!isOpen || !initialData) return;
-    setActiveSection('profile');
+    setActiveSection(isPC ? 'profile' : 'profile');
     setSaved(false);
 
     const p = initialData.name_prefix || '';
@@ -603,14 +604,14 @@ export default function ProfileEditModal({
       setProgram(pg); setSection(sec);
     }
 
-    setOrigValues({ prefix: p, suffix: s, avatarUrl: av, fullName: full, dept: dp, title: ti, firstName: fn, middleName: mn, lastName: ln, program: pg, section: sec });
+    setOrigValues({ prefix: p, suffix: s, avatarUrl: av, fullName: full, dept: isFaculty ? (dp || 'CCS') : dp, title: ti, firstName: fn, middleName: mn, lastName: ln, program: pg, section: sec });
   }, [isOpen, initialData, isFaculty]);
 
   const isDirty = origValues ? (
     prefix !== origValues.prefix ||
     suffix !== origValues.suffix ||
     (isFaculty
-      ? fullName !== origValues.fullName || title !== origValues.title
+      ? fullName !== origValues.fullName || title !== origValues.title || dept !== origValues.dept
       : firstName !== origValues.firstName || middleName !== origValues.middleName || lastName !== origValues.lastName ||
         program !== origValues.program || section !== origValues.section)
   ) : false;
@@ -641,7 +642,7 @@ export default function ProfileEditModal({
       name_prefix: prefix,
       name_suffix: suffix,
       avatar_url: avatarUrl,
-      ...(isFaculty && { department: 'CCS', title }),
+      ...(isFaculty && { department: dept, title, program: dept }),
       ...(!isFaculty && { program, section }),
     };
     // Optimistic update: local state updates immediately, rolls back on DB failure
@@ -664,17 +665,17 @@ export default function ProfileEditModal({
         { id: 'name',    label: 'Name & Title', icon: Tag },
       ],
     },
-    ...(isFaculty ? [{
+    ...(!isPC && isFaculty ? [{
       group: 'WORK',
       items: [
         { id: 'professional', label: 'Professional', icon: Briefcase },
       ],
-    }] : [{
+    }] : !isPC ? [{
       group: 'ACADEMICS',
       items: [
         { id: 'academic', label: 'Academic', icon: GraduationCap },
       ],
-    }]),
+    }] : []),
   ];
 
   const renderContent = () => {
@@ -701,7 +702,7 @@ export default function ProfileEditModal({
               </div>
               <div className="pem-avatar-details">
                 <p className="pem-avatar-name">{displayName || 'Your Name'}</p>
-                <p className="pem-avatar-meta">{isFaculty ? 'CCS — College of Computer Studies' : 'Student'}</p>
+                <p className="pem-avatar-meta">{isPC ? 'Program Chair' : role === 'dean' ? 'Dean' : isFaculty ? 'Faculty' : 'Student'}</p>
               </div>
             </div>
 
@@ -861,6 +862,7 @@ export default function ProfileEditModal({
         );
 
       case 'professional':
+        if (isPC) return null;
         return (
           <>
             <div className="pem-content-header">
@@ -883,9 +885,16 @@ export default function ProfileEditModal({
             </div>
 
             <div className="pem-divider"><span>Department</span></div>
-            <div className="pem-info-row">
-              <span className="pem-info-row-label">Department / College</span>
-              <span className="pem-info-row-value" style={{ color: 'var(--accent, #2e4a87)' }}>CCS — College of Computer Studies</span>
+            <div className="pem-field">
+              <label className="pem-label">Department / College</label>
+              <select className="pem-select" value={dept} onChange={e => setDept(e.target.value)} onFocus={handleInputFocus}>
+                {DEPARTMENTS.map(d => (
+                  <option key={d} value={d}>
+                    {d === 'CCS' ? 'CCS - College of Computer Studies' : d === 'IT' ? 'IT - Information Technology' : 'EMC - Entertainment and Multimedia Computing'}
+                  </option>
+                ))}
+              </select>
+              <span className="pem-input-hint">Faculty in this department will be visible to their Program Chair.</span>
             </div>
 
             {(title || dept) && (
@@ -904,7 +913,7 @@ export default function ProfileEditModal({
 
       case 'academic': {
         const PROGRAMS = {
-          'CCS — College of Computer Studies': [
+          'CCS - College of Computer Studies': [
             'Bachelor of Science in Computer Science (BSCS)',
             'Bachelor of Science in Entertainment and Multimedia Computing (BSEMC)',
             'Bachelor of Science in Information Technology (BSIT)',

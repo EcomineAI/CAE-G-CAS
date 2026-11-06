@@ -262,8 +262,11 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
     if (!focusAppointmentId || requests.length === 0) return;
     const target = requests.find(r => r.id === focusAppointmentId);
     if (target) {
-      setActiveFilter('All');
+      setActiveFilter(target.status === 'Completed' ? 'History' : 'All');
       setSelectedId(target.id);
+      if (target.status === 'Completed' && !target.satisfactionRating) {
+        openRating(target);
+      }
       if (onFocusHandled) onFocusHandled();
     }
   }, [focusAppointmentId, requests]);
@@ -458,12 +461,42 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
         </div>
         {app.facultyNote && <div className="ac-detail-note"><strong>Faculty Note:</strong> "{app.facultyNote}"</div>}
         {app.status === 'Declined' && app.declineReason && <div className="ac-detail-decline"><strong>Decline Reason:</strong> "{app.declineReason}"</div>}
-        {hasRated && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.8rem', padding: '0.5rem 0.75rem', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8 }}>
-            {[1,2,3,4,5].map(s => <Star key={s} size={14} fill={s <= app.satisfactionRating ? '#f59e0b' : 'none'} stroke={s <= app.satisfactionRating ? '#f59e0b' : '#d1d5db'} />)}
-            <span style={{ fontSize: '0.76rem', color: '#78350f', fontWeight: 600, marginLeft: 4 }}>Overall {app.satisfactionRating}/5</span>
-          </div>
-        )}
+        {hasRated && (() => {
+          let breakdown = null;
+          if (app.feedbackNotes) {
+            try { breakdown = JSON.parse(app.feedbackNotes); } catch {}
+          }
+          const criteriaKeys = [
+            { key: 'preparedness',    label: 'Preparedness' },
+            { key: 'communication',   label: 'Communication' },
+            { key: 'helpfulness',     label: 'Helpfulness' },
+            { key: 'professionalism', label: 'Professionalism' },
+          ];
+          return (
+            <div style={{ marginBottom: '0.8rem', padding: '0.65rem 0.75rem', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: breakdown ? '0.6rem' : 0 }}>
+                {[1,2,3,4,5].map(s => <Star key={s} size={14} fill={s <= app.satisfactionRating ? '#f59e0b' : 'none'} stroke={s <= app.satisfactionRating ? '#f59e0b' : '#d1d5db'} />)}
+                <span style={{ fontSize: '0.76rem', color: '#78350f', fontWeight: 600, marginLeft: 4 }}>Overall {app.satisfactionRating}/5</span>
+              </div>
+              {breakdown && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                  {criteriaKeys.map(c => breakdown[c.key] ? (
+                    <div key={c.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#92400e' }}>{c.label}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                        {[1,2,3,4,5].map(s => <Star key={s} size={10} fill={s <= breakdown[c.key] ? '#f59e0b' : 'none'} stroke={s <= breakdown[c.key] ? '#f59e0b' : '#d1d5db'} />)}
+                        <span style={{ fontSize: '0.68rem', color: '#78350f', fontWeight: 600, minWidth: 18, textAlign: 'right' }}>{breakdown[c.key]}/5</span>
+                      </div>
+                    </div>
+                  ) : null)}
+                  {breakdown.comments && (
+                    <p style={{ fontSize: '0.72rem', color: '#78350f', margin: '0.3rem 0 0', fontStyle: 'italic', lineHeight: 1.4 }}>"{breakdown.comments}"</p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })()}
         <p className="ac-detail-hint">{canResched ? 'You can reschedule or cancel pending requests. Approved appointments can only be cancelled.' : isCompleted ? 'Session completed. Submit your faculty evaluation below.' : 'You can cancel this appointment at any time before it starts.'}</p>
         <div className="ac-detail-actions">
           {canCancel && <button className="ac-action-btn" onClick={() => openCancel(app)} style={{ border: '1.5px solid #fca5a5', background: '#fff5f5', color: '#ef4444' }}>Cancel Request</button>}
@@ -555,6 +588,14 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
                               <span>{getDividedTime(app)}</span>
                             </div>
                             {app.subject && <div className="ac-subject">{app.subject}</div>}
+                            {app.status === 'Completed' && app.satisfactionRating ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+                                {[1,2,3,4,5].map(s => <Star key={s} size={11} fill={s <= app.satisfactionRating ? '#f59e0b' : 'none'} stroke={s <= app.satisfactionRating ? '#f59e0b' : '#d1d5db'} />)}
+                                <span style={{ fontSize: '0.68rem', color: '#92400e', fontWeight: 600 }}>{app.satisfactionRating}/5</span>
+                              </div>
+                            ) : app.status === 'Completed' ? (
+                              <div style={{ fontSize: '0.68rem', color: '#d97706', fontWeight: 600, marginTop: '0.25rem' }}>Pending evaluation</div>
+                            ) : null}
                           </div>
                           <div className="ac-chevron"><ChevronRight size={16} /></div>
                         </div>
@@ -587,7 +628,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
       {/* ── Faculty Evaluation Modal ── */}
       {ratingModal && (
         <div style={OVERLAY} onClick={() => setRatingModal(null)}>
-          <div className="appt-modal" style={{ maxWidth: 520, maxHeight: 'calc(100vh - 2rem)', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+          <div className="appt-modal" style={{ width: 'clamp(300px, 70vw, 450px)', height: 'clamp(400px, 80vh, 85vh)', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <div style={PAD}>
               {/* Header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
@@ -634,7 +675,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
                             onMouseEnter={() => setRatingHover(prev => ({ ...prev, [criterion.key]: s }))}
                             onMouseLeave={() => setRatingHover(prev => ({ ...prev, [criterion.key]: 0 }))}
                             onClick={() => setRatingCriteria(prev => ({ ...prev, [criterion.key]: s }))}
-                            style={{ flex: 1, padding: '0.5rem 0', border: active >= s ? '1.5px solid #f59e0b' : '1.5px solid #e5e8f0', borderRadius: 7, background: active >= s ? '#fffbeb' : '#f8fafc', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 800, color: active >= s ? '#92400e' : '#94a3b8', transition: 'all 0.1s' }}>
+                            style={{ flex: 1, padding: '0.5rem 0', border: active === s ? '1.5px solid #f59e0b' : '1.5px solid #e5e8f0', borderRadius: 7, background: active === s ? '#fffbeb' : '#f8fafc', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 800, color: active === s ? '#92400e' : '#94a3b8', transition: 'all 0.1s' }}>
                             {s}
                           </button>
                         ))}
@@ -683,7 +724,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
         const { app } = cancelModal;
         return (
           <div style={OVERLAY} onClick={() => setCancelModal(null)}>
-            <div className="appt-modal" onClick={e => e.stopPropagation()}>
+            <div className="appt-modal" style={{ width: 'clamp(300px, 70vw, 450px)', height: 'clamp(300px, 70vh, 80vh)' }} onClick={e => e.stopPropagation()}>
               <div style={PAD}>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1f2937', margin: '0 0 0.8rem 0' }}>Cancel this request?</h2>
                 <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '1.2rem', lineHeight: 1.5 }}>
@@ -720,7 +761,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
         const { app } = reschedModal;
         return (
           <div style={OVERLAY} onClick={() => setReschedModal(null)}>
-            <div className="appt-modal" onClick={e => e.stopPropagation()}>
+            <div className="appt-modal" style={{ width: 'clamp(300px, 70vw, 450px)', height: 'clamp(400px, 80vh, 90vh)' }} onClick={e => e.stopPropagation()}>
               <div style={PAD}>
                 <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1f2937', margin: '0 0 0.6rem 0' }}>Re-schedule appointment</h2>
                 <p style={{ fontSize: '0.83rem', color: '#6b7280', marginBottom: '1.1rem', lineHeight: 1.5 }}>
@@ -784,7 +825,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
       {/* ── Archive Modal ── */}
       {deleteModal && (
         <div style={OVERLAY} onClick={() => setDeleteModal(null)}>
-          <div className="appt-modal" onClick={e => e.stopPropagation()}>
+          <div className="appt-modal" style={{ width: 'clamp(300px, 70vw, 450px)', height: 'clamp(250px, 60vh, 75vh)' }} onClick={e => e.stopPropagation()}>
             <div style={PAD}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '0.8rem' }}>
                 <Archive size={22} style={{ color: '#1a2d5a' }} />

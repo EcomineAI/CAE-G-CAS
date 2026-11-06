@@ -66,6 +66,8 @@ export const MAX_ACTIVE_REQUESTS = 2;
 // All supported user roles
 export const ALL_ROLES = ['student', 'faculty', 'program_chair', 'dean'];
 
+export const DEPARTMENTS = ['CCS', 'IT', 'EMC'];
+
 // Completion outcome statuses (written to requests.completion_status)
 export const COMPLETION_STATUSES = {
   completed:        { label: 'Completed',        color: '#16a34a', bg: '#dcfce7', border: '#86efac' },

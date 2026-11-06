@@ -32,15 +32,16 @@ export const calendarSharedStyles = `
 
 .sc-layout {
   display: flex;
-  gap: calc(1.5rem + 10px);
+  gap: clamp(0.75rem, 2vw, calc(1.5rem + 10px));
   align-items: flex-start;
-  width: fit-content;
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
 /* ── Left panel ── */
 .sc-left {
-  flex: 0 0 820px;
+  flex: 1 1 0;
   min-width: 0;
   background: #ffffff;
   border: 2px solid #64748b;
@@ -167,7 +168,7 @@ export const calendarSharedStyles = `
 .sc-weekday:last-child { border-right: none; }
 
 .sc-day {
-  min-height: 90px;
+  min-height: clamp(60px, 10vh, 90px);
   padding: 0.5rem 0.45rem 0.35rem;
   display: flex;
   flex-direction: column;
@@ -203,7 +204,7 @@ export const calendarSharedStyles = `
 .sc-day-past-history .sc-day-num { color: #64748b; }
 
 .sc-day-empty {
-  min-height: 90px;
+  min-height: clamp(60px, 10vh, 90px);
   background: #f1f3f8;
   cursor: default;
   border-right: 1.5px solid #94a3b8;
@@ -388,7 +389,7 @@ export const calendarSharedStyles = `
 
 /* ── Right panel ── */
 .sc-right {
-  flex: 0 0 280px;
+  flex: 0 0 clamp(200px, 22vw, 280px);
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -949,6 +950,29 @@ export const calendarSharedStyles = `
 /* Large monitors: give calendar more breathing room */
 @media (min-width: 1440px) {
   .sc-layout { gap: 2rem; }
+}
+
+/* Small laptops (<=1280px) */
+@media (max-width: 1280px) {
+  .sc-layout { gap: 0.75rem; }
+  .sc-right { flex: 0 0 clamp(170px, 18vw, 240px); }
+  .sc-month-label { font-size: 1rem; }
+  .sc-cal-header { padding: 0.6rem 1rem; }
+  .sc-filter-bar { padding: 0.4rem 1rem; }
+  .sc-legend { padding: 0.4rem 1rem; }
+  .sc-weekday { padding: 0.4rem 0; font-size: 0.63rem; }
+  .sc-day { min-height: clamp(50px, 8vh, 70px); padding: 0.3rem 0.35rem 0.25rem; }
+  .sc-day-empty { min-height: clamp(50px, 8vh, 70px); }
+  .sc-day-num { font-size: 0.7rem; }
+  .sc-pill { font-size: 0.56rem; padding: 2px 5px; }
+  .sc-pill-name { font-size: 0.57rem; }
+  .sc-multi-count { font-size: 0.65rem; }
+}
+
+/* Very small screens (<=1024px) - stack layout */
+@media (max-width: 1024px) {
+  .sc-layout { flex-direction: column; }
+  .sc-right { flex: none; width: 100%; }
 }
 `;
 

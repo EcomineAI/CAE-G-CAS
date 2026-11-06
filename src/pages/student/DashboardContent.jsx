@@ -689,7 +689,7 @@ const DashboardContent = ({ onTabChange, realName }) => {
                       <p className="dc-eval-faculty">{r.name || r.facultyName || 'Faculty'}</p>
                       <p className="dc-eval-date">{r.subject || 'Consultation'} · {dateLabel}</p>
                     </div>
-                    <button className="dc-eval-btn" onClick={() => onTabChange('Appointments', 'History')}>
+                    <button className="dc-eval-btn" onClick={() => onTabChange('Appointments', 'History', r.id)}>
                       Evaluate <ArrowRight size={12} />
                     </button>
                   </div>

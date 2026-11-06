@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, WifiOff, Search, Users, Clock, XCircle, LayoutList, LayoutGrid, Columns } from 'lucide-react';
+import { CheckCircle, WifiOff, Search, Users, Clock, XCircle, LayoutList, LayoutGrid, Columns, Check, X } from 'lucide-react';
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount, isDateBlocked, getBlockedDates, computeNextSlot, isDeanBlockedDate } from '../../supabase/api';
@@ -1053,6 +1053,100 @@ const facultyStyles = `
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
 }
+
+@keyframes facs-circle-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes facs-zoom-out {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.58); opacity: 0.9; }
+}
+
+@keyframes facs-stamp-pop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.25); opacity: 1; }
+  80% { transform: scale(0.9); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes facs-msg-fade {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.facs-submit-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.facs-submit-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.4rem;
+}
+
+.facs-circle-stage {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.facs-circle-stage.zooming {
+  animation: facs-zoom-out 0.7s ease-out forwards;
+}
+
+.facs-arc-svg {
+  position: absolute;
+  inset: 0;
+  animation: facs-circle-spin 1s linear infinite;
+}
+
+.facs-arc-svg.paused {
+  animation-play-state: paused;
+}
+
+.facs-stamp-icon {
+  position: absolute;
+  animation: facs-stamp-pop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) both;
+}
+
+.facs-submit-msg {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  animation: facs-msg-fade 0.3s ease both;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+.facs-retry-btn {
+  margin-top: 0.4rem;
+  padding: 0.5rem 1.4rem;
+  border-radius: 8px;
+  border: 1.5px solid #ef4444;
+  background: transparent;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.88rem;
+  transition: background 0.18s, color 0.18s;
+}
+
+.facs-retry-btn:hover {
+  background: #ef4444;
+  color: #fff;
+}
 `;
 
 const FacultyContent = ({ initialFacultyId = null }) => {
@@ -1074,6 +1168,9 @@ const FacultyContent = ({ initialFacultyId = null }) => {
   const [selectedSlotIdx, setSelectedSlotIdx] = useState(null);
   const [facultyBlockedDates, setFacultyBlockedDates] = useState([]);
   const [topicOpen, setTopicOpen] = useState(false);
+  const [submitState, setSubmitState] = useState(null);
+  const [submitPhase, setSubmitPhase] = useState('spinning');
+  const [submitMessage, setSubmitMessage] = useState('');
   const [layoutMode, setLayoutMode] = useState(() => {
     const saved = localStorage.getItem('gcas_faculty_layout');
     if (saved) return saved;
@@ -1185,40 +1282,50 @@ const FacultyContent = ({ initialFacultyId = null }) => {
       return;
     }
 
+    setSubmitState('loading');
+    setSubmitPhase('spinning');
+    setSubmitMessage('');
+
     const targetDateForDeanCheck =
       chosenDate ||
       (slot.schedule_type === 'one-time' && slot.specific_date) ||
       new Date().toISOString().split('T')[0];
     const deanBlocked = await isDeanBlockedDate(targetDateForDeanCheck);
     if (deanBlocked) {
+      setSubmitState(null);
       toast.error(`This date is unavailable: ${deanBlocked.reason}`);
       return;
     }
 
     const activeCount = await getActiveRequestCount(user.id);
     if (activeCount >= MAX_ACTIVE_REQUESTS) {
+      setSubmitState(null);
       toast.error(`You already have ${MAX_ACTIVE_REQUESTS} active requests. Complete or cancel one before booking again.`);
       return;
     }
 
     const slotTaken = await checkActiveRequestForSlot(user.id, slot.id);
     if (slotTaken) {
+      setSubmitState(null);
       toast.error('You already have an active request for this specific slot.');
       return;
     }
 
     const hasActive = await checkActiveRequest(user.id, selectedFaculty.id);
     if (hasActive) {
+      setSubmitState(null);
       toast.error('You already have an active request with this faculty member.');
       return;
     }
 
     if (slot.filled >= slot.max_slots) {
+      setSubmitState(null);
       toast.error('This consultation slot is already fully booked.');
       return;
     }
 
     if (selectedFaculty.status === 'Unavailable' || selectedFaculty.status === 'Out of office') {
+      setSubmitState(null);
       toast.error(`${selectedFaculty.name} is currently ${selectedFaculty.status === 'Out of office' ? 'out of office' : 'unavailable'} and not accepting requests.`);
       return;
     }
@@ -1233,6 +1340,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
     const block = await isDateBlocked(selectedFaculty.id, targetDate);
     console.log('[booking] block result:', block);
     if (block) {
+      setSubmitState(null);
       const facultyDisplayName = selectedFaculty?.name || 'The faculty';
       toast.error(
         block.reason === 'Out of office'
@@ -1266,18 +1374,31 @@ const FacultyContent = ({ initialFacultyId = null }) => {
 
     const result = await submitRequest(requestData, notifContext);
     if (result?.error === 'SLOT_FULL') {
-      toast.error('Sorry, this slot was just taken by another student.');
-      // Refresh slot counts so the card shows as full immediately
+      setSubmitState('error');
+      setSubmitMessage('Sorry, this slot was just taken by another student.');
+      setSubmitPhase('zooming');
       const updated = await getSchedulesForFaculty(selectedFaculty.id);
       setFacultySchedules(updated);
+      setTimeout(() => setSubmitPhase('stamped'), 700);
+      setTimeout(() => setSubmitState(null), 2500);
     } else if (result?.error) {
-      toast.error('Failed to submit request. Please try again.');
+      setSubmitState('error');
+      setSubmitMessage('Failed to submit request. Please try again.');
+      setSubmitPhase('zooming');
+      setTimeout(() => setSubmitPhase('stamped'), 700);
+      setTimeout(() => setSubmitState(null), 2500);
     } else if (result?.data) {
+      setSubmitState('success');
       setSubmittedReqId(result.data.id);
       setSelectedSlot(slot);
-      setFacultyView('list');
-      setShowConfirmation(true);
-      toast.success('Request sent! Awaiting faculty approval');
+      setSubmitPhase('zooming');
+      setTimeout(() => setSubmitPhase('stamped'), 700);
+      setTimeout(() => {
+        setSubmitState(null);
+        setFacultyView('list');
+        setShowConfirmation(true);
+        toast.success('Request sent! Awaiting faculty approval');
+      }, 2500);
     }
   };
 
@@ -1607,7 +1728,9 @@ const FacultyContent = ({ initialFacultyId = null }) => {
 
                     {/* Actions */}
                     <div className="bk-actions">
-                      <button type="submit" className="bk-submit-btn">Submit Request</button>
+                      <button type="submit" className="bk-submit-btn" disabled={submitState === 'loading'}>
+                        {submitState === 'loading' ? 'Submitting...' : 'Submit Request'}
+                      </button>
                       <button type="button" className="bk-cancel-btn" onClick={() => setFacultyView('list')}>Cancel</button>
                     </div>
                   </form>
@@ -1618,6 +1741,40 @@ const FacultyContent = ({ initialFacultyId = null }) => {
         );
       })()}
 
+
+      {submitState !== null && (
+        <div className="facs-submit-overlay" onClick={submitState === 'error' && submitPhase === 'stamped' ? () => setSubmitState(null) : undefined}>
+          <div className="facs-submit-card" onClick={e => e.stopPropagation()}>
+            <div className={`facs-circle-stage${submitPhase === 'zooming' || submitPhase === 'stamped' ? ' zooming' : ''}`}>
+              <svg className={`facs-arc-svg${submitPhase === 'stamped' ? ' paused' : ''}`} viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="70" cy="70" r="60" stroke={submitState === 'success' ? '#22c55e' : submitState === 'error' ? '#ef4444' : '#3b82f6'} strokeWidth="8" strokeOpacity="0.18" />
+                <path
+                  d="M70 10 A60 60 0 0 1 130 70"
+                  stroke={submitState === 'success' ? '#22c55e' : submitState === 'error' ? '#ef4444' : '#3b82f6'}
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                />
+              </svg>
+              {submitPhase === 'stamped' && submitState === 'success' && (
+                <Check size={52} className="facs-stamp-icon" style={{ color: '#22c55e' }} />
+              )}
+              {submitPhase === 'stamped' && submitState === 'error' && (
+                <X size={52} className="facs-stamp-icon" style={{ color: '#ef4444' }} />
+              )}
+            </div>
+            <span className="facs-submit-msg" key={submitState + submitPhase}>
+              {submitState === 'loading' && 'Submitting your request…'}
+              {submitState === 'success' && submitPhase === 'stamped' && 'Request sent!'}
+              {submitState === 'error' && submitPhase === 'stamped' && (submitMessage || 'Something went wrong.')}
+            </span>
+            {submitState === 'error' && submitPhase === 'stamped' && (
+              <button className="facs-retry-btn" onClick={() => setSubmitState(null)}>
+                Try Again
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {showConfirmation && selectedSlot && selectedFaculty && (
         <div className="modal-overlay">

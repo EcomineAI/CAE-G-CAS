@@ -515,6 +515,9 @@ const StudentDashboard = () => {
   const handleTabChange = (tab, filter = 'All', facultyIdOrDate = null) => {
     if (tab === 'Faculty') { setFacultyMountKey(k => k + 1); setInitialFacultyId(facultyIdOrDate); }
     if (tab === 'Calendar' && facultyIdOrDate) setFocusCalendarDate(facultyIdOrDate);
+    if (tab === 'Appointments' && facultyIdOrDate && typeof facultyIdOrDate === 'string' && facultyIdOrDate.includes('-') && facultyIdOrDate.length > 10) {
+      setFocusAppointmentId(facultyIdOrDate);
+    }
     setInitialFilter(filter); setActiveTab(tab);
     localStorage.setItem('gcas_student_tab', tab);
   };

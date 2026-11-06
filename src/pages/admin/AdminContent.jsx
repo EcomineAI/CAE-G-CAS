@@ -458,6 +458,26 @@ const adminStyles = `
   transition: transform 0.18s; pointer-events: none;
 }
 .admin-toggle-track.on .admin-toggle-thumb { transform: translateX(18px); }
+
+/* ── Feedback tab ── */
+.fb-faculty-card { background: var(--bg-secondary); border: 1.5px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 0.65rem; }
+.fb-faculty-header { display: flex; align-items: center; gap: 0.9rem; padding: 0.9rem 1.1rem; cursor: pointer; user-select: none; transition: background 0.12s; }
+.fb-faculty-header:hover { background: var(--bg-primary); }
+.fb-faculty-name { font-weight: 700; font-size: 0.9rem; color: var(--text-primary); }
+.fb-faculty-meta { font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
+.fb-avg { display: flex; align-items: center; gap: 0.3rem; }
+.fb-avg-val { font-weight: 800; font-size: 0.95rem; }
+.fb-eval-list { border-top: 1px solid var(--border-color); padding: 0.6rem 1.1rem 0.75rem; display: flex; flex-direction: column; gap: 0.45rem; }
+.fb-eval-row { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 9px; padding: 0.6rem 0.8rem; cursor: pointer; transition: border-color 0.12s; }
+.fb-eval-row:hover { border-color: #3b82f6; }
+.fb-eval-row.expanded { border-color: #3b82f6; background: rgba(59,130,246,0.04); }
+.fb-eval-top { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.fb-eval-student { font-weight: 700; font-size: 0.83rem; color: var(--text-primary); }
+.fb-eval-date { font-size: 0.74rem; color: var(--text-muted); }
+.fb-stars { display: flex; align-items: center; gap: 2px; }
+.fb-eval-snippet { font-size: 0.74rem; color: var(--text-muted); font-style: italic; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.fb-eval-full { font-size: 0.82rem; color: var(--text-secondary); margin-top: 6px; line-height: 1.55; word-break: break-word; white-space: pre-wrap; }
+.fb-no-evals { font-size: 0.82rem; color: var(--text-muted); padding: 0.6rem 0.2rem; }
 `;
 
 const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
@@ -478,6 +498,10 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
   const [apptDatePreset,  setApptDatePreset]  = useState('all');
   const [apptCustomFrom,  setApptCustomFrom]  = useState('');
   const [apptCustomTo,    setApptCustomTo]    = useState('');
+
+  // Feedback tab (PC only)
+  const [feedbackExpandedFaculty, setFeedbackExpandedFaculty] = useState(null);
+  const [feedbackExpandedRow,     setFeedbackExpandedRow]     = useState(null);
 
   // Ratings tab
   const [ratingFacultyId,  setRatingFacultyId]  = useState(null);
@@ -512,9 +536,22 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
   useEffect(() => { load(); }, [load]);
 
   // ── Scope data by viewer role ──────────────────────────────────────────────
-  // PC sees only users whose program matches their own; Dean sees all.
+  // PC sees only users in their department.
+  // Faculty: matched by department or program field (abbreviation, e.g. 'EMC').
+  // Students: all student programs are CCS-based; only PC-CCS sees students.
   const profiles = isPC && viewerProgram
-    ? allProfiles.filter(p => p.role === 'student' ? p.program === viewerProgram : p.role === 'faculty' || p.role === 'program_chair')
+    ? allProfiles.filter(p => {
+        if (p.role === 'faculty') {
+          const facDept = p.program || null;
+          return facDept ? facDept === viewerProgram : viewerProgram === 'CCS';
+        }
+        if (p.role === 'student') {
+          const abbr = p.program ? ((p.program.match(/\(([^)]+)\)/) || [])[1] || null) : null;
+          const studDept = abbr === 'BSEMC' ? 'EMC' : abbr === 'BSIT' ? 'IT' : 'CCS';
+          return studDept === viewerProgram;
+        }
+        return false;
+      })
     : allProfiles;
 
   const pcFacultyIds = isPC
@@ -786,6 +823,11 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
             <span style={{ position: 'absolute', top: 2, right: 2, width: 7, height: 7, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
           )}
         </button>
+        {isPC && (
+          <button className={`admin-tab${tab === 'feedback' ? ' active' : ''}`} onClick={() => setTab('feedback')}>
+            <MessageSquare size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />Feedback
+          </button>
+        )}
       </div>
 
       {/* ── OVERVIEW TAB ── */}
@@ -860,7 +902,7 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
                           const reqCount = getUserReqCount(p.id, p.role);
                           const avatarBg = p.avatar_color || nameToColor(p.full_name || '');
                           const deptOrProgram = isFacultyRole(p.role)
-                            ? 'CCS'
+                            ? (p.program || p.department || 'CCS')
                             : (p.program ? ((p.program.match(/\(([^)]+)\)/) || [])[1] || p.program) : '—');
                           const studentNo = p.role === 'student' && p.email ? p.email.split('@')[0] : null;
                           return (
@@ -912,7 +954,7 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
                           {roleBadge(selectedUser.role).label}
                         </span>
                         {isFacultyRole(selectedUser.role)
-                          ? <span>CCS</span>
+                          ? <span>{selectedUser.program || selectedUser.department || 'CCS'}</span>
                           : selectedUser.email
                             ? <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary)' }}>{selectedUser.email.split('@')[0]}</span>
                             : null
@@ -920,7 +962,7 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
                         {selectedUser.role === 'student' && selectedUser.program && (
                           <span>{(selectedUser.program.match(/\(([^)]+)\)/) || [])[1] || selectedUser.program}</span>
                         )}
-                        {isFacultyRole(selectedUser.role) && selectedUser.status && (
+                        {!isPC && isFacultyRole(selectedUser.role) && selectedUser.status && (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: STATUS_DOT_COLOR[selectedUser.status] || '#9ca3af', display: 'inline-block' }} />
                             {selectedUser.status}
@@ -1346,6 +1388,144 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
           </div>
         </>
       )}
+
+      {/* ── FEEDBACK TAB (PC only) ── */}
+      {tab === 'feedback' && isPC && (() => {
+        const evalRequests = requests.filter(r =>
+          r.status === 'Completed' && r.satisfactionRating && r.satisfactionRating > 0
+        );
+        const pcFaculty = profiles.filter(p => p.role === 'faculty' || p.role === 'program_chair');
+
+        const facultyFeedback = pcFaculty.map(f => {
+          const evals = evalRequests.filter(r => r.facultyId === f.id);
+          const avg = evals.length > 0
+            ? evals.reduce((s, r) => s + r.satisfactionRating, 0) / evals.length
+            : null;
+          return { ...f, evals, avg };
+        }).sort((a, b) => {
+          if (a.evals.length === 0 && b.evals.length === 0) return 0;
+          if (a.evals.length === 0) return 1;
+          if (b.evals.length === 0) return -1;
+          return (b.avg || 0) - (a.avg || 0);
+        });
+
+        const overallRated = evalRequests.length;
+        const overallAvg = overallRated > 0
+          ? (evalRequests.reduce((s, r) => s + r.satisfactionRating, 0) / overallRated).toFixed(1)
+          : null;
+
+        return (
+          <>
+            <div style={{ display: 'flex', gap: '0.85rem', marginBottom: '1.4rem', flexWrap: 'wrap' }}>
+              {[
+                { label: 'Total Evaluations', value: overallRated, color: '#f59e0b' },
+                { label: 'Faculty Evaluated', value: pcFaculty.filter(f => evalRequests.some(r => r.facultyId === f.id)).length, color: '#6366f1' },
+                { label: 'Program Avg Rating', value: overallAvg ? `${overallAvg}/5` : '—', color: '#22c55e' },
+              ].map(m => (
+                <div key={m.label} style={{ flex: '1 1 140px', background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', borderRadius: 14, padding: '0.9rem 1.1rem' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.3rem' }}>{m.label}</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 800, color: m.color }}>{loading ? '…' : m.value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="admin-section">
+              <p className="admin-section-title">
+                <MessageSquare size={15} />
+                Student Feedback by Faculty
+              </p>
+              {loading ? (
+                <div className="admin-empty">Loading…</div>
+              ) : facultyFeedback.length === 0 ? (
+                <div className="admin-empty">No faculty in this program.</div>
+              ) : (
+                <div>
+                  {facultyFeedback.map(f => {
+                    const isExpanded = feedbackExpandedFaculty === f.id;
+                    const avgColor = f.avg === null ? '#9ca3af'
+                      : f.avg >= 4 ? '#16a34a'
+                      : f.avg >= 3 ? '#f59e0b'
+                      : '#ef4444';
+                    return (
+                      <div key={f.id} className="fb-faculty-card">
+                        <div
+                          className="fb-faculty-header"
+                          onClick={() => setFeedbackExpandedFaculty(isExpanded ? null : f.id)}
+                        >
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', background: f.avatar_color || nameToColor(f.full_name || ''), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '0.85rem', flexShrink: 0 }}>
+                            {getInitials(f.full_name)}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="fb-faculty-name">{f.full_name || '—'}</div>
+                            <div className="fb-faculty-meta">
+                              {f.evals.length > 0 ? `${f.evals.length} evaluation${f.evals.length !== 1 ? 's' : ''}` : 'No evaluations yet'}
+                            </div>
+                          </div>
+                          <div className="fb-avg">
+                            {f.avg !== null ? (
+                              <>
+                                <Star size={14} fill={avgColor} stroke={avgColor} />
+                                <span className="fb-avg-val" style={{ color: avgColor }}>{f.avg.toFixed(1)}</span>
+                                <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>/5</span>
+                              </>
+                            ) : (
+                              <span style={{ fontSize: '0.78rem', color: '#9ca3af' }}>No ratings</span>
+                            )}
+                          </div>
+                          {isExpanded
+                            ? <ChevronUp size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                            : <ChevronDown size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                          }
+                        </div>
+
+                        {isExpanded && (
+                          <div className="fb-eval-list">
+                            {f.evals.length === 0 ? (
+                              <div className="fb-no-evals">No evaluations yet for this faculty member.</div>
+                            ) : f.evals.map(ev => {
+                              const rowKey = ev.id;
+                              const isRowExpanded = feedbackExpandedRow === rowKey;
+                              const notes = ev.feedbackNotes || '';
+                              const snippet = notes.length > 100 ? notes.slice(0, 100) + '…' : notes;
+                              return (
+                                <div
+                                  key={rowKey}
+                                  className={`fb-eval-row${isRowExpanded ? ' expanded' : ''}`}
+                                  onClick={() => setFeedbackExpandedRow(isRowExpanded ? null : rowKey)}
+                                >
+                                  <div className="fb-eval-top">
+                                    <span className="fb-eval-student">{ev.studentName || 'Anonymous'}</span>
+                                    <span className="fb-eval-date">{fmtDate(ev.date)}</span>
+                                    <div className="fb-stars">
+                                      {[1,2,3,4,5].map(s => (
+                                        <Star key={s} size={11} fill={s <= ev.satisfactionRating ? '#f59e0b' : 'none'} stroke={s <= ev.satisfactionRating ? '#f59e0b' : '#d1d5db'} />
+                                      ))}
+                                      <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#78716c', marginLeft: 3 }}>{ev.satisfactionRating}/5</span>
+                                    </div>
+                                  </div>
+                                  {notes && !isRowExpanded && (
+                                    <div className="fb-eval-snippet">"{snippet}"</div>
+                                  )}
+                                  {notes && isRowExpanded && (
+                                    <div className="fb-eval-full">"{notes}"</div>
+                                  )}
+                                  {!notes && (
+                                    <div className="fb-eval-snippet" style={{ color: '#d1d5db' }}>No written notes.</div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </>
+        );
+      })()}
 
       {/* ── PC Report Modal ── */}
       {pcReportModal && (

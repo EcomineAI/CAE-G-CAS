@@ -938,13 +938,18 @@ const FacultyDashboard = () => {
     if (isDeanRole || isPCRole) {
       if (activeTab === 'Calendar') return <FacultyCalendarPage onTabChange={handleTabChange} />;
       if (activeTab !== 'Settings') {
-        return <AdminContent viewerRole={user?.role || 'dean'} viewerProgram={profileData?.program || null} />;
+        const rawProg = profileData?.program || profileData?.department || null;
+        const pcProgram = rawProg ? ((rawProg.match(/\(([^)]+)\)/) || [])[1] || rawProg) : null;
+        return <AdminContent viewerRole={user?.role || 'dean'} viewerProgram={pcProgram} />;
       }
     }
 
     switch (activeTab) {
-      case 'Overview':
-        return <AdminContent viewerRole={user?.role || 'dean'} viewerProgram={profileData?.program || null} />;
+      case 'Overview': {
+        const rawProg = profileData?.program || profileData?.department || null;
+        const pcProgram = rawProg ? ((rawProg.match(/\(([^)]+)\)/) || [])[1] || rawProg) : null;
+        return <AdminContent viewerRole={user?.role || 'dean'} viewerProgram={pcProgram} />;
+      }
       case 'Dashboard':
         return <FacultyDashboardContent onTabChange={handleTabChange} />;
       case 'Calendar':
@@ -1225,7 +1230,7 @@ const FacultyDashboard = () => {
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         onSaved={handleProfileSaved}
-        role="faculty"
+        role={isDeanRole ? 'dean' : isPCRole ? 'program_chair' : 'faculty'}
         userId={user?.id}
         initialData={profileData}
         forceComplete={false}
