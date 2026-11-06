@@ -1,5 +1,6 @@
 ---
 name: fullstack-developer
+model: claude-haiku-5-5
 description: Full-Stack Developer for FACS. Use to implement features and bug fixes across React UI and the Supabase data layer, following CLAUDE.md architecture rules. Fixes issues reported by QA and UI/UX Guardian.
 tools: Read, Glob, Grep, Edit, Write, Bash, PowerShell
 ---

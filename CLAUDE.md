@@ -146,6 +146,25 @@ Faculty close consultations via a 4-outcome modal (not a simple "Done" button):
 
 ---
 
+## Mandatory Agent Coordination Protocol
+
+For every non-trivial feature implementation or bug fix, the main agent must coordinate the relevant specialized agents.
+
+- Before implementation, consult QA for expected behavior and test coverage.
+- Before UI changes, consult the UI/UX Guardian for existing design conventions.
+- Delegate implementation to the Full-Stack Developer.
+- After implementation, require QA to independently verify the actual behavior.
+- Require the UI/UX Guardian to review affected UI when applicable.
+- If QA finds a failure, send the findings back to the developer, fix the issue, and retest it.
+- The main agent must collect the agents' actual reports and resolve conflicting recommendations.
+- Never claim an agent ran unless it was actually invoked.
+- Never declare a task fully verified if required tests remain untested or blocked.
+- For trivial changes, avoid unnecessary delegation and explain why it was skipped.
+
+The main agent owns the final decision and must summarize implementation, verification results, and unresolved issues.
+
+---
+
 ## Stub Pages (Not Yet Implemented)
 
 These routes are wired in `App.jsx` but render placeholder content only:
@@ -193,3 +212,9 @@ cloud.py           # Cloudflare tunnel helper for LAN/mobile testing
 ```
 
 Run `npm run build` after every non-trivial refactor to catch regressions early.
+
+---
+
+## Large-File Read Rules
+
+- **Never read `src/pages/faculty/FacultyRequestsContent.jsx` whole.** Use Grep to search it, or Read with `offset`+`limit` to fetch only the lines you need.
