@@ -961,7 +961,7 @@ const FacultyDashboard = () => {
       case 'Settings':
         return (
           <SharedSettingsContent
-            role={isDeanRole ? 'admin' : isPCRole ? 'admin' : 'faculty'}
+            role={isDeanRole ? 'dean' : isPCRole ? 'program_chair' : 'faculty'}
             profileData={profileData}
             userId={user?.id}
             userEmail={user?.email}

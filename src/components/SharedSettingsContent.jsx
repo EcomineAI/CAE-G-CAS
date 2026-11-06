@@ -114,8 +114,8 @@ const SharedSettingsContent = ({
   accessibilityPrefs = {}, updateAccessibilityPref = () => {},
   onTabChange,
 }) => {
-  const isAdmin   = role === 'admin';
-  const isFaculty = role === 'faculty' || isAdmin;
+  const isElevated = role === 'dean' || role === 'program_chair';
+  const isFaculty  = role === 'faculty' || isElevated;
 
   const name     = profileData?.full_name || '—';
   const email    = userEmail || profileData?.email || '';
