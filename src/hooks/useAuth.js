@@ -30,7 +30,7 @@ const fetchProfile = async (userId) => {
   try {
     const query = supabase
       .from('profiles')
-      .select('role, full_name, avatar_url')
+      .select('role, full_name, avatar_url, is_active')
       .eq('id', userId)
       .maybeSingle();
 
@@ -65,7 +65,8 @@ const processUser = async (sessionUser) => {
     ...sessionUser,
     role: profile?.role || 'student', // only reached when profile is explicitly null (no row)
     displayName: profile?.full_name || formatNameFromEmail(sessionUser.email),
-    avatarUrl: oauthAvatar || profile?.avatar_url || null
+    avatarUrl: oauthAvatar || profile?.avatar_url || null,
+    isActive: profile?.is_active !== false, // true when null/undefined (pre-migration safe default)
   };
 };
 

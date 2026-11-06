@@ -208,7 +208,7 @@ const NotificationCenter = ({ userId, isOpen, onClose, role = 'Student', onNotif
 
         /* ── Desktop overrides ── */
         @media (min-width: 769px) {
-          .nc-panel { top: 72px; right: 22px; width: 380px; max-height: 560px; border-radius: 18px; }
+          .nc-panel { top: 72px; right: 80px; width: 380px; max-height: 560px; border-radius: 18px; }
           .nc-header { padding: 1.1rem 1.2rem 0 1.2rem; }
           .nc-title { font-size: 1.15rem; margin-bottom: 0.8rem; }
           .nc-tabs { padding-bottom: 0.85rem; gap: 0.5rem; }

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { User, Archive, ClipboardList, Calendar, Clock, MapPin, ChevronRight } from 'lucide-react';
+import { User, Archive, ClipboardList, Calendar, Clock, MapPin, ChevronRight, Star, ClipboardCheck } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { getStudentRequests, updateRequestDetails, updateRequestStatus, deleteRequest, getSchedulesForFaculty, submitRequest, isDateBlocked, checkActiveRequestForSlot } from '../../supabase/api';
+import { getStudentRequests, updateRequestDetails, updateRequestStatus, deleteRequest, getSchedulesForFaculty, submitRequest, isDateBlocked, checkActiveRequestForSlot, submitRating } from '../../supabase/api';
 import { subscribeToRequests } from '../../supabase/realtime';
 import { withMinDelay, optimistic, toast } from '../../supabase/ux';
 import { formatTimeRange } from '../../utils/dateUtils';
@@ -230,6 +230,11 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
 
+  const [ratingModal, setRatingModal] = useState(null);
+  const [ratingCriteria, setRatingCriteria] = useState({ preparedness: 0, communication: 0, helpfulness: 0, professionalism: 0 });
+  const [ratingHover, setRatingHover] = useState({ preparedness: 0, communication: 0, helpfulness: 0, professionalism: 0 });
+  const [ratingNotes, setRatingNotes] = useState('');
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [cancelModal, setCancelModal] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelDropOpen, setCancelDropOpen] = useState(false);
@@ -377,6 +382,47 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
     setSelectedId(null);
   };
 
+  const EVAL_CRITERIA = [
+    { key: 'preparedness',    label: 'Preparedness',    desc: 'Faculty was prepared and knowledgeable about the subject matter' },
+    { key: 'communication',   label: 'Communication',   desc: 'Faculty communicated clearly and listened actively' },
+    { key: 'helpfulness',     label: 'Helpfulness',     desc: 'Faculty provided useful guidance and addressed your concern' },
+    { key: 'professionalism', label: 'Professionalism', desc: 'Faculty was respectful, punctual, and professional' },
+  ];
+  const RATING_LABELS = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+
+  // ── Rating ──
+  const openRating = (app) => {
+    let initial = { preparedness: 0, communication: 0, helpfulness: 0, professionalism: 0 };
+    if (app.feedbackNotes) {
+      try {
+        const parsed = JSON.parse(app.feedbackNotes);
+        if (parsed && typeof parsed === 'object' && 'preparedness' in parsed) {
+          initial = { preparedness: parsed.preparedness || 0, communication: parsed.communication || 0, helpfulness: parsed.helpfulness || 0, professionalism: parsed.professionalism || 0 };
+          setRatingNotes(parsed.comments || '');
+        } else { setRatingNotes(app.feedbackNotes || ''); }
+      } catch { setRatingNotes(app.feedbackNotes || ''); }
+    } else { setRatingNotes(''); }
+    setRatingCriteria(initial);
+    setRatingHover({ preparedness: 0, communication: 0, helpfulness: 0, professionalism: 0 });
+    setRatingModal(app);
+  };
+  const executeRating = async () => {
+    const allFilled = EVAL_CRITERIA.every(c => ratingCriteria[c.key] > 0);
+    if (!allFilled) { toast.error('Please rate all criteria before submitting.'); return; }
+    setRatingSubmitting(true);
+    const app = ratingModal;
+    const values = EVAL_CRITERIA.map(c => ratingCriteria[c.key]);
+    const overall = Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 2) / 2;
+    const breakdown = JSON.stringify({ preparedness: ratingCriteria.preparedness, communication: ratingCriteria.communication, helpfulness: ratingCriteria.helpfulness, professionalism: ratingCriteria.professionalism, comments: ratingNotes || null, overall });
+    const ok = await submitRating(app.id, Math.round(overall), breakdown);
+    setRatingSubmitting(false);
+    if (ok) {
+      setRatingModal(null);
+      setRequests(prev => prev.map(r => r.id === app.id ? { ...r, satisfactionRating: Math.round(overall), feedbackNotes: breakdown } : r));
+      toast.success('Evaluation submitted. Thank you!');
+    } else { toast.error('Failed to submit evaluation.'); }
+  };
+
   // ── Archive ──
   const executeArchive = async () => {
     const app = deleteModal; setDeleteModal(null);
@@ -393,6 +439,8 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
     const ref = idx >= 0 ? `REF${String(idx + 1).padStart(4, '0')}` : '';
     const canCancel = ['Pending','Approved'].includes(app.status);
     const canResched = app.status === 'Pending';
+    const isCompleted = app.status === 'Completed';
+    const hasRated = isCompleted && app.satisfactionRating;
     return (
       <div className="ac-detail" key={app.id}>
         <div className="ac-detail-ref">{ref}</div>
@@ -408,12 +456,23 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
           {app.room && <div className="ac-detail-info-row"><MapPin size={14} style={{ color: '#1a2d5a', flexShrink: 0 }} /><span>Room {app.room}</span></div>}
           {app.day  && <div className="ac-detail-info-row"><User size={14} style={{ color: '#1a2d5a', flexShrink: 0 }} /><span>{app.day}</span></div>}
         </div>
-        {app.faculty_note && <div className="ac-detail-note"><strong>Faculty Note:</strong> "{app.faculty_note}"</div>}
+        {app.facultyNote && <div className="ac-detail-note"><strong>Faculty Note:</strong> "{app.facultyNote}"</div>}
         {app.status === 'Declined' && app.declineReason && <div className="ac-detail-decline"><strong>Decline Reason:</strong> "{app.declineReason}"</div>}
-        <p className="ac-detail-hint">{canResched ? 'You can reschedule or cancel pending requests. Approved appointments can only be cancelled.' : 'You can cancel this appointment at any time before it starts.'}</p>
+        {hasRated && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.8rem', padding: '0.5rem 0.75rem', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8 }}>
+            {[1,2,3,4,5].map(s => <Star key={s} size={14} fill={s <= app.satisfactionRating ? '#f59e0b' : 'none'} stroke={s <= app.satisfactionRating ? '#f59e0b' : '#d1d5db'} />)}
+            <span style={{ fontSize: '0.76rem', color: '#78350f', fontWeight: 600, marginLeft: 4 }}>Overall {app.satisfactionRating}/5</span>
+          </div>
+        )}
+        <p className="ac-detail-hint">{canResched ? 'You can reschedule or cancel pending requests. Approved appointments can only be cancelled.' : isCompleted ? 'Session completed. Submit your faculty evaluation below.' : 'You can cancel this appointment at any time before it starts.'}</p>
         <div className="ac-detail-actions">
           {canCancel && <button className="ac-action-btn" onClick={() => openCancel(app)} style={{ border: '1.5px solid #fca5a5', background: '#fff5f5', color: '#ef4444' }}>Cancel Request</button>}
           {canResched && <button className="ac-action-btn" onClick={() => openResched(app)} style={{ border: 'none', background: '#1a2d5a', color: '#fff' }}>Reschedule</button>}
+          {isCompleted && (
+            <button className="ac-action-btn" onClick={() => openRating(app)} style={{ border: hasRated ? '1.5px solid #86efac' : 'none', background: hasRated ? '#f0fdf4' : '#1a2d5a', color: hasRated ? '#15803d' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+              <ClipboardCheck size={14} /> {hasRated ? 'View / Update Evaluation' : 'Evaluate Faculty'}
+            </button>
+          )}
           {['Completed','Cancelled','Declined'].includes(app.status) && (
             <button className="ac-action-btn" onClick={() => setDeleteModal(app)} style={{ border: '1.5px solid #e5e8f0', background: '#fff', color: '#9ca3af', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
               <Archive size={14} /> Archive Record
@@ -524,6 +583,100 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
           ) : renderDetailPanel(selectedApp)}
         </div>
       </div>
+
+      {/* ── Faculty Evaluation Modal ── */}
+      {ratingModal && (
+        <div style={OVERLAY} onClick={() => setRatingModal(null)}>
+          <div className="appt-modal" style={{ maxWidth: 520, maxHeight: 'calc(100vh - 2rem)', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+            <div style={PAD}>
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
+                <ClipboardCheck size={20} style={{ color: '#1a2d5a', flexShrink: 0 }} />
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1f2937', margin: 0 }}>Faculty Evaluation</h2>
+              </div>
+              <p style={{ fontSize: '0.82rem', color: '#6b7280', marginBottom: '1.2rem', lineHeight: 1.5 }}>
+                Evaluate your consultation with <strong style={{ color: '#1a2d5a' }}>{ratingModal.name || ratingModal.facultyName}</strong> on {(() => { const d = ratingModal.date; if (!d) return '—'; const [y,mo,dy] = d.split('-').map(Number); return new Date(y, mo-1, dy).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }); })()}.
+              </p>
+
+              {/* Rating scale legend */}
+              <div style={{ display: 'flex', gap: '0.3rem', marginBottom: '1.1rem', flexWrap: 'wrap' }}>
+                {[1,2,3,4,5].map(n => (
+                  <div key={n} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 800, background: '#f1f5f9', color: '#475569', padding: '0.1rem 0.4rem', borderRadius: 4 }}>{n}</span>
+                    <span style={{ fontSize: '0.68rem', color: '#9ca3af' }}>{RATING_LABELS[n]}</span>
+                    {n < 5 && <span style={{ color: '#e5e7eb', marginLeft: '0.15rem' }}>·</span>}
+                  </div>
+                ))}
+              </div>
+
+              {/* Criteria rows */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.2rem' }}>
+                {EVAL_CRITERIA.map(criterion => {
+                  const val = ratingCriteria[criterion.key];
+                  const hov = ratingHover[criterion.key];
+                  const active = hov || val;
+                  return (
+                    <div key={criterion.key}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
+                        <div>
+                          <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#1f2937' }}>{criterion.label}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#9ca3af', lineHeight: 1.4 }}>{criterion.desc}</div>
+                        </div>
+                        {val > 0 && (
+                          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1a2d5a', whiteSpace: 'nowrap', marginLeft: '0.5rem', marginTop: '0.1rem' }}>
+                            {RATING_LABELS[val]}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        {[1,2,3,4,5].map(s => (
+                          <button key={s} type="button"
+                            onMouseEnter={() => setRatingHover(prev => ({ ...prev, [criterion.key]: s }))}
+                            onMouseLeave={() => setRatingHover(prev => ({ ...prev, [criterion.key]: 0 }))}
+                            onClick={() => setRatingCriteria(prev => ({ ...prev, [criterion.key]: s }))}
+                            style={{ flex: 1, padding: '0.5rem 0', border: active >= s ? '1.5px solid #f59e0b' : '1.5px solid #e5e8f0', borderRadius: 7, background: active >= s ? '#fffbeb' : '#f8fafc', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 800, color: active >= s ? '#92400e' : '#94a3b8', transition: 'all 0.1s' }}>
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Overall preview */}
+              {EVAL_CRITERIA.every(c => ratingCriteria[c.key] > 0) && (() => {
+                const avg = EVAL_CRITERIA.reduce((s, c) => s + ratingCriteria[c.key], 0) / EVAL_CRITERIA.length;
+                const overall = Math.round(avg * 2) / 2;
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.9rem', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 9, marginBottom: '1.1rem' }}>
+                    <div style={{ display: 'flex', gap: '0.2rem' }}>
+                      {[1,2,3,4,5].map(s => <Star key={s} size={14} fill={s <= overall ? '#f59e0b' : 'none'} stroke={s <= overall ? '#f59e0b' : '#d1d5db'} />)}
+                    </div>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0369a1' }}>Overall: {overall}/5 — {RATING_LABELS[Math.round(overall)]}</span>
+                  </div>
+                );
+              })()}
+
+              {/* Comments */}
+              <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9ca3af', marginBottom: '0.4rem' }}>Additional Comments (optional)</div>
+              <textarea
+                value={ratingNotes}
+                onChange={e => setRatingNotes(e.target.value)}
+                placeholder="Any additional comments about the consultation..."
+                rows={3}
+                style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: 9, border: '1.5px solid #e5e8f0', fontFamily: 'inherit', fontSize: '0.84rem', resize: 'none', boxSizing: 'border-box', marginBottom: '1.2rem', outline: 'none', color: '#1f2937' }}
+              />
+
+              {/* Footer */}
+              <div style={{ display: 'flex', gap: '0.7rem' }}>
+                <button onClick={() => setRatingModal(null)} disabled={ratingSubmitting} style={{ flex: 1, padding: '0.72rem', borderRadius: 9, border: '1.5px solid #e5e8f0', background: '#fff', color: '#1f2937', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+                <button onClick={executeRating} disabled={ratingSubmitting} style={{ flex: 1, padding: '0.72rem', borderRadius: 9, border: 'none', background: '#1a2d5a', color: '#fff', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit', opacity: ratingSubmitting ? 0.6 : 1 }}>{ratingSubmitting ? 'Submitting…' : 'Submit Evaluation'}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Cancel Modal ── */}
       {cancelModal && (() => {

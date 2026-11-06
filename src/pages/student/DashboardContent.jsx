@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Clock, History, ArrowRight, MapPin } from 'lucide-react';
+import { CheckCircle2, Clock, History, ArrowRight, MapPin, ClipboardCheck } from 'lucide-react';
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { getStudentRequests, getAllFaculty } from '../../supabase/api';
@@ -114,6 +114,8 @@ const DashboardContent = ({ onTabChange, realName }) => {
     Pending:  requests.filter(r => r.status === 'Pending').length,
     History:  requests.filter(r => ['Completed', 'Cancelled', 'Declined'].includes(r.status)).length,
   };
+
+  const unratedCompleted = requests.filter(r => r.status === 'Completed' && !r.satisfactionRating);
 
   const todayStr = todayDateStr();
   const upcomingApproved = requests
@@ -443,6 +445,59 @@ const DashboardContent = ({ onTabChange, realName }) => {
         }
         .dc-avail-empty { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
 
+        /* ── Pending Evaluations ── */
+        .dc-eval-card {
+          background: var(--card-bg);
+          border: 1.5px solid #fcd34d;
+          border-radius: 14px;
+          padding: 0.9rem 1rem 1rem 1rem;
+          box-shadow: 0 2px 10px rgba(245,158,11,0.10);
+        }
+        .dc-eval-hd {
+          display: flex; justify-content: space-between; align-items: center;
+          margin-bottom: 0.75rem;
+        }
+        .dc-eval-title-wrap { display: flex; align-items: center; gap: 0.5rem; }
+        .dc-eval-title {
+          font-size: 0.63rem; font-weight: 700; letter-spacing: 0.1em;
+          text-transform: uppercase; color: #92400e; margin: 0 0 0.08rem 0;
+        }
+        .dc-eval-subtitle {
+          font-size: 0.88rem; font-weight: 800; color: var(--text-primary); margin: 0;
+        }
+        .dc-eval-badge {
+          background: #fef3c7; color: #92400e;
+          font-size: 0.65rem; font-weight: 800; letter-spacing: 0.08em;
+          padding: 0.18rem 0.6rem; border-radius: 20px;
+        }
+        .dc-eval-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .dc-eval-item {
+          display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+          padding: 0.65rem 0.85rem;
+          background: #fffbeb;
+          border: 1px solid #fde68a;
+          border-radius: 10px;
+        }
+        .dc-eval-item-info { flex: 1; min-width: 0; }
+        .dc-eval-faculty {
+          font-size: 0.83rem; font-weight: 700; color: #1f2937;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0 0 0.1rem 0;
+        }
+        .dc-eval-date {
+          font-size: 0.72rem; color: #92400e; margin: 0;
+        }
+        .dc-eval-btn {
+          display: flex; align-items: center; gap: 0.3rem;
+          padding: 0.38rem 0.9rem;
+          background: #1a2d5a; color: #fff;
+          border: none; border-radius: 7px;
+          font-size: 0.75rem; font-weight: 700;
+          cursor: pointer; font-family: inherit;
+          white-space: nowrap; flex-shrink: 0;
+          transition: opacity 0.15s;
+        }
+        .dc-eval-btn:hover { opacity: 0.85; }
+
         /* skeleton */
         .dc-skel {
           background: linear-gradient(90deg, var(--card-border) 25%, var(--card-bg) 50%, var(--card-border) 75%);
@@ -607,6 +662,44 @@ const DashboardContent = ({ onTabChange, realName }) => {
               <button className="dc-next-btn" onClick={() => onTabChange('Faculty')}>
                 Book one now <ArrowRight size={12} />
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Pending Evaluations ── */}
+        {!loading && unratedCompleted.length > 0 && (
+          <div className="dc-eval-card">
+            <div className="dc-eval-hd">
+              <div className="dc-eval-title-wrap">
+                <ClipboardCheck size={18} style={{ color: '#b45309', flexShrink: 0 }} />
+                <div>
+                  <p className="dc-eval-title">Pending Evaluations</p>
+                  <p className="dc-eval-subtitle">Faculty to Evaluate</p>
+                </div>
+              </div>
+              <span className="dc-eval-badge">{unratedCompleted.length} pending</span>
+            </div>
+            <div className="dc-eval-list">
+              {unratedCompleted.slice(0, 3).map(r => {
+                const dateStr = r.date;
+                const dateLabel = dateStr ? (() => { const [y,mo,d] = dateStr.split('-').map(Number); return new Date(y, mo-1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); })() : '—';
+                return (
+                  <div key={r.id} className="dc-eval-item">
+                    <div className="dc-eval-item-info">
+                      <p className="dc-eval-faculty">{r.name || r.facultyName || 'Faculty'}</p>
+                      <p className="dc-eval-date">{r.subject || 'Consultation'} · {dateLabel}</p>
+                    </div>
+                    <button className="dc-eval-btn" onClick={() => onTabChange('Appointments', 'History')}>
+                      Evaluate <ArrowRight size={12} />
+                    </button>
+                  </div>
+                );
+              })}
+              {unratedCompleted.length > 3 && (
+                <button onClick={() => onTabChange('Appointments', 'History')} style={{ background: 'none', border: 'none', color: '#92400e', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', padding: '0.3rem 0', textAlign: 'left', fontFamily: 'inherit' }}>
+                  +{unratedCompleted.length - 3} more — View all
+                </button>
+              )}
             </div>
           </div>
         )}

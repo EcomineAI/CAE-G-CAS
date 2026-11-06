@@ -572,6 +572,13 @@ export default function ProfileEditModal({
     setSuffix(s);
     setAvatarUrl(av);
 
+    // Sync avatar color from DB (source of truth); fall back to localStorage only if DB has none
+    const dbColor = initialData.avatar_color || null;
+    const localColor = storageKey ? localStorage.getItem(storageKey) : null;
+    const resolved = dbColor || localColor || null;
+    setAvatarColor(resolved);
+    if (resolved && storageKey) localStorage.setItem(storageKey, resolved);
+
     let fn = '', mn = '', ln = '', full = '', dp = '', ti = '', pg = '', sec = '';
     if (isFaculty) {
       full = initialData.full_name || '';

@@ -1180,6 +1180,11 @@ const FacultyContent = ({ initialFacultyId = null }) => {
       return;
     }
 
+    if (user.isActive === false) {
+      toast.error('Your account has been deactivated. Please contact your program chair.');
+      return;
+    }
+
     const activeCount = await getActiveRequestCount(user.id);
     if (activeCount >= MAX_ACTIVE_REQUESTS) {
       toast.error(`You already have ${MAX_ACTIVE_REQUESTS} active requests. Complete or cancel one before booking again.`);

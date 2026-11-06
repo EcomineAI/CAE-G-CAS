@@ -7,6 +7,9 @@ import { getFacultyRequests, getProfile, updateRequestStatus } from '../../supab
 import { subscribeToRequests, subscribeToStudentProfiles } from '../../supabase/realtime';
 import { toast, withMinDelay, prefetch, optimistic } from '../../supabase/ux';
 
+const AVATAR_COLORS = ['#2e4a87','#7c3aed','#0891b2','#0d9488','#d97706','#dc2626','#059669','#db2777'];
+const nameToAvatarColor = (name = '') => AVATAR_COLORS[(name.charCodeAt(0) || 0) % AVATAR_COLORS.length];
+
 const S = `
 .fdc-wrap { display: flex; flex-direction: column; gap: 1.2rem; animation: fadeIn 0.3s ease; max-width: 1120px; margin: 0 auto; }
 @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
@@ -369,7 +372,7 @@ const FacultyDashboardContent = ({ onTabChange }) => {
     const notifCtx = { studentId: req.avatarSeed, facultyName: user?.displayName || user?.user_metadata?.full_name || 'Faculty' };
     await optimistic(
       setRequests, requests,
-      requests.map(r => r.id === req.id ? { ...r, status: 'Completed', completion_status: outcome } : r),
+      requests.map(r => r.id === req.id ? { ...r, status: 'Completed', completionStatus: outcome } : r),
       () => updateRequestStatus(
         req.id, 'Completed', null, null, note || null, notifCtx, req.room,
         outcome, outcome === 'rescheduled', followupDate || null
@@ -462,7 +465,7 @@ const FacultyDashboardContent = ({ onTabChange }) => {
           </div>
         ) : pendingList.map(req => (
           <div key={req.id} className="fdc-req-row">
-            <div className="fdc-avatar" style={req.avatarColor ? { background: req.avatarColor } : {}}>
+            <div className="fdc-avatar" style={{ background: req.avatarColor || nameToAvatarColor(req.name) }}>
               <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{getInitials(req.name)}</span>
             </div>
             <div className="fdc-req-info">
@@ -507,7 +510,7 @@ const FacultyDashboardContent = ({ onTabChange }) => {
           </div>
         ) : upcomingList.map(req => (
           <div key={req.id} className="fdc-upcoming-row">
-            <div className="fdc-avatar" style={req.avatarColor ? { background: req.avatarColor } : {}}>
+            <div className="fdc-avatar" style={{ background: req.avatarColor || nameToAvatarColor(req.name) }}>
               <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{getInitials(req.name)}</span>
             </div>
             <div className="fdc-upcoming-info">
@@ -523,8 +526,8 @@ const FacultyDashboardContent = ({ onTabChange }) => {
             </div>
             <div className="fdc-req-actions">
               <span className="fdc-approved-badge">Approved</span>
-              {req.date === todayStr && (
-                <button className="fdc-approve-btn" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.78rem', padding: '0.35rem 0.8rem' }}
+              {req.date <= todayStr && (
+                <button className="fdc-cancel-btn" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.78rem', padding: '0.35rem 0.8rem', borderColor: '#1a2d5a', color: '#1a2d5a' }}
                   onClick={() => setCloseSessionModal({ open: true, req, outcome: 'completed', followupDate: '', note: '' })}>
                   <ClipboardCheck size={13} /> Close Session
                 </button>

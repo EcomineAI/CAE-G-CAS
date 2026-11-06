@@ -457,7 +457,7 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
     const notifCtx = { studentId: req.avatarSeed, facultyName: user?.user_metadata?.full_name || 'Faculty' };
     await optimistic(
       setRequests, requests,
-      requests.map(r => r.id === req.id ? { ...r, status: 'Completed', completion_status: outcome } : r),
+      requests.map(r => r.id === req.id ? { ...r, status: 'Completed', completionStatus: outcome } : r),
       () => updateRequestStatus(
         req.id, 'Completed', null, null, note || null, notifCtx, req.room,
         outcome, outcome === 'rescheduled', followupDate || null
@@ -567,9 +567,7 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
 
                 {/* #1 Avatar with initials */}
                 <div className="frc-avatar" style={{ background: avatarColor }}>
-                  {req.avatar
-                    ? <img src={req.avatar} alt={displayName} />
-                    : initials}
+                  {initials}
                 </div>
 
                 {/* Info */}

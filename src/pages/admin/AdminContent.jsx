@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Users, GraduationCap, CalendarClock, CheckCircle, XCircle, Clock, X, BarChart2, Download, Search, ListFilter } from 'lucide-react';
-import { getAllProfiles, getAllRequestsAdmin, updateUserRole } from '../../supabase/api';
+import { RefreshCw, Users, GraduationCap, CalendarClock, CheckCircle, XCircle, Clock, X, BarChart2, Download, Search, ListFilter, Star, Flag, MessageSquare, Send, ChevronDown, ChevronUp } from 'lucide-react';
+import { getAllProfiles, getAllRequestsAdmin, updateUserRole, submitPCReport, submitDeanIntervention, toggleUserActive } from '../../supabase/api';
 import { toast } from '../../supabase/ux';
+import { useAuth } from '../../hooks/useAuth';
 import { getInitials, fmt12 } from '../../utils/dateUtils';
 import { ALL_ROLES } from '../../utils/constants';
 
@@ -435,16 +436,40 @@ const adminStyles = `
   border-radius: 2px; padding: 0 1px;
   display: inline; /* override <mark> block default */
 }
+.admin-toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1rem; border-top: 1px solid var(--border-color);
+}
+.admin-toggle-label { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
+.admin-toggle-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
+.admin-toggle-switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; cursor: pointer; }
+.admin-toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.admin-toggle-track {
+  position: absolute; inset: 0; border-radius: 11px;
+  background: var(--border-color); transition: background 0.18s;
+}
+.admin-toggle-track.on { background: #22c55e; }
+.admin-toggle-track.disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+.admin-toggle-thumb {
+  position: absolute; top: 3px; left: 3px; width: 16px; height: 16px;
+  border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.18s; pointer-events: none;
+}
+.admin-toggle-track.on .admin-toggle-thumb { transform: translateX(18px); }
 `;
 
 const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
   const isPC = viewerRole === 'program_chair';
+  const isDean = !isPC;
+  const { user } = useAuth();
   const [tab, setTab] = useState('overview');
   const [allProfiles, setAllProfiles] = useState([]);
   const [allRequests, setAllRequests] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [roleChanging, setRoleChanging] = useState(false);
+  const [togglingActive, setTogglingActive] = useState(false);
   const [activeFilter, setActiveFilter] = useState(null);
 
   // Appointments tab filters
@@ -454,6 +479,14 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
   const [apptCustomFrom,  setApptCustomFrom]  = useState('');
   const [apptCustomTo,    setApptCustomTo]    = useState('');
 
+  // Ratings tab
+  const [ratingFacultyId,  setRatingFacultyId]  = useState(null);
+  const [pcReportModal,    setPCReportModal]     = useState(null);
+  const [pcRemarks,        setPCRemarks]         = useState('');
+  const [deanModal,        setDeanModal]         = useState(null);
+  const [deanNoteText,     setDeanNoteText]      = useState('');
+  const [reportSubmitting, setReportSubmitting]  = useState(false);
+
   // Reports filters
   const [rangePreset, setRangePreset] = useState('month');
   const today = isoDate(new Date());
@@ -462,10 +495,15 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [p, r] = await Promise.all([getAllProfiles(), getAllRequestsAdmin()]);
-    setAllProfiles(p);
-    setAllRequests(r);
-    setLoading(false);
+    try {
+      const [p, r] = await Promise.all([getAllProfiles(), getAllRequestsAdmin()]);
+      setAllProfiles(p);
+      setAllRequests(r);
+    } catch (err) {
+      toast.error('Failed to load dashboard data. Please refresh.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -538,6 +576,23 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
       toast.error('Failed to update role');
     }
     setRoleChanging(false);
+  };
+
+  const handleToggleActive = async (userId, currentIsActive) => {
+    if (togglingActive) return;
+    const newVal = !currentIsActive;
+    setTogglingActive(true);
+    setAllProfiles(prev => prev.map(p => p.id === userId ? { ...p, is_active: newVal } : p));
+    setSelectedUser(prev => prev?.id === userId ? { ...prev, is_active: newVal } : prev);
+    const ok = await toggleUserActive(userId, newVal);
+    setTogglingActive(false);
+    if (ok) {
+      toast.success(newVal ? 'Account activated.' : 'Account deactivated.');
+    } else {
+      setAllProfiles(prev => prev.map(p => p.id === userId ? { ...p, is_active: currentIsActive } : p));
+      setSelectedUser(prev => prev?.id === userId ? { ...prev, is_active: currentIsActive } : prev);
+      toast.error('Failed to update account status.');
+    }
   };
   const userRequests = selectedUser
     ? requests.filter(r => isFacultyRole(selectedUser.role) ? r.facultyId === selectedUser.id : r.studentId === selectedUser.id)
@@ -643,6 +698,56 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
     URL.revokeObjectURL(url);
   };
 
+  // ── Derived: ratings tab ──────────────────────────────────────────────────
+  const ratedRequests = requests.filter(r => r.status === 'Completed' && r.satisfactionRating);
+  const flaggedRequests = requests.filter(r =>
+    r.status === 'Completed' && (
+      r.completionStatus === 'no_show_faculty' ||
+      (r.satisfactionRating && r.satisfactionRating <= 2)
+    )
+  );
+
+  const facultyRatings = faculty.map(f => {
+    const fReqs     = requests.filter(r => r.facultyId === f.id && r.status === 'Completed');
+    const rated     = fReqs.filter(r => r.satisfactionRating);
+    const avg       = rated.length > 0 ? (rated.reduce((s, r) => s + r.satisfactionRating, 0) / rated.length) : null;
+    const noShows   = fReqs.filter(r => r.completionStatus === 'no_show_faculty').length;
+    const flagged   = fReqs.filter(r => r.completionStatus === 'no_show_faculty' || (r.satisfactionRating && r.satisfactionRating <= 2));
+    const pcFlagged = flagged.filter(r => r.pcRemarks);
+    return { ...f, fReqs, rated, avg, noShows, flagged, pcFlagged, completed: fReqs.length };
+  }).filter(f => f.completed > 0);
+
+  const deanUserId = allProfiles.find(p => p.role === 'dean')?.id || null;
+
+  const handleSendPCReport = async () => {
+    if (!pcRemarks.trim()) { toast.error('Please add your remarks before sending.'); return; }
+    setReportSubmitting(true);
+    const { req } = pcReportModal;
+    const facultyName = req.facultyName || '—';
+    const ok = await submitPCReport(req.id, pcRemarks.trim(), deanUserId, facultyName, req.facultyId);
+    if (ok) {
+      setAllRequests(prev => prev.map(r => r.id === req.id ? { ...r, pcRemarks: pcRemarks.trim(), pcReviewedAt: new Date().toISOString() } : r));
+      toast.success('Report sent to Dean.');
+      setPCReportModal(null); setPCRemarks('');
+    } else { toast.error('Failed to send report.'); }
+    setReportSubmitting(false);
+  };
+
+  const handleDeanIntervention = async () => {
+    if (!deanNoteText.trim()) { toast.error('Please add an intervention note.'); return; }
+    setReportSubmitting(true);
+    const { req } = deanModal;
+    const deanProfile = allProfiles.find(p => p.role === 'dean');
+    const deanName = deanProfile?.full_name || 'Dean';
+    const ok = await submitDeanIntervention(req.id, deanNoteText.trim(), req.facultyId, req.facultyName, deanName);
+    if (ok) {
+      setAllRequests(prev => prev.map(r => r.id === req.id ? { ...r, deanNotes: deanNoteText.trim(), deanReviewedAt: new Date().toISOString() } : r));
+      toast.success('Intervention note sent to faculty.');
+      setDeanModal(null); setDeanNoteText('');
+    } else { toast.error('Failed to save note.'); }
+    setReportSubmitting(false);
+  };
+
   return (
     <div className="admin-container">
       <style>{adminStyles}</style>
@@ -676,6 +781,12 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
         <button className={`admin-tab${tab === 'overview'      ? ' active' : ''}`} onClick={() => setTab('overview')}>Overview</button>
         <button className={`admin-tab${tab === 'appointments'  ? ' active' : ''}`} onClick={() => setTab('appointments')}><CalendarClock size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />Appointments</button>
         <button className={`admin-tab${tab === 'reports'       ? ' active' : ''}`} onClick={() => setTab('reports')}><BarChart2 size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />Reports</button>
+        <button className={`admin-tab${tab === 'ratings'       ? ' active' : ''}`} onClick={() => setTab('ratings')} style={{ position: 'relative' }}>
+          <Star size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />Ratings
+          {flaggedRequests.filter(r => !r.pcRemarks && !r.deanNotes).length > 0 && (
+            <span style={{ position: 'absolute', top: 2, right: 2, width: 7, height: 7, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
+          )}
+        </button>
       </div>
 
       {/* ── OVERVIEW TAB ── */}
@@ -835,14 +946,36 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
                     ))}
                   </div>
 
+                  {isDean && selectedUser.id !== user?.id && (
+                    <div className="admin-toggle-row">
+                      <div>
+                        <div className="admin-toggle-label">Account Status</div>
+                        <div className="admin-toggle-hint">
+                          {selectedUser.is_active !== false ? 'Active — user can log in and use the system' : 'Deactivated — user cannot book or be booked'}
+                        </div>
+                      </div>
+                      <label className="admin-toggle-switch" aria-label={selectedUser.is_active !== false ? 'Deactivate account' : 'Activate account'}>
+                        <input
+                          type="checkbox"
+                          checked={selectedUser.is_active !== false}
+                          onChange={() => handleToggleActive(selectedUser.id, selectedUser.is_active !== false)}
+                          disabled={togglingActive}
+                        />
+                        <span className={`admin-toggle-track${selectedUser.is_active !== false ? ' on' : ''}${togglingActive ? ' disabled' : ''}`}>
+                          <span className="admin-toggle-thumb" />
+                        </span>
+                      </label>
+                    </div>
+                  )}
+
                   {(!isPC || (selectedUser.role === 'student' || selectedUser.role === 'faculty')) && (
-                    <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid var(--border-color)' }}>
                       <p style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-muted)', textTransform: 'uppercase', margin: '0 0 0.45rem' }}>Change Role</p>
                       <select
                         value={selectedUser.role || ''}
                         disabled={roleChanging}
                         onChange={e => handleRoleChange(selectedUser.id, e.target.value)}
-                        style={{ width: '100%', padding: '0.45rem 0.7rem', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: '0.85rem', fontFamily: 'inherit', cursor: roleChanging ? 'not-allowed' : 'pointer', opacity: roleChanging ? 0.6 : 1 }}
+                        style={{ width: '100%', padding: '0.45rem 0.7rem', borderRadius: 8, border: '1.5px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '0.85rem', fontFamily: 'inherit', cursor: roleChanging ? 'not-allowed' : 'pointer', opacity: roleChanging ? 0.6 : 1 }}
                       >
                         {assignableRoles.map(r => (
                           <option key={r} value={r}>
@@ -1105,6 +1238,175 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
             )}
           </div>
         </>
+      )}
+
+      {/* ── RATINGS TAB ── */}
+      {tab === 'ratings' && (
+        <>
+          {/* Summary cards */}
+          <div style={{ display: 'flex', gap: '0.85rem', marginBottom: '1.4rem', flexWrap: 'wrap' }}>
+            {[
+              { label: 'Rated Sessions', value: ratedRequests.length, color: '#f59e0b' },
+              { label: 'Flagged Items', value: flaggedRequests.length, color: '#ef4444' },
+              { label: 'Avg Rating', value: ratedRequests.length > 0 ? (ratedRequests.reduce((s,r) => s + r.satisfactionRating, 0) / ratedRequests.length).toFixed(1) : '—', color: '#6366f1' },
+              { label: 'PC Reports Sent', value: flaggedRequests.filter(r => r.pcRemarks).length, color: '#0891b2' },
+            ].map(m => (
+              <div key={m.label} style={{ flex: '1 1 140px', background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', borderRadius: 14, padding: '0.9rem 1.1rem' }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.3rem' }}>{m.label}</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: m.color }}>{m.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Faculty rating table */}
+          <div className="admin-section" style={{ marginBottom: '1.4rem' }}>
+            <p className="admin-section-title">Faculty Evaluation Summary</p>
+            {facultyRatings.length === 0 ? (
+              <div className="admin-empty">No completed sessions with ratings yet.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {facultyRatings.map(f => {
+                  const isExpanded = ratingFacultyId === f.id;
+                  const avgColor = f.avg === null ? '#9ca3af' : f.avg >= 4 ? '#16a34a' : f.avg >= 3 ? '#f59e0b' : '#ef4444';
+                  return (
+                    <div key={f.id} style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', borderRadius: 12, overflow: 'hidden' }}>
+                      <div
+                        onClick={() => setRatingFacultyId(isExpanded ? null : f.id)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.9rem 1.1rem', cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: nameToColor(f.full_name), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '0.85rem', flexShrink: 0 }}>
+                          {getInitials(f.full_name)}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{f.full_name}</div>
+                          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>{f.completed} session{f.completed !== 1 ? 's' : ''} · {f.rated.length} rated · {f.noShows} no-show{f.noShows !== 1 ? 's' : ''}</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          {f.avg !== null ? (
+                            <>
+                              <Star size={14} fill={avgColor} stroke={avgColor} />
+                              <span style={{ fontWeight: 800, fontSize: '0.95rem', color: avgColor }}>{f.avg.toFixed(1)}</span>
+                            </>
+                          ) : <span style={{ fontSize: '0.78rem', color: '#9ca3af' }}>No ratings</span>}
+                        </div>
+                        {f.flagged.length > 0 && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: '#fee2e2', borderRadius: 20, padding: '0.2rem 0.6rem' }}>
+                            <Flag size={11} color="#ef4444" />
+                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#b91c1c' }}>{f.flagged.length}</span>
+                          </div>
+                        )}
+                        {isExpanded ? <ChevronUp size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} /> : <ChevronDown size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />}
+                      </div>
+
+                      {isExpanded && (
+                        <div style={{ borderTop: '1px solid var(--border-color)', padding: '0.8rem 1.1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          {f.fReqs.map(req => {
+                            const isFlagged = req.completionStatus === 'no_show_faculty' || (req.satisfactionRating && req.satisfactionRating <= 2);
+                            const hasPCReport = !!req.pcRemarks;
+                            const hasDeanNote = !!req.deanNotes;
+                            return (
+                              <div key={req.id} style={{ background: isFlagged ? '#fff5f5' : 'var(--bg-primary)', border: `1px solid ${isFlagged ? '#fca5a5' : 'var(--border-color)'}`, borderRadius: 9, padding: '0.65rem 0.85rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontWeight: 600, fontSize: '0.83rem', color: 'var(--text-primary)' }}>{req.studentName}</div>
+                                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                                      {fmtDate(req.date)} · {req.subject || '—'}
+                                      {req.completionStatus && <span style={{ marginLeft: 6, fontWeight: 700, color: req.completionStatus === 'no_show_faculty' ? '#dc2626' : req.completionStatus === 'no_show_student' ? '#b45309' : req.completionStatus === 'rescheduled' ? '#6d28d9' : '#16a34a' }}>· {req.completionStatus === 'no_show_faculty' ? 'Faculty No-Show' : req.completionStatus === 'no_show_student' ? 'Student No-Show' : req.completionStatus === 'rescheduled' ? 'Needs Follow-up' : 'Completed'}</span>}
+                                    </div>
+                                    {req.satisfactionRating && (
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 4 }}>
+                                        {[1,2,3,4,5].map(s => <Star key={s} size={11} fill={s <= req.satisfactionRating ? '#f59e0b' : 'none'} stroke={s <= req.satisfactionRating ? '#f59e0b' : '#d1d5db'} />)}
+                                        {req.feedbackNotes && <span style={{ fontSize: '0.72rem', color: '#6b7280', marginLeft: 4 }}>"{req.feedbackNotes}"</span>}
+                                      </div>
+                                    )}
+                                    {hasPCReport && <div style={{ fontSize: '0.72rem', color: '#0891b2', marginTop: 4, fontStyle: 'italic' }}><MessageSquare size={10} style={{ verticalAlign: 'middle', marginRight: 3 }} />PC: {req.pcRemarks}</div>}
+                                    {hasDeanNote && <div style={{ fontSize: '0.72rem', color: '#7c3aed', marginTop: 3, fontStyle: 'italic' }}><MessageSquare size={10} style={{ verticalAlign: 'middle', marginRight: 3 }} />Dean: {req.deanNotes}</div>}
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+                                    {isPC && isFlagged && !hasPCReport && (
+                                      <button onClick={() => { setPCReportModal({ req }); setPCRemarks(''); }}
+                                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0.35rem 0.7rem', borderRadius: 7, border: '1.5px solid #fca5a5', background: '#fff5f5', color: '#b91c1c', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                        <Send size={11} /> Flag to Dean
+                                      </button>
+                                    )}
+                                    {isPC && hasPCReport && !hasDeanNote && (
+                                      <span style={{ fontSize: '0.72rem', color: '#0891b2', fontWeight: 600 }}>Sent to Dean</span>
+                                    )}
+                                    {!isPC && isFlagged && (
+                                      <button onClick={() => { setDeanModal({ req }); setDeanNoteText(req.deanNotes || ''); }}
+                                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0.35rem 0.7rem', borderRadius: 7, border: '1.5px solid #c4b5fd', background: '#f5f3ff', color: '#6d28d9', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                        <MessageSquare size={11} /> {hasDeanNote ? 'Edit Note' : 'Add Note'}
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── PC Report Modal ── */}
+      {pcReportModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, backdropFilter: 'blur(3px)', padding: '1rem' }} onClick={() => setPCReportModal(null)}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '93%', maxWidth: 480, maxHeight: 'calc(100vh - 2rem)', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.22)', padding: '1.6rem 1.8rem', animation: 'fadeIn 0.17s ease' }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1f2937', margin: '0 0 0.3rem' }}>Flag Concern to Dean</h2>
+            <p style={{ fontSize: '0.84rem', color: '#6b7280', marginBottom: '1.2rem', lineHeight: 1.5 }}>
+              Flagging session with <strong style={{ color: '#1a2d5a' }}>{pcReportModal.req.facultyName}</strong> for <strong>{pcReportModal.req.studentName}</strong> on {fmtDate(pcReportModal.req.date)}.
+              <br />The Dean will be notified and can review this concern.
+            </p>
+            <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9ca3af', marginBottom: '0.4rem' }}>Your remarks</div>
+            <textarea
+              value={pcRemarks}
+              onChange={e => setPCRemarks(e.target.value)}
+              placeholder="Describe the concern (low ratings, no-show pattern, etc.)..."
+              rows={4}
+              style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: 9, border: '1.5px solid #e5e8f0', fontFamily: 'inherit', fontSize: '0.84rem', resize: 'none', boxSizing: 'border-box', marginBottom: '1.2rem', outline: 'none', color: '#1f2937' }}
+            />
+            <div style={{ display: 'flex', gap: '0.7rem' }}>
+              <button onClick={() => setPCReportModal(null)} style={{ flex: 1, padding: '0.72rem', borderRadius: 9, border: '1.5px solid #e5e8f0', background: '#fff', color: '#1f2937', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+              <button onClick={handleSendPCReport} disabled={reportSubmitting} style={{ flex: 1, padding: '0.72rem', borderRadius: 9, border: 'none', background: '#1a2d5a', color: '#fff', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit', opacity: reportSubmitting ? 0.6 : 1 }}>
+                {reportSubmitting ? 'Sending…' : 'Send to Dean'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Dean Intervention Modal ── */}
+      {deanModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, backdropFilter: 'blur(3px)', padding: '1rem' }} onClick={() => setDeanModal(null)}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '93%', maxWidth: 480, maxHeight: 'calc(100vh - 2rem)', overflowY: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,0.22)', padding: '1.6rem 1.8rem', animation: 'fadeIn 0.17s ease' }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1f2937', margin: '0 0 0.3rem' }}>Dean Intervention</h2>
+            <p style={{ fontSize: '0.84rem', color: '#6b7280', marginBottom: '1.2rem', lineHeight: 1.5 }}>
+              Session: <strong style={{ color: '#1a2d5a' }}>{deanModal.req.facultyName}</strong> with <strong>{deanModal.req.studentName}</strong> on {fmtDate(deanModal.req.date)}.
+              {deanModal.req.pcRemarks && <><br /><span style={{ color: '#0891b2' }}>PC Remarks: {deanModal.req.pcRemarks}</span></>}
+              <br /><span style={{ fontSize: '0.78rem' }}>Your note will be sent as a notification to the faculty member.</span>
+            </p>
+            <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#9ca3af', marginBottom: '0.4rem' }}>Intervention note</div>
+            <textarea
+              value={deanNoteText}
+              onChange={e => setDeanNoteText(e.target.value)}
+              placeholder="Write your verdict or guidance for the faculty member..."
+              rows={4}
+              style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: 9, border: '1.5px solid #e5e8f0', fontFamily: 'inherit', fontSize: '0.84rem', resize: 'none', boxSizing: 'border-box', marginBottom: '1.2rem', outline: 'none', color: '#1f2937' }}
+            />
+            <div style={{ display: 'flex', gap: '0.7rem' }}>
+              <button onClick={() => setDeanModal(null)} style={{ flex: 1, padding: '0.72rem', borderRadius: 9, border: '1.5px solid #e5e8f0', background: '#fff', color: '#1f2937', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+              <button onClick={handleDeanIntervention} disabled={reportSubmitting} style={{ flex: 1, padding: '0.72rem', borderRadius: 9, border: 'none', background: '#6d28d9', color: '#fff', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit', opacity: reportSubmitting ? 0.6 : 1 }}>
+                {reportSubmitting ? 'Saving…' : 'Send to Faculty'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

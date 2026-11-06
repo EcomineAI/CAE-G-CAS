@@ -405,7 +405,10 @@ export const getStudentRequests = async (studentId) => {
     facultyDeleted: req.is_faculty_deleted ?? false,
     schedule_id: req.schedule_id,
     max_slots: req.schedule?.max_slots || 1,
-    room: req.room || req.schedule?.room || null
+    room: req.room || req.schedule?.room || null,
+    satisfactionRating: req.student_satisfaction_rating || null,
+    feedbackNotes: req.student_feedback_notes || null,
+    completionStatus: req.completion_status || null,
     };
   });
 };
@@ -482,7 +485,7 @@ export const markRequestSeen = async (requestId) => {
 export const getAllProfiles = async () => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, email, role, department, program, status, avatar_url, avatar_color, created_at')
+    .select('id, full_name, email, role, department, program, status, avatar_url, avatar_color, is_active, created_at')
     .neq('full_name', 'Admin')
     .order('role', { ascending: true })
     .order('full_name', { ascending: true });
@@ -642,7 +645,65 @@ export const getAllRequestsAdmin = async () => {
     room: r.room || null,
     startTime: r.start_time || null,
     endTime: r.end_time || null,
+    satisfactionRating: r.student_satisfaction_rating || null,
+    feedbackNotes: r.student_feedback_notes || null,
+    completionStatus: r.completion_status || null,
+    pcRemarks: r.pc_remarks || null,
+    pcReviewedAt: r.pc_reviewed_at || null,
+    deanNotes: r.dean_intervention_notes || null,
+    deanReviewedAt: r.dean_reviewed_at || null,
+    requiresFollowup: r.requires_followup || false,
+    followupDate: r.followup_date || null,
   }));
+};
+
+export const submitRating = async (requestId, rating, notes = null) => {
+  const { error } = await supabase
+    .from('requests')
+    .update({
+      student_satisfaction_rating: rating,
+      student_feedback_notes: notes,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', requestId);
+  if (error) { logError('Error submitting rating:', error); return false; }
+  return true;
+};
+
+export const submitPCReport = async (requestId, pcRemarks, deanUserId, facultyName, facultyId) => {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from('requests')
+    .update({ pc_remarks: pcRemarks, pc_reviewed_at: now, updated_at: now })
+    .eq('id', requestId);
+  if (error) { logError('Error submitting PC report:', error); return false; }
+  if (deanUserId) {
+    await insertNotification(
+      deanUserId,
+      'pc_report',
+      `Program Chair flagged a concern about ${facultyName}. Review recommended.`,
+      requestId
+    );
+  }
+  return true;
+};
+
+export const submitDeanIntervention = async (requestId, notes, facultyId, facultyName, deanName) => {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from('requests')
+    .update({ dean_intervention_notes: notes, dean_reviewed_at: now, updated_at: now })
+    .eq('id', requestId);
+  if (error) { logError('Error saving dean intervention:', error); return false; }
+  if (facultyId) {
+    await insertNotification(
+      facultyId,
+      'dean_intervention',
+      `Dean ${deanName} has reviewed a consultation concern and left a remark for you.`,
+      requestId
+    );
+  }
+  return true;
 };
 
 const DAY_ORDER = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -733,9 +794,10 @@ export const computeNextSlot = (schedules) => {
 export const getAllFaculty = async () => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, avatar_url, avatar_color, status, department, name_prefix, name_suffix, schedules(id, day, specific_date, start_time, end_time, schedule_type, max_slots)')
+    .select('id, full_name, avatar_url, avatar_color, status, department, name_prefix, name_suffix, is_active, schedules(id, day, specific_date, start_time, end_time, schedule_type, max_slots)')
     .eq('role', 'faculty')
     .neq('full_name', 'Admin')
+    .eq('is_active', true)
     .order('full_name', { ascending: true });
 
   if (error) {
@@ -935,4 +997,13 @@ export const uploadAvatar = async (userId, file) => {
     .getPublicUrl(filePath);
 
   return publicUrl;
+};
+
+export const toggleUserActive = async (userId, isActive) => {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .eq('id', userId);
+  if (error) { logError('Error toggling user active status:', error); return false; }
+  return true;
 };
