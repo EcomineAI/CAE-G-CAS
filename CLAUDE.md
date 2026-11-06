@@ -106,7 +106,8 @@ seeds/
 ### Auth
 - **Always use `useAuth()`** from `src/hooks/useAuth.js` to get `{ user, loading }`.
 - Never read `supabase.auth.getUser()` in a component — `useAuth` already does this with retry logic.
-- Role detection is **DB-authoritative** (`profiles.role`), not email-based. Do not derive roles from email in component code.
+- **Roles are email-based and immutable**: `getUserRole(email)` from `authUtils.js` determines role at profile creation. Emails with all-digit local parts → `student`, letters/names → `faculty`. Roles **cannot be changed** after account creation — use `isValidRoleEmail(email, role)` to verify.
+- Never manually update `profiles.role` in the database or call `updateUserRole()` — it will fail with a guard message.
 
 ### Routing
 - Routes are defined **only** in `src/App.jsx`.
@@ -132,10 +133,11 @@ seeds/
 
 ### Roles
 Four roles exist: `student`, `faculty`, `program_chair`, `dean`.
+- Roles are **assigned at profile creation based on email pattern** and **cannot be changed** after signup.
+- Email local part all digits (e.g. `20210001@gc.edu`) → `student`; otherwise → `faculty`.
+- `program_chair` and `dean` roles are **only assigned via direct database updates** by administrators — they bypass the email-based system.
 - **Dean** — sees all programs; uses `FacultyDashboard` shell → renders `AdminContent` with `viewerRole="dean"`.
 - **Program Chair** — scoped to their `profiles.program`; uses same shell → renders `AdminContent` with `viewerRole="program_chair" viewerProgram={...}`.
-- Role assignment hierarchy: Dean can assign any role; PC can only assign `student`/`faculty`.
-- Role changes take effect on the user's **next login** (no realtime redirect).
 - Dev bypass: `Admin@gmail.com` / `testing123` → routes to `/dean`, sets `sessionStorage admin_bypass=1`.
 
 ### Close Session Modal

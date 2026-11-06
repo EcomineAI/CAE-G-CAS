@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Users, GraduationCap, CalendarClock, CheckCircle, XCircle, Clock, X, BarChart2, Download, Search, ListFilter, Star, Flag, MessageSquare, Send, ChevronDown, ChevronUp } from 'lucide-react';
-import { getAllProfiles, getAllRequestsAdmin, updateUserRole, submitPCReport, submitDeanIntervention, toggleUserActive } from '../../supabase/api';
+import { getAllProfiles, getAllRequestsAdmin, submitPCReport, submitDeanIntervention, toggleUserActive } from '../../supabase/api';
 import { toast } from '../../supabase/ux';
 import { useAuth } from '../../hooks/useAuth';
 import { getInitials, fmt12 } from '../../utils/dateUtils';
@@ -468,7 +468,6 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
   const [allRequests, setAllRequests] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [roleChanging, setRoleChanging] = useState(false);
   const [togglingActive, setTogglingActive] = useState(false);
   const [activeFilter, setActiveFilter] = useState(null);
 
@@ -522,11 +521,6 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
     ? allRequests.filter(r => pcFacultyIds.has(r.facultyId))
     : allRequests;
 
-  // Roles a viewer is allowed to assign
-  const assignableRoles = isPC
-    ? ALL_ROLES.filter(r => r === 'student' || r === 'faculty')
-    : ALL_ROLES;
-
   // ── Derived: overview ──────────────────────────────────────────────────────
   const faculty  = profiles.filter(p => p.role === 'faculty' || p.role === 'program_chair' || p.role === 'dean');
   const students = profiles.filter(p => p.role === 'student');
@@ -565,18 +559,6 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
 
   const isFacultyRole = (role) => role === 'faculty' || role === 'program_chair' || role === 'dean';
 
-  const handleRoleChange = async (userId, newRole) => {
-    setRoleChanging(true);
-    const ok = await updateUserRole(userId, newRole);
-    if (ok) {
-      setAllProfiles(prev => prev.map(p => p.id === userId ? { ...p, role: newRole } : p));
-      setSelectedUser(prev => prev ? { ...prev, role: newRole } : prev);
-      toast.success('Role updated');
-    } else {
-      toast.error('Failed to update role');
-    }
-    setRoleChanging(false);
-  };
 
   const handleToggleActive = async (userId, currentIsActive) => {
     if (togglingActive) return;
@@ -968,26 +950,6 @@ const AdminContent = ({ viewerRole = 'dean', viewerProgram = null }) => {
                     </div>
                   )}
 
-                  {(!isPC || (selectedUser.role === 'student' || selectedUser.role === 'faculty')) && (
-                    <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid var(--border-color)' }}>
-                      <p style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-muted)', textTransform: 'uppercase', margin: '0 0 0.45rem' }}>Change Role</p>
-                      <select
-                        value={selectedUser.role || ''}
-                        disabled={roleChanging}
-                        onChange={e => handleRoleChange(selectedUser.id, e.target.value)}
-                        style={{ width: '100%', padding: '0.45rem 0.7rem', borderRadius: 8, border: '1.5px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '0.85rem', fontFamily: 'inherit', cursor: roleChanging ? 'not-allowed' : 'pointer', opacity: roleChanging ? 0.6 : 1 }}
-                      >
-                        {assignableRoles.map(r => (
-                          <option key={r} value={r}>
-                            {r === 'program_chair' ? 'Program Chair' : r.charAt(0).toUpperCase() + r.slice(1)}
-                          </option>
-                        ))}
-                      </select>
-                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '0.4rem 0 0', lineHeight: 1.4 }}>
-                        User must log out and back in for the new role to take effect.
-                      </p>
-                    </div>
-                  )}
 
                   <div className="admin-detail-history">
                     <p className="admin-detail-hist-title">

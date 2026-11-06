@@ -1,28 +1,11 @@
-/**
- * Detects the user role based on the email pattern.
- * - (numbers)@any.domain = student
- * - (name)@any.domain = faculty
- */
 export const getUserRole = (email) => {
   if (!email || !email.includes('@')) return null;
-
   const localPart = email.split('@')[0];
-
-  // If it's all numbers, it's a student ID
-  if (/^\d+$/.test(localPart)) {
-    return 'student';
-  }
-
-  // Otherwise, it's considered faculty
-  return 'faculty';
+  return /^\d+$/.test(localPart) ? 'student' : 'faculty';
 };
 
-/**
- * Validates if the email matches the expected role pattern.
- */
 export const isValidRoleEmail = (email, expectedRole) => {
-  const role = getUserRole(email);
-  return role === expectedRole;
+  return getUserRole(email) === expectedRole;
 };
 
 /**

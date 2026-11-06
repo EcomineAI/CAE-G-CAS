@@ -498,12 +498,8 @@ export const getAllProfiles = async () => {
 };
 
 export const updateUserRole = async (userId, role) => {
-  const { error } = await supabase
-    .from('profiles')
-    .update({ role })
-    .eq('id', userId);
-  if (error) { logError('Error updating user role:', error); return false; }
-  return true;
+  logError('updateUserRole should never be called — roles are email-based and immutable');
+  return false;
 };
 
 
