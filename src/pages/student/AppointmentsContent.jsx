@@ -443,6 +443,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
     const canCancel = ['Pending','Approved'].includes(app.status);
     const canResched = app.status === 'Pending';
     const isCompleted = app.status === 'Completed';
+    const isNoShowStudent = app.completionStatus === 'no_show_student';
     const hasRated = isCompleted && app.satisfactionRating;
     return (
       <div className="ac-detail" key={app.id}>
@@ -497,11 +498,11 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
             </div>
           );
         })()}
-        <p className="ac-detail-hint">{canResched ? 'You can reschedule or cancel pending requests. Approved appointments can only be cancelled.' : isCompleted ? 'Session completed. Submit your faculty evaluation below.' : 'You can cancel this appointment at any time before it starts.'}</p>
+        <p className="ac-detail-hint">{canResched ? 'You can reschedule or cancel pending requests. Approved appointments can only be cancelled.' : isCompleted && isNoShowStudent ? 'You were marked as a no-show for this session. Evaluation is not available.' : isCompleted ? 'Session completed. Submit your faculty evaluation below.' : 'You can cancel this appointment at any time before it starts.'}</p>
         <div className="ac-detail-actions">
           {canCancel && <button className="ac-action-btn" onClick={() => openCancel(app)} style={{ border: '1.5px solid #fca5a5', background: '#fff5f5', color: '#ef4444' }}>Cancel Request</button>}
           {canResched && <button className="ac-action-btn" onClick={() => openResched(app)} style={{ border: 'none', background: '#1a2d5a', color: '#fff' }}>Reschedule</button>}
-          {isCompleted && (
+          {isCompleted && !isNoShowStudent && (
             <button className="ac-action-btn" onClick={() => openRating(app)} style={{ border: hasRated ? '1.5px solid #86efac' : 'none', background: hasRated ? '#f0fdf4' : '#1a2d5a', color: hasRated ? '#15803d' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
               <ClipboardCheck size={14} /> {hasRated ? 'View / Update Evaluation' : 'Evaluate Faculty'}
             </button>
@@ -593,7 +594,7 @@ const AppointmentsContent = ({ initialFilter = 'All', onResetFilter, focusAppoin
                                 {[1,2,3,4,5].map(s => <Star key={s} size={11} fill={s <= app.satisfactionRating ? '#f59e0b' : 'none'} stroke={s <= app.satisfactionRating ? '#f59e0b' : '#d1d5db'} />)}
                                 <span style={{ fontSize: '0.68rem', color: '#92400e', fontWeight: 600 }}>{app.satisfactionRating}/5</span>
                               </div>
-                            ) : app.status === 'Completed' ? (
+                            ) : app.status === 'Completed' && app.completionStatus !== 'no_show_student' ? (
                               <div style={{ fontSize: '0.68rem', color: '#d97706', fontWeight: 600, marginTop: '0.25rem' }}>Pending evaluation</div>
                             ) : null}
                           </div>
