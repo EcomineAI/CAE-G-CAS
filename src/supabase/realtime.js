@@ -208,6 +208,24 @@ export const subscribeToOwnProfile = (userId, callback) => {
  * @param {Function} callback - Called with the updated schedule list
  * @returns {Function} unsubscribe function
  */
+export const subscribeToRejections = (fetchFn, callback) => {
+  const channel = supabase
+    .channel('request-rejections-student')
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'requests', filter: 'status=eq.rejected' },
+      async () => {
+        const data = await fetchFn();
+        callback(data);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    if (channel) supabase.removeChannel(channel);
+  };
+};
+
 export const subscribeToSlotFills = (facultyId, fetchFn, callback) => {
   const channel = supabase
     .channel(`slot-fills-${facultyId}`)

@@ -3,7 +3,7 @@ import { CheckCircle, WifiOff, Search, Users, Clock, XCircle, LayoutList, Layout
 import { getInitials } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { getAllFaculty, getSchedulesForFaculty, submitRequest, checkActiveRequest, checkActiveRequestForSlot, getActiveRequestCount, isDateBlocked, getBlockedDates, computeNextSlot, isDeanBlockedDate } from '../../supabase/api';
-import { subscribeToFacultyStatus, subscribeToAllSchedules, subscribeToFacultyProfiles } from '../../supabase/realtime';
+import { subscribeToFacultyStatus, subscribeToAllSchedules, subscribeToFacultyProfiles, subscribeToRejections } from '../../supabase/realtime';
 import { FacultyCardSkeleton, toast, withMinDelay } from '../../supabase/ux';
 import { formatTimeRange } from '../../utils/dateUtils';
 import { MAX_ACTIVE_REQUESTS } from '../../utils/constants';
@@ -1220,6 +1220,12 @@ const FacultyContent = ({ initialFacultyId = null }) => {
       (updated) => setFacultyList(updated)
     );
 
+    // Realtime: rejection frees a slot — refetch so availability reflects immediately
+    const unsubRejections = subscribeToRejections(
+      getAllFaculty,
+      (updated) => setFacultyList(updated)
+    );
+
     // Realtime: faculty name/prefix/suffix/avatar changes — patch directory cards instantly
     const unsubFacultyProfiles = subscribeToFacultyProfiles((updated) => {
       const prefix = updated.name_prefix || '';
@@ -1233,7 +1239,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
       ));
     });
 
-    return () => { unsubStatus(); unsubSchedules(); unsubFacultyProfiles(); };
+    return () => { unsubStatus(); unsubSchedules(); unsubRejections(); unsubFacultyProfiles(); };
   }, []);
 
   const filteredFaculty = facultyList.filter(f => 
