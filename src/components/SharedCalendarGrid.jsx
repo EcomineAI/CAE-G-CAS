@@ -859,11 +859,11 @@ export const calendarSharedStyles = `
   width: 22px; height: 22px; border-radius: 50%;
 }
 @media (max-width: 600px) {
-  .sc-day-skel { min-height: 0; height: calc((100vw - 1.5rem) / 7); max-height: 72px; padding: 0.25rem 0.2rem; }
+  .sc-day-skel { min-height: 46px; padding: 0.25rem 0.2rem; }
   .sc-day-skel-num { width: 16px; height: 16px; }
 }
 @media (max-width: 430px) {
-  .sc-day-skel { min-height: 0; height: calc((100vw - 1rem) / 7); max-height: 62px; padding: 0.2rem 0.15rem; }
+  .sc-day-skel { min-height: 38px; padding: 0.2rem 0.15rem; }
   .sc-day-skel-num { width: 14px; height: 14px; }
 }
 
@@ -919,8 +919,8 @@ export const calendarSharedStyles = `
   .sc-nav-btn { width: 24px; height: 24px; }
   .sc-filter-bar { padding: 0.45rem 0.9rem; gap: 0.3rem; }
   .sc-filter-chip { padding: 0.24rem 0.65rem; font-size: 0.7rem; }
-  .sc-day { padding: 0.25rem 0.2rem; min-height: 0; height: calc((100vw - 1.5rem) / 7); max-height: 72px; overflow: hidden; }
-  .sc-day-empty { min-height: 0; height: calc((100vw - 1.5rem) / 7); max-height: 72px; }
+  .sc-day { padding: 0.25rem 0.2rem; min-height: 54px; }
+  .sc-day-empty { min-height: 54px; }
   .sc-day-num { width: 20px; height: 20px; font-size: 0.72rem; }
   .sc-popover {
     position: fixed;
@@ -938,8 +938,8 @@ export const calendarSharedStyles = `
   .sc-nav-btn { width: 22px; height: 22px; }
   .sc-filter-bar { padding: 0.4rem 0.75rem; }
   .sc-filter-chip { padding: 0.2rem 0.55rem; font-size: 0.65rem; }
-  .sc-day { min-height: 0; height: calc((100vw - 1rem) / 7); max-height: 62px; padding: 0.2rem 0.15rem; overflow: hidden; }
-  .sc-day-empty { min-height: 0; height: calc((100vw - 1rem) / 7); max-height: 62px; }
+  .sc-day { min-height: 46px; padding: 0.2rem 0.15rem; }
+  .sc-day-empty { min-height: 46px; }
   .sc-day-num { width: 18px; height: 18px; font-size: 0.65rem; }
   .sc-weekday { font-size: 0.52rem; }
   .sc-pill { font-size: 0.48rem; padding: 1px 4px; }

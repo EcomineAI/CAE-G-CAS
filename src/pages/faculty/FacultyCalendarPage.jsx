@@ -15,8 +15,7 @@ const facultyCalStyles = `
   display: flex;
   gap: calc(1.5rem + 10px);
   align-items: flex-start;
-  width: 100%;
-  max-width: fit-content;
+  width: fit-content;
   margin: 0 auto;
 }
 .fcp-layout .sc-right { height: 100%; overflow-y: auto; }
