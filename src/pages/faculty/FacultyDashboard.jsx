@@ -784,7 +784,7 @@ const facultyDashStyles = `
 const FacultyDashboard = () => {
   const [activeTab, setActiveTab] = useState(() => {
     const role = sessionStorage.getItem('askademic_role') || '';
-    if (role === 'dean' || role === 'program_chair' || sessionStorage.getItem('admin_bypass') === '1') return 'Overview';
+    if (role === 'dean' || role === 'program_chair') return 'Overview';
     return localStorage.getItem('gcas_faculty_tab') || 'Dashboard';
   });
 
@@ -916,7 +916,6 @@ const FacultyDashboard = () => {
     localStorage.removeItem('gcas_student_tab');
     localStorage.removeItem('askademic_last_uid');
     if (user?.id) localStorage.removeItem(`askademic_avatar_color_${user.id}`);
-    sessionStorage.removeItem('admin_bypass');
     sessionStorage.removeItem('askademic_role');
     await supabase.auth.signOut();
     navigate('/');

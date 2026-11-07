@@ -2,14 +2,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabase/supabase';
 import { formatNameFromEmail } from '../utils/authUtils';
 
-const ADMIN_USER = {
-  id: 'admin-bypass',
-  email: 'Admin@gmail.com',
-  role: 'dean',
-  displayName: 'Admin',
-  avatarUrl: null,
-};
-
 // Clear per-role UI state when the signed-in user changes
 const clearStaleTabState = (currentUserId) => {
   const lastUid = localStorage.getItem('askademic_last_uid');
@@ -75,12 +67,6 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (sessionStorage.getItem('admin_bypass') === '1') {
-      setUser(ADMIN_USER);
-      setLoading(false);
-      return;
-    }
-
     let cancelled = false;
     let latestToken = 0; // monotonically increases, so stale resolves lose
     let currentUserId = null; // track the active user so token-refresh SIGNED_IN events don't wipe state

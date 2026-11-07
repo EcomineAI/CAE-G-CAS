@@ -347,7 +347,7 @@ const FacultyRequestsContent = ({ initialFilter = 'All', focusRequestId = null, 
           ? { ...r, avatarColor: updated.avatar_color || r.avatarColor, avatar: updated.avatar_url ?? r.avatar, name: updated.full_name || r.name }
           : r
       ));
-    });
+    }, user.id);
     return () => { unsub(); unsubProfiles(); };
   }, [user]);
 

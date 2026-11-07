@@ -80,9 +80,9 @@ export const subscribeToRequests = (userId, role, callback, fetchFn) => {
  * @param {Function} callback - Called with the updated faculty list
  * @returns {Function} unsubscribe function
  */
-export const subscribeToAllSchedules = (fetchFn, callback) => {
+export const subscribeToAllSchedules = (fetchFn, callback, userId = 'anon') => {
   const channel = supabase
-    .channel('all-schedules-student')
+    .channel(`all-schedules-student-${userId}`)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'schedules' },
@@ -104,9 +104,9 @@ export const subscribeToAllSchedules = (fetchFn, callback) => {
  * @param {Function} callback - Called with the update payload { new: {id, status, ...} }
  * @returns {Function} unsubscribe function
  */
-export const subscribeToFacultyStatus = (callback) => {
+export const subscribeToFacultyStatus = (callback, userId = 'anon') => {
   const channel = supabase
-    .channel('faculty-status')
+    .channel(`faculty-status-${userId}`)
     .on(
       'postgres_changes',
       {
@@ -131,9 +131,9 @@ export const subscribeToFacultyStatus = (callback) => {
  * @param {Function} callback - Called with the updated profile row (payload.new)
  * @returns {Function} unsubscribe function
  */
-export const subscribeToFacultyProfiles = (callback) => {
+export const subscribeToFacultyProfiles = (callback, userId = 'anon') => {
   const channel = supabase
-    .channel('faculty-profiles-student-view')
+    .channel(`faculty-profiles-student-view-${userId}`)
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'profiles' },
@@ -154,9 +154,9 @@ export const subscribeToFacultyProfiles = (callback) => {
  * @param {Function} callback - Called with the updated profile row (payload.new)
  * @returns {Function} unsubscribe function
  */
-export const subscribeToStudentProfiles = (callback) => {
+export const subscribeToStudentProfiles = (callback, userId = 'anon') => {
   const channel = supabase
-    .channel('student-profiles-faculty-view')
+    .channel(`student-profiles-faculty-view-${userId}`)
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'profiles' },
@@ -208,9 +208,9 @@ export const subscribeToOwnProfile = (userId, callback) => {
  * @param {Function} callback - Called with the updated schedule list
  * @returns {Function} unsubscribe function
  */
-export const subscribeToRejections = (fetchFn, callback) => {
+export const subscribeToRejections = (fetchFn, callback, userId = 'anon') => {
   const channel = supabase
-    .channel('request-rejections-student')
+    .channel(`request-rejections-student-${userId}`)
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'requests', filter: 'status=eq.rejected' },

@@ -1212,18 +1212,20 @@ const FacultyContent = ({ initialFacultyId = null }) => {
           statusColor: updatedProfile.status === 'Available' ? 'green' : updatedProfile.status === 'Busy' ? 'red' : 'gray',
         };
       }));
-    });
+    }, user?.id);
 
     // Realtime: any schedule change — full refetch so filled counts + nextSlot stay accurate
     const unsubSchedules = subscribeToAllSchedules(
       getAllFaculty,
-      (updated) => setFacultyList(updated)
+      (updated) => setFacultyList(updated),
+      user?.id
     );
 
     // Realtime: rejection frees a slot — refetch so availability reflects immediately
     const unsubRejections = subscribeToRejections(
       getAllFaculty,
-      (updated) => setFacultyList(updated)
+      (updated) => setFacultyList(updated),
+      user?.id
     );
 
     // Realtime: faculty name/prefix/suffix/avatar changes — patch directory cards instantly
@@ -1237,7 +1239,7 @@ const FacultyContent = ({ initialFacultyId = null }) => {
           ? { ...f, name: displayName || f.name, fullName: base || f.fullName, avatar: updated.avatar_url ?? f.avatar, avatarColor: updated.avatar_color || f.avatarColor }
           : f
       ));
-    });
+    }, user?.id);
 
     return () => { unsubStatus(); unsubSchedules(); unsubRejections(); unsubFacultyProfiles(); };
   }, []);

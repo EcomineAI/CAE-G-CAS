@@ -294,7 +294,7 @@ const FacultyDashboardContent = ({ onTabChange }) => {
           ? { ...r, avatarColor: updated.avatar_color || r.avatarColor, avatar: updated.avatar_url ?? r.avatar, name: updated.full_name || r.name }
           : r
       ));
-    });
+    }, user.id);
     return () => { unsubReqs(); unsubProfiles(); };
   }, [user]);
 

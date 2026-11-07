@@ -80,12 +80,13 @@ const DashboardContent = ({ onTabChange, realName }) => {
       setFacultyList(prev => prev.map(f =>
         f.id === payload.new.id ? { ...f, status: payload.new.status } : f
       ));
-    });
+    }, user.id);
 
     // Schedule changes: full refetch so nextSlot + hasBookableSlot recompute correctly
     const unsubSchedules = subscribeToAllSchedules(
       getAllFaculty,
-      (updated) => setFacultyList(updated)
+      (updated) => setFacultyList(updated),
+      user.id
     );
 
     // Faculty profile changes (name/prefix/suffix/avatar): patch requests + facultyList instantly
@@ -104,7 +105,7 @@ const DashboardContent = ({ onTabChange, realName }) => {
           ? { ...f, name: displayName || f.name, fullName: base || f.fullName, avatar: updated.avatar_url ?? f.avatar, avatarColor: updated.avatar_color || f.avatarColor }
           : f
       ));
-    });
+    }, user.id);
 
     return () => { unsub(); unsubFaculty(); unsubSchedules(); unsubFacultyProfiles(); };
   }, [user]);

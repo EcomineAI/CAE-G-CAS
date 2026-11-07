@@ -82,10 +82,9 @@ const LoginPage = () => {
       return;
     }
 
-    if (id === 'Admin@gmail.com' && password === 'testing123') {
-      sessionStorage.setItem('admin_bypass', '1');
-      sessionStorage.setItem('askademic_role', 'dean');
-      navigate('/dean');
+    if (id.includes('@') && !id.endsWith('@gordoncollege.edu.ph')) {
+      setError('Please use your @gordoncollege.edu.ph account.');
+      triggerShake();
       return;
     }
 
