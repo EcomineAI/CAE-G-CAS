@@ -101,7 +101,8 @@ const S = `
 .fdc-req-name { font-size: 0.88rem; font-weight: 700; color: #1a2d5a; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .fdc-req-section { font-size: 0.75rem; color: #6b7280; font-weight: 500; }
 .fdc-student-no { font-size: 0.68rem; font-weight: 700; font-family: ui-monospace, monospace; color: #9ca3af; white-space: nowrap; }
-.fdc-req-detail { font-size: 0.78rem; color: #374151; margin-top: 0.2rem; }
+.fdc-req-detail { font-size: 0.78rem; color: #374151; margin-top: 0.2rem; display: flex; flex-direction: column; gap: 0.1rem; }
+.fdc-req-detail-sub { font-size: 0.72rem; color: #6b7280; }
 .fdc-req-note { font-size: 0.76rem; color: #6b7280; font-style: italic; margin-top: 0.15rem; }
 .fdc-req-actions { display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0; }
 .fdc-decline-btn {
@@ -126,7 +127,7 @@ const S = `
 }
 .fdc-upcoming-info { flex: 1; min-width: 0; }
 .fdc-upcoming-name { font-size: 0.88rem; font-weight: 700; color: #1a2d5a; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.fdc-upcoming-detail { font-size: 0.78rem; color: #374151; margin-top: 0.2rem; }
+.fdc-upcoming-detail { font-size: 0.78rem; color: #374151; margin-top: 0.2rem; display: flex; flex-direction: column; gap: 0.1rem; }
 .fdc-upcoming-note { font-size: 0.76rem; color: #6b7280; font-style: italic; margin-top: 0.15rem; }
 .fdc-approved-badge {
   padding: 0.3rem 0.8rem; border-radius: 20px;
@@ -475,7 +476,8 @@ const FacultyDashboardContent = ({ onTabChange }) => {
                 {req.section && <span className="fdc-req-section">{req.section}</span>}
               </div>
               <div className="fdc-req-detail">
-                {req.subject} · {req.day}, {req.date ? fmt(req.date) : ''} {req.time} · {req.filled || 1} of {req.max_slots || 1} slots held
+                <span>{req.subject}</span>
+                <span className="fdc-req-detail-sub">{req.day}, {req.date ? fmt(req.date) : ''} {req.time} · {req.filled || 1} of {req.max_slots || 1} slots held</span>
               </div>
               {req.details && <div className="fdc-req-note">"{req.details}"</div>}
             </div>
@@ -520,7 +522,8 @@ const FacultyDashboardContent = ({ onTabChange }) => {
                 {req.section && <span className="fdc-req-section">{req.section}</span>}
               </div>
               <div className="fdc-upcoming-detail">
-                {req.subject} · {fmtWithDay(req.date)} {req.time} · {req.filled || 1} of {req.max_slots || 1} slots held
+                <span>{req.subject}</span>
+                <span className="fdc-req-detail-sub">{fmtWithDay(req.date)} {req.time} · {req.filled || 1} of {req.max_slots || 1} slots held</span>
               </div>
               {req.details && <div className="fdc-upcoming-note">"{req.details}"</div>}
             </div>

@@ -768,11 +768,13 @@ const facultyDashStyles = `
   .mobile-menu-btn { display: flex; }
   .bottom-nav { display: flex; }
   .faculty-main-content { padding: 1rem; }
+  .faculty-main-content.fac-calendar-tab { padding: 0.75rem; }
 }
 
 /* iPhone */
 @media (max-width: 430px) {
   .faculty-main-content { padding: 0.8rem 0.75rem; }
+  .faculty-main-content.fac-calendar-tab { padding: 0.5rem 0.4rem; }
 }
 
 /* Large monitors */
